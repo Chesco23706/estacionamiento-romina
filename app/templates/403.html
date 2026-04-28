@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Acceso denegado{% endblock %}
+{% block content %}
+<main class="single-column">
+  <section class="card">
+    <p class="eyebrow">Permisos insuficientes</p>
+    <h2>No tienes acceso a esta acción</h2>
+    <p>Tu perfil no cuenta con autorización para entrar a esta ruta o ejecutar esta operación.</p>
+    <a class="link-button" href="{{ url_for('main.dashboard') }}">Regresar al panel</a>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,30 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: romina_parking
+      MYSQL_USER: romina_user
+      MYSQL_PASSWORD: change-this-password
+      MYSQL_ROOT_PASSWORD: change-this-root-password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pchange-this-root-password"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  mysql_data:

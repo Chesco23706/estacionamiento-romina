@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block title %}Panel | Estacionamiento Romina{% endblock %}
+{% block content %}
+<main class="dashboard-layout">
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span>Vehículos dentro</span>
+      <strong>{{ metrics.inside_count }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Salidas registradas</span>
+      <strong>{{ metrics.exited_count }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Total cobrado hoy</span>
+      <strong>{{ metrics.total_day|money }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Total cobrado semana</span>
+      <strong>{{ metrics.total_week|money }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Total pendiente</span>
+      <strong>{{ metrics.pending_total|money }}</strong>
+    </article>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Captura operativa</p>
+          <h2>Registrar entrada</h2>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Número asignado o ticket
+          <input type="text" name="ticket_number" required maxlength="30">
+        </label>
+        <label>
+          Cliente o propietario
+          <input type="text" name="client_name" required maxlength="120">
+        </label>
+        <label>
+          Tipo de vehículo
+          <select name="vehicle_type" required>
+            <option value="">Selecciona</option>
+            {% for vehicle_type in vehicle_types %}
+            <option value="{{ vehicle_type }}">{{ vehicle_type }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Placas o identificador
+          <input type="text" name="plate_number" required maxlength="50">
+        </label>
+        <label class="full-width">
+          Notas
+          <textarea name="notes" rows="2" maxlength="500"></textarea>
+        </label>
+        <button class="btn" type="submit">Guardar entrada</button>
+      </form>
+    </article>
+
+    <article class="card">
+      <p class="eyebrow">Tarifas configuradas</p>
+      <h2>Reglas de cobro</h2>
+      <ul class="plain-list">
+        <li>Moto, bicicleta y carrito callejero: $10 por día o $40 por semana completa.</li>
+        <li>Automóvil: $20 por hora.</li>
+        <li>La fracción mínima se cobra como 1 hora o 1 día, según el tipo de vehículo.</li>
+      </ul>
+      <p class="muted">El cálculo final del cobro siempre se confirma desde el servidor cuando el administrador registra la salida.</p>
+      <div class="type-counter-grid">
+        {% for vehicle_type, count in metrics.vehicle_count.items() %}
+        <div class="type-counter">
+          <span>{{ vehicle_type }}</span>
+          <strong>{{ count }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  {% if current_user.is_admin %}
+  <section class="dashboard-grid admin-grid">
+    <article class="card">
+      <p class="eyebrow">Administración</p>
+      <h2>Empleados</h2>
+      <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Nombre completo
+          <input type="text" name="full_name" required maxlength="120">
+        </label>
+        <label>
+          Usuario
+          <input type="text" name="username" required maxlength="50">
+        </label>
+        <label>
+          Contraseña inicial
+          <input type="password" name="password" required minlength="8">
+        </label>
+        <button class="btn" type="submit">Crear empleado</button>
+      </form>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Cambiar contraseña</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.full_name }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
+              <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="password" name="new_password" placeholder="Nueva contraseña" minlength="8" required>
+                  <button class="btn btn-secondary" type="submit">Actualizar</button>
+                </form>
+              </td>
+              <td>
+                {% if user.id != current_user.id %}
+                <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-danger" type="submit">
+                    {{ 'Desactivar' if user.is_active_user else 'Activar' }}
+                  </button>
+                </form>
+                {% else %}
+                <span class="muted">Sesión actual</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="card">
+      <p class="eyebrow">Cortes de caja</p>
+      <h2>Resumen y generación</h2>
+      <div class="button-row">
+        <form method="post" action="{{ url_for('main.generate_cut') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="cut_type" value="daily">
+          <button class="btn" type="submit">Generar corte diario</button>
+        </form>
+        <form method="post" action="{{ url_for('main.generate_cut') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="cut_type" value="weekly">
+          <button class="btn btn-secondary" type="submit">Generar corte semanal</button>
+        </form>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Ingresos</th>
+              <th>Pendiente</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cut in cuts %}
+            <tr>
+              <td>{{ cut.id }}</td>
+              <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
+              <td>{{ cut.generated_at|dt }}</td>
+              <td>{{ cut.total_income|money }}</td>
+              <td>{{ cut.total_pending|money }}</td>
+              <td><a class="link-button" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6">Todavía no hay cortes generados.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Bitácora general</p>
+        <h2>Registros de vehículos</h2>
+      </div>
+      <form method="get" class="search-grid">
+        <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ticket, nombre, placas o tipo">
+        <select name="status">
+          <option value="">Todos los estados</option>
+          {% for status in status_options %}
+          <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+        <select name="vehicle_type">
+          <option value="">Todos los tipos</option>
+          {% for vehicle_type in vehicle_types %}
+          <option value="{{ vehicle_type }}" {% if filters.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-secondary" type="submit">Buscar</button>
+      </form>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Número asignado</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Placas</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Tiempo</th>
+            <th>Tarifa</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Entrada por</th>
+            <th>Salida por</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td>{{ record.id }}</td>
+            <td>{{ record.ticket_number }}</td>
+            <td>{{ record.client_name }}</td>
+            <td>{{ record.vehicle_type }}</td>
+            <td>{{ record.plate_number }}</td>
+            <td>{{ record.entry_at|dt }}</td>
+            <td>{{ record.exit_at|dt }}</td>
+            <td>
+              {% if record.status == 'Dentro del estacionamiento' %}
+              <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
+              {% else %}
+              {{ format_duration(record.duration_seconds) }}
+              {% endif %}
+            </td>
+            <td>{{ record.applied_rate_label or '-' }}</td>
+            <td>{{ record.total_amount|money }}</td>
+            <td><span class="status-pill">{{ record.status }}</span></td>
+            <td>{{ record.entry_user.full_name }}</td>
+            <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
+            <td>
+              <div class="button-column">
+                {% if current_user.is_admin %}
+                  {% if not record.exit_at %}
+                  <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-secondary" type="submit">Registrar salida</button>
+                  </form>
+                  {% endif %}
+                  {% if record.exit_at and record.status != 'Pagado' %}
+                  <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn" type="submit">Marcar pagado</button>
+                  </form>
+                  {% endif %}
+                  <a class="link-button" href="{{ url_for('main.edit_record', record_id=record.id) }}">Editar</a>
+                  <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('¿Seguro que deseas eliminar este registro?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-danger" type="submit">Eliminar</button>
+                  </form>
+                {% else %}
+                  <span class="muted">Solo registro de entrada</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="14">No hay registros que coincidan con la búsqueda.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}

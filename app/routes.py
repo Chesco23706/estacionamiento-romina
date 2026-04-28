@@ -1,0 +1,349 @@
+from flask import (
+    Blueprint,
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy import or_
+
+from .decorators import role_required
+from .extensions import db
+from .models import CashCut, Role, User, VehicleRecord, log_action
+from .pricing import ensure_utc, format_duration, utc_now
+from .services import (
+    STATUS_OPTIONS,
+    VEHICLE_TYPES,
+    create_employee,
+    create_vehicle_record,
+    dashboard_metrics,
+    delete_vehicle_record,
+    generate_cash_cut,
+    register_exit,
+    register_payment,
+    reset_employee_password,
+    update_vehicle_record,
+)
+from .validators import clean_text
+
+main_bp = Blueprint("main", __name__)
+
+
+def parse_record_filters():
+    return {
+        "search": request.args.get("search", "").strip(),
+        "status": request.args.get("status", "").strip(),
+        "vehicle_type": request.args.get("vehicle_type", "").strip(),
+    }
+
+
+def build_records_query(filters):
+    query = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc())
+    search = filters["search"]
+    if search:
+        like_value = f"%{search}%"
+        query = query.filter(
+            or_(
+                VehicleRecord.ticket_number.ilike(like_value),
+                VehicleRecord.client_name.ilike(like_value),
+                VehicleRecord.plate_number.ilike(like_value),
+                VehicleRecord.vehicle_type.ilike(like_value),
+            )
+        )
+    if filters["status"]:
+        query = query.filter(VehicleRecord.status == filters["status"])
+    if filters["vehicle_type"]:
+        query = query.filter(VehicleRecord.vehicle_type == filters["vehicle_type"])
+    return query
+
+
+@main_bp.app_template_filter("money")
+def money_filter(value):
+    return f"${float(value):,.2f}"
+
+
+@main_bp.app_template_filter("dt")
+def datetime_filter(value):
+    if not value:
+        return "-"
+    return ensure_utc(value).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+
+@main_bp.app_context_processor
+def inject_now():
+    return {"now_utc": utc_now}
+
+
+@main_bp.route("/health")
+def health():
+    db.session.execute(db.text("SELECT 1"))
+    return {"status": "ok"}, 200
+
+
+@main_bp.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        password = request.form.get("password", "")
+
+        user = User.query.filter(db.func.lower(User.username) == username).first()
+        if not user or not user.check_password(password):
+            if user:
+                user.register_failed_login()
+                db.session.commit()
+            flash("Usuario o contraseña inválidos.", "danger")
+            return render_template("login.html")
+
+        if user.is_locked():
+            flash("Tu cuenta está temporalmente bloqueada por intentos fallidos.", "danger")
+            return render_template("login.html")
+
+        if not user.is_active_user:
+            flash("Tu usuario está desactivado. Contacta al administrador.", "danger")
+            return render_template("login.html")
+
+        login_user(user)
+        user.last_login_at = utc_now()
+        user.reset_login_guard()
+        log_action(user, "login", "session", details={"username": username})
+        db.session.commit()
+        return redirect(url_for("main.dashboard"))
+
+    return render_template("login.html")
+
+
+@main_bp.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    log_action(current_user, "logout", "session")
+    db.session.commit()
+    logout_user()
+    flash("Sesión cerrada correctamente.", "success")
+    return redirect(url_for("main.login"))
+
+
+@main_bp.route("/")
+@login_required
+def dashboard():
+    filters = parse_record_filters()
+    records = build_records_query(filters).all()
+    metrics = dashboard_metrics()
+    users = User.query.order_by(User.full_name.asc()).all() if current_user.is_admin else []
+    roles = Role.query.order_by(Role.name.asc()).all() if current_user.is_admin else []
+    cuts = (
+        CashCut.query.order_by(CashCut.generated_at.desc()).limit(10).all()
+        if current_user.is_admin
+        else []
+    )
+    return render_template(
+        "dashboard.html",
+        records=records,
+        metrics=metrics,
+        users=users,
+        roles=roles,
+        cuts=cuts,
+        filters=filters,
+        vehicle_types=VEHICLE_TYPES,
+        status_options=STATUS_OPTIONS,
+        format_duration=format_duration,
+    )
+
+
+@main_bp.route("/records/new", methods=["POST"])
+@login_required
+def create_record():
+    try:
+        create_vehicle_record(request.form, current_user)
+        flash("Entrada registrada correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/records/<int:record_id>/exit", methods=["POST"])
+@login_required
+@role_required("admin")
+def register_vehicle_exit(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        register_exit(record, current_user)
+        flash("Salida registrada y cobro calculado automáticamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "warning")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/records/<int:record_id>/pay", methods=["POST"])
+@login_required
+@role_required("admin")
+def mark_paid(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        register_payment(record, current_user)
+        flash("Pago registrado correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/records/<int:record_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("admin")
+def edit_record(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    if request.method == "POST":
+        try:
+            update_vehicle_record(record, request.form, current_user)
+            flash("Registro actualizado correctamente.", "success")
+            return redirect(url_for("main.dashboard"))
+        except ValueError as exc:
+            flash(str(exc), "danger")
+
+    return render_template(
+        "record_edit.html",
+        record=record,
+        vehicle_types=VEHICLE_TYPES,
+        status_options=STATUS_OPTIONS,
+    )
+
+
+@main_bp.route("/records/<int:record_id>/delete", methods=["POST"])
+@login_required
+@role_required("admin")
+def delete_record(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    delete_vehicle_record(record, current_user)
+    flash("Registro eliminado correctamente.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/users/new", methods=["POST"])
+@login_required
+@role_required("admin")
+def create_user():
+    try:
+        create_employee(request.form, current_user)
+        flash("Empleado creado correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/users/<int:user_id>/toggle", methods=["POST"])
+@login_required
+@role_required("admin")
+def toggle_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("No se encontró el usuario solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+    if user.id == current_user.id:
+        flash("No puedes desactivar tu propio usuario desde esta pantalla.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    user.is_active_user = not user.is_active_user
+    log_action(
+        current_user,
+        "employee_status_changed",
+        "user",
+        user.id,
+        {"active": user.is_active_user},
+    )
+    db.session.commit()
+    flash("Estado del empleado actualizado.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/users/<int:user_id>/password", methods=["POST"])
+@login_required
+@role_required("admin")
+def reset_password(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("No se encontró el usuario solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        reset_employee_password(user, request.form.get("new_password", ""), current_user)
+        flash("Contraseña actualizada correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/cuts/generate", methods=["POST"])
+@login_required
+@role_required("admin")
+def generate_cut():
+    try:
+        cut_type = clean_text(request.form.get("cut_type"), 20, "tipo de corte")
+        if cut_type not in {"daily", "weekly"}:
+            raise ValueError("Tipo de corte inválido.")
+        cut = generate_cash_cut(cut_type, current_user)
+        flash("Corte generado correctamente.", "success")
+        return redirect(url_for("main.cash_cut_detail", cut_id=cut.id))
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/cuts/<int:cut_id>")
+@login_required
+@role_required("admin")
+def cash_cut_detail(cut_id):
+    cut = db.session.get(CashCut, cut_id)
+    if not cut:
+        flash("No se encontró el corte solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+    return render_template("cut_detail.html", cut=cut)
+
+
+@main_bp.route("/cuts/<int:cut_id>/export")
+@login_required
+@role_required("admin")
+def export_cut(cut_id):
+    cut = db.session.get(CashCut, cut_id)
+    if not cut:
+        flash("No se encontró el corte solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    lines = [
+        "tipo_corte,periodo_inicio,periodo_fin,total_ingresos,total_pendiente,vehiculos_atendidos,vehiculos_pagados",
+        f"{cut.cut_type},{cut.period_start.isoformat()},{cut.period_end.isoformat()},{cut.total_income},{cut.total_pending},{cut.vehicles_served},{cut.vehicles_paid}",
+        "",
+        "tipo_vehiculo,cantidad,ingresos",
+    ]
+    for vehicle_type, values in cut.breakdown.items():
+        lines.append(f"{vehicle_type},{values['count']},{values['income']}")
+
+    response = make_response("\n".join(lines))
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = f"attachment; filename=cut_{cut.id}.csv"
+    return response
+
+
+@main_bp.errorhandler(403)
+def forbidden(_error):
+    return render_template("403.html"), 403

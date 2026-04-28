@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Editar Registro{% endblock %}
+{% block content %}
+<main class="single-column">
+  <section class="card">
+    <p class="eyebrow">Administrador</p>
+    <h2>Editar registro #{{ record.id }}</h2>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Número asignado
+        <input type="text" name="ticket_number" required value="{{ record.ticket_number }}">
+      </label>
+      <label>
+        Cliente
+        <input type="text" name="client_name" required value="{{ record.client_name }}">
+      </label>
+      <label>
+        Tipo de vehículo
+        <select name="vehicle_type" required>
+          {% for vehicle_type in vehicle_types %}
+          <option value="{{ vehicle_type }}" {% if record.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Placas
+        <input type="text" name="plate_number" required value="{{ record.plate_number }}">
+      </label>
+      <label>
+        Estado
+        <select name="status" required>
+          {% for status in status_options %}
+          <option value="{{ status }}" {% if record.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="full-width">
+        Notas
+        <textarea name="notes" rows="3">{{ record.notes or '' }}</textarea>
+      </label>
+      <div class="button-row">
+        <button class="btn" type="submit">Guardar cambios</button>
+        <a class="link-button" href="{{ url_for('main.dashboard') }}">Volver al panel</a>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}

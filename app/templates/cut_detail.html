@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Corte #{{ cut.id }}{% endblock %}
+{% block content %}
+<main class="single-column">
+  <section class="card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Reporte imprimible</p>
+        <h2>Corte {{ 'diario' if cut.cut_type == 'daily' else 'semanal' }} #{{ cut.id }}</h2>
+      </div>
+      <div class="button-row">
+        <a class="link-button" href="{{ url_for('main.export_cut', cut_id=cut.id) }}">Exportar CSV</a>
+        <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
+      </div>
+    </div>
+    <div class="report-grid">
+      <article class="report-card">
+        <span>Periodo</span>
+        <strong>{{ cut.period_start|dt }} a {{ cut.period_end|dt }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Generado por</span>
+        <strong>{{ cut.generated_by.full_name }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Total ingresos</span>
+        <strong>{{ cut.total_income|money }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Total pendiente</span>
+        <strong>{{ cut.total_pending|money }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Vehículos atendidos</span>
+        <strong>{{ cut.vehicles_served }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Vehículos pagados</span>
+        <strong>{{ cut.vehicles_paid }}</strong>
+      </article>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de vehículo</th>
+            <th>Cantidad</th>
+            <th>Ingresos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vehicle_type, values in cut.breakdown.items() %}
+          <tr>
+            <td>{{ vehicle_type }}</td>
+            <td>{{ values.count }}</td>
+            <td>{{ values.income|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}
