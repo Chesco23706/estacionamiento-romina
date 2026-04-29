@@ -22,7 +22,6 @@ Esta version esta preparada para uso empresarial con:
 
 ```text
 New project 3/
-|-- app.py
 |-- server.py
 |-- wsgi.py
 |-- config.py
