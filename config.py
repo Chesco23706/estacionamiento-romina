@@ -45,6 +45,7 @@ class Config:
     SEED_DEMO_USERS = False
     ENABLE_SECURITY_HEADERS = True
     PREFERRED_URL_SCHEME = "https"
+    AUTO_INIT_DATABASE = False
     ADMIN_BOOTSTRAP_USERNAME = os.environ.get("ADMIN_BOOTSTRAP_USERNAME", "admin")
     ADMIN_BOOTSTRAP_NAME = os.environ.get("ADMIN_BOOTSTRAP_NAME", "Administrador General")
     ADMIN_BOOTSTRAP_PASSWORD = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD")
@@ -53,6 +54,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SEED_DEMO_USERS = True
+    AUTO_INIT_DATABASE = True
     PREFERRED_URL_SCHEME = "http"
     ADMIN_BOOTSTRAP_PASSWORD = os.environ.get(
         "ADMIN_BOOTSTRAP_PASSWORD", "AdminRomina2026!"
@@ -66,6 +68,7 @@ class TestingConfig(Config):
     SQLALCHEMY_ENGINE_OPTIONS = {}
     ENABLE_SECURITY_HEADERS = False
     SEED_DEMO_USERS = True
+    AUTO_INIT_DATABASE = True
     ADMIN_BOOTSTRAP_PASSWORD = "AdminRomina2026!"
 
 
