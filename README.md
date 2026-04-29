@@ -23,6 +23,7 @@ Esta version esta preparada para uso empresarial con:
 ```text
 New project 3/
 |-- app.py
+|-- server.py
 |-- wsgi.py
 |-- config.py
 |-- requirements.txt
@@ -220,7 +221,7 @@ py -m pip install -r requirements.txt
 ### 3. Ejecutar la app
 
 ```powershell
-py app.py
+py server.py
 ```
 
 Abrir:
