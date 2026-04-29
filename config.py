@@ -1,6 +1,8 @@
 import os
 from datetime import timedelta
 
+from sqlalchemy.pool import NullPool
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
 
@@ -8,7 +10,19 @@ INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
 def _normalize_database_url(raw_url: str) -> str:
     if raw_url.startswith("mysql://"):
         return raw_url.replace("mysql://", "mysql+pymysql://", 1)
+    if raw_url.startswith("postgresql://"):
+        return raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql+psycopg://", 1)
     return raw_url
+
+
+def _engine_options(database_url: str) -> dict:
+    options = {"pool_pre_ping": True}
+    if "postgresql+psycopg://" in database_url:
+        options["poolclass"] = NullPool
+        options["connect_args"] = {"prepare_threshold": None}
+    return options
 
 
 class Config:
@@ -19,6 +33,7 @@ class Config:
             f"sqlite:///{os.path.join(INSTANCE_DIR, 'romina_parking.db')}",
         )
     )
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options(SQLALCHEMY_DATABASE_URI)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -48,6 +63,7 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {}
     ENABLE_SECURITY_HEADERS = False
     SEED_DEMO_USERS = True
     ADMIN_BOOTSTRAP_PASSWORD = "AdminRomina2026!"

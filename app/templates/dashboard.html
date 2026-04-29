@@ -268,6 +268,7 @@
             <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
             <td>
               <div class="button-column">
+                <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}" target="_blank" rel="noopener">Imprimir ticket</a>
                 {% if current_user.is_admin %}
                   {% if not record.exit_at %}
                   <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">

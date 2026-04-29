@@ -159,11 +159,22 @@ def dashboard():
 @login_required
 def create_record():
     try:
-        create_vehicle_record(request.form, current_user)
+        record = create_vehicle_record(request.form, current_user)
         flash("Entrada registrada correctamente.", "success")
+        return redirect(url_for("main.print_ticket", record_id=record.id))
     except ValueError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/records/<int:record_id>/ticket")
+@login_required
+def print_ticket(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+    return render_template("ticket.html", record=record)
 
 
 @main_bp.route("/records/<int:record_id>/exit", methods=["POST"])
