@@ -18,7 +18,10 @@ def create_app(config_object=None):
         static_url_path="",
     )
     app.config.from_object(config_object or get_config())
-    os.makedirs(INSTANCE_DIR, exist_ok=True)
+
+    database_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    if database_uri.startswith("sqlite:///"):
+        os.makedirs(INSTANCE_DIR, exist_ok=True)
 
     configure_proxy(app)
 
