@@ -2,6 +2,19 @@
 {% block title %}Panel | Estacionamiento Romina{% endblock %}
 {% block content %}
 <main class="dashboard-layout">
+  <section class="hero-panel">
+    <article class="card hero-copy">
+      <div class="hero-copy-inner">
+        <div>
+          <p class="eyebrow">Panel principal</p>
+          <h2>Operación clara, rápida y organizada</h2>
+          <p>Administra entradas, controla salidas, emite tickets y mantén visibles los totales más importantes del día desde una interfaz más intuitiva y mejor estructurada.</p>
+        </div>
+        <img class="hero-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Identidad Romina">
+      </div>
+    </article>
+  </section>
+
   <section class="stats-grid">
     <article class="stat-card">
       <span>Vehículos dentro</span>
@@ -25,12 +38,13 @@
     </article>
   </section>
 
-  <section class="dashboard-grid">
-    <article class="card">
+  <section class="workspace-grid">
+    <article class="card feature-card">
       <div class="section-heading">
         <div>
           <p class="eyebrow">Captura operativa</p>
           <h2>Registrar entrada</h2>
+          <p class="section-note">Este módulo es el punto de partida de la operación. Al guardar, el sistema genera el ticket imprimible del cliente.</p>
         </div>
       </div>
       <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
@@ -64,31 +78,39 @@
       </form>
     </article>
 
-    <article class="card">
-      <p class="eyebrow">Tarifas configuradas</p>
-      <h2>Reglas de cobro</h2>
-      <ul class="plain-list">
-        <li>Moto, bicicleta y carrito callejero: $10 por día o $40 por semana completa.</li>
-        <li>Automóvil: $20 por hora.</li>
-        <li>La fracción mínima se cobra como 1 hora o 1 día, según el tipo de vehículo.</li>
-      </ul>
-      <p class="muted">El cálculo final del cobro siempre se confirma desde el servidor cuando el administrador registra la salida.</p>
-      <div class="type-counter-grid">
-        {% for vehicle_type, count in metrics.vehicle_count.items() %}
-        <div class="type-counter">
-          <span>{{ vehicle_type }}</span>
-          <strong>{{ count }}</strong>
+    <aside class="stack-column">
+      <article class="card feature-card">
+        <p class="eyebrow">Tarifas configuradas</p>
+        <h2>Reglas de cobro</h2>
+        <ul class="plain-list">
+          <li>Moto, bicicleta y carrito callejero: $10 por día o $40 por semana completa.</li>
+          <li>Automóvil: $20 por hora.</li>
+          <li>La fracción mínima se cobra como 1 hora o 1 día, según el tipo de vehículo.</li>
+        </ul>
+        <p class="muted">El cálculo final del cobro siempre se confirma desde el servidor cuando el administrador registra la salida.</p>
+      </article>
+
+      <article class="card feature-card">
+        <p class="eyebrow">Ocupación actual</p>
+        <h2>Vehículos por tipo</h2>
+        <div class="type-counter-grid">
+          {% for vehicle_type, count in metrics.vehicle_count.items() %}
+          <div class="type-counter">
+            <span>{{ vehicle_type }}</span>
+            <strong>{{ count }}</strong>
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    </article>
+      </article>
+    </aside>
   </section>
 
   {% if current_user.is_admin %}
-  <section class="dashboard-grid admin-grid">
-    <article class="card">
+  <section class="workspace-grid admin-workspace">
+    <article class="card feature-card">
       <p class="eyebrow">Administración</p>
       <h2>Empleados</h2>
+      <p class="section-note">Alta, cambio de contraseñas y activación o desactivación de cuentas operativas.</p>
       <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>
@@ -151,9 +173,10 @@
       </div>
     </article>
 
-    <article class="card">
+    <article class="card feature-card">
       <p class="eyebrow">Cortes de caja</p>
       <h2>Resumen y generación</h2>
+      <p class="section-note">Genera y consulta resúmenes diarios o semanales con una vista rápida de ingresos y pendientes.</p>
       <div class="button-row">
         <form method="post" action="{{ url_for('main.generate_cut') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -200,11 +223,12 @@
   </section>
   {% endif %}
 
-  <section class="card">
+  <section class="card feature-card records-card">
     <div class="section-heading">
       <div>
         <p class="eyebrow">Bitácora general</p>
         <h2>Registros de vehículos</h2>
+        <p class="section-note">Consulta la operación completa, reimprime tickets y filtra por ticket, cliente, placas, tipo o estado.</p>
       </div>
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ticket, nombre, placas o tipo">

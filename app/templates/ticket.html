@@ -4,8 +4,14 @@
 <main class="single-column">
   <section class="card ticket-card">
     <div class="ticket-printable">
-      <p class="eyebrow">Comprobante de entrada</p>
-      <h2>Estacionamiento Romina</h2>
+      <div class="ticket-header">
+        <img class="ticket-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Romina">
+        <div>
+          <p class="eyebrow">Comprobante de entrada</p>
+          <h2>Estacionamiento Romina</h2>
+          <p class="muted">Izamal, Yucatán</p>
+        </div>
+      </div>
       <div class="ticket-grid">
         <div>
           <span>Ticket</span>

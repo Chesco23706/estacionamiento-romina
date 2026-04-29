@@ -8,23 +8,29 @@
   </head>
   <body>
     <div class="page-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Bitácora segura</p>
-          <h1>{{ config.APP_NAME }}</h1>
-        </div>
-        {% if current_user.is_authenticated %}
-        <div class="topbar-actions">
-          <div class="user-card">
-            <strong>{{ current_user.full_name }}</strong>
-            <span>{{ 'Administrador' if current_user.is_admin else 'Empleado' }}</span>
+      <header class="topbar-shell">
+        <div class="topbar">
+          <div class="brand-block">
+            <img class="brand-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Estacionamiento Romina">
+            <div>
+              <p class="eyebrow">Bitácora segura</p>
+              <h1>{{ config.APP_NAME }}</h1>
+              <p class="brand-subtitle">Izamal, Yucatán · Operación diaria con un aire de hacienda colonial</p>
+            </div>
           </div>
-          <form method="post" action="{{ url_for('main.logout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary" type="submit">Cerrar sesión</button>
-          </form>
+          {% if current_user.is_authenticated %}
+          <div class="topbar-actions">
+            <div class="user-card">
+              <strong>{{ current_user.full_name }}</strong>
+              <span>{{ 'Administrador' if current_user.is_admin else 'Empleado' }}</span>
+            </div>
+            <form method="post" action="{{ url_for('main.logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-secondary" type="submit">Cerrar sesión</button>
+            </form>
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
       </header>
 
       {% with messages = get_flashed_messages(with_categories=true) %}

@@ -2,31 +2,45 @@
 {% block title %}Login | Estacionamiento Romina{% endblock %}
 {% block content %}
 <main class="auth-layout">
-  <section class="card auth-card">
-    <p class="eyebrow">Acceso protegido</p>
-    <h2>Iniciar sesión</h2>
-    <p>Usa tu usuario autorizado para operar la bitácora de vehículos.</p>
-    <form method="post" class="form-grid">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label>
-        Usuario
-        <input type="text" name="username" required maxlength="50" autocomplete="username">
-      </label>
-      <label>
-        Contraseña
-        <input type="password" name="password" required autocomplete="current-password">
-      </label>
-      <button class="btn" type="submit">Entrar</button>
-    </form>
-    <div class="hint-box">
-      <strong>Acceso controlado</strong>
-      {% if config.SEED_DEMO_USERS %}
-      <span><code>admin</code>, <code>empleado1</code>, <code>empleado2</code></span>
-      <span>Esta ayuda solo existe en desarrollo. En producción usa credenciales corporativas.</span>
-      {% else %}
-      <span>Las cuentas productivas se crean desde el bootstrap administrativo y la gestión interna.</span>
-      {% endif %}
-    </div>
+  <section class="auth-stage">
+    <article class="card auth-showcase">
+      <img class="auth-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Romina">
+      <p class="eyebrow">Centro de control</p>
+      <h2>Bienvenido a Romina</h2>
+      <p>Una interfaz pensada para registrar entradas, emitir comprobantes y mantener el control diario del estacionamiento con una operación clara, cálida y ordenada.</p>
+      <ul class="plain-list">
+        <li>Registro en tiempo real de entradas y salidas.</li>
+        <li>Bitácora con ticket imprimible para el cliente.</li>
+        <li>Cortes y control administrativo desde un solo panel.</li>
+      </ul>
+    </article>
+
+    <section class="card auth-card">
+      <p class="eyebrow">Acceso protegido</p>
+      <h2>Iniciar sesión</h2>
+      <p>Usa tu usuario autorizado para operar la bitácora de vehículos.</p>
+      <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Usuario
+          <input type="text" name="username" required maxlength="50" autocomplete="username">
+        </label>
+        <label>
+          Contraseña
+          <input type="password" name="password" required autocomplete="current-password">
+        </label>
+        <button class="btn" type="submit">Entrar</button>
+      </form>
+      <div class="hint-box">
+        <strong>Acceso controlado</strong>
+        {% if config.SEED_DEMO_USERS %}
+        <span><code>admin</code>, <code>empleado1</code>, <code>empleado2</code></span>
+        <span>Esta ayuda solo existe en desarrollo. En producción usa credenciales corporativas.</span>
+        {% else %}
+        <span>Las cuentas productivas se crean desde el bootstrap administrativo y la gestión interna.</span>
+        {% endif %}
+      </div>
+    </section>
   </section>
 </main>
 {% endblock %}
