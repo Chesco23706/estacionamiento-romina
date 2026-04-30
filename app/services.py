@@ -1,10 +1,10 @@
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func
 
 from .extensions import db
-from .models import CashCut, Role, User, VehicleRecord, get_period_bounds, log_action
+from .models import CashCut, Role, Tariff, User, VehicleRecord, get_period_bounds, log_action
 from .pricing import calculate_charge, ensure_utc, utc_now
 from .validators import (
     clean_optional_text,
@@ -14,27 +14,49 @@ from .validators import (
     validate_password_strength,
 )
 
-VEHICLE_TYPES = ("Moto", "Automóvil", "Bicicleta", "Carrito callejero")
 STATUS_OPTIONS = (
     "Dentro del estacionamiento",
     "Salida registrada",
     "Pagado",
     "Pendiente de pago",
 )
+BILLING_SCHEMES = (
+    ("hourly", "Por hora"),
+    ("daily", "Por dia"),
+    ("flat", "Tarifa fija"),
+)
+PERIOD_UNITS = (
+    ("hour", "Hora"),
+    ("day", "Dia"),
+)
+
+
+def get_vehicle_types(include_inactive=False):
+    query = Tariff.query.order_by(Tariff.vehicle_type.asc())
+    if not include_inactive:
+        query = query.filter(Tariff.active.is_(True))
+    return [tariff.vehicle_type for tariff in query.all()]
+
+
+def get_tariffs(include_inactive=True):
+    query = Tariff.query.order_by(Tariff.vehicle_type.asc())
+    if not include_inactive:
+        query = query.filter(Tariff.active.is_(True))
+    return query.all()
 
 
 def create_vehicle_record(form_data, user):
     ticket_number = clean_ticket(form_data.get("ticket_number"))
     client_name = clean_text(form_data.get("client_name"), 120, "cliente")
-    vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehículo")
+    vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     plate_number = clean_plate(form_data.get("plate_number"))
     notes = clean_optional_text(form_data.get("notes"), 500)
 
-    if vehicle_type not in VEHICLE_TYPES:
-        raise ValueError("El tipo de vehículo no es válido.")
+    if vehicle_type not in get_vehicle_types():
+        raise ValueError("El tipo de vehiculo no es valido o no esta activo.")
 
     if VehicleRecord.query.filter_by(ticket_number=ticket_number).first():
-        raise ValueError("El número de ticket ya existe.")
+        raise ValueError("El numero de ticket ya existe.")
 
     record = VehicleRecord(
         ticket_number=ticket_number,
@@ -60,22 +82,22 @@ def create_vehicle_record(form_data, user):
 def update_vehicle_record(record, form_data, user):
     record.ticket_number = clean_ticket(form_data.get("ticket_number"))
     record.client_name = clean_text(form_data.get("client_name"), 120, "cliente")
-    record.vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehículo")
+    record.vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     record.plate_number = clean_plate(form_data.get("plate_number"))
     record.status = clean_text(form_data.get("status"), 30, "estado")
     record.notes = clean_optional_text(form_data.get("notes"), 500)
 
-    if record.vehicle_type not in VEHICLE_TYPES:
-        raise ValueError("El tipo de vehículo no es válido.")
+    if record.vehicle_type not in get_vehicle_types(include_inactive=True):
+        raise ValueError("El tipo de vehiculo no es valido.")
     if record.status not in STATUS_OPTIONS:
-        raise ValueError("El estado seleccionado no es válido.")
+        raise ValueError("El estado seleccionado no es valido.")
 
     existing = VehicleRecord.query.filter(
         VehicleRecord.ticket_number == record.ticket_number,
         VehicleRecord.id != record.id,
     ).first()
     if existing:
-        raise ValueError("Ese número de ticket ya está asignado a otro registro.")
+        raise ValueError("Ese numero de ticket ya esta asignado a otro registro.")
 
     if record.exit_at:
         pricing = calculate_charge(record.vehicle_type, record.entry_at, record.exit_at)
@@ -105,7 +127,7 @@ def register_exit(record, user):
 
 def register_payment(record, user):
     if not record.exit_at:
-        raise ValueError("Primero debes registrar la salida del vehículo.")
+        raise ValueError("Primero debes registrar la salida del vehiculo.")
     record.mark_paid()
     log_action(user, "vehicle_payment_registered", "vehicle_record", record.id)
     db.session.commit()
@@ -148,6 +170,35 @@ def reset_employee_password(target_user, new_password, actor):
     db.session.commit()
 
 
+def create_tariff(form_data, user):
+    tariff = Tariff(**_clean_tariff_payload(form_data))
+    if Tariff.query.filter(func.lower(Tariff.vehicle_type) == tariff.vehicle_type.lower()).first():
+        raise ValueError("Ese tipo de vehiculo ya existe.")
+
+    db.session.add(tariff)
+    db.session.flush()
+    log_action(user, "tariff_created", "tariff", tariff.id, {"vehicle_type": tariff.vehicle_type})
+    db.session.commit()
+    return tariff
+
+
+def update_tariff(tariff, form_data, user):
+    payload = _clean_tariff_payload(form_data)
+    existing = Tariff.query.filter(
+        func.lower(Tariff.vehicle_type) == payload["vehicle_type"].lower(),
+        Tariff.id != tariff.id,
+    ).first()
+    if existing:
+        raise ValueError("Ese tipo de vehiculo ya existe.")
+
+    for key, value in payload.items():
+        setattr(tariff, key, value)
+
+    log_action(user, "tariff_updated", "tariff", tariff.id, {"vehicle_type": tariff.vehicle_type})
+    db.session.commit()
+    return tariff
+
+
 def generate_cash_cut(cut_type, user):
     start, end = get_period_bounds("daily" if cut_type == "daily" else "weekly")
     records = VehicleRecord.query.filter(
@@ -158,9 +209,11 @@ def generate_cash_cut(cut_type, user):
 
     total_income = Decimal("0.00")
     total_pending = Decimal("0.00")
-    by_type = {vehicle_type: {"count": 0, "income": 0.0} for vehicle_type in VEHICLE_TYPES}
+    vehicle_types = get_vehicle_types(include_inactive=True)
+    by_type = {vehicle_type: {"count": 0, "income": 0.0} for vehicle_type in vehicle_types}
 
     for record in records:
+        by_type.setdefault(record.vehicle_type, {"count": 0, "income": 0.0})
         by_type[record.vehicle_type]["count"] += 1
         if record.status == "Pagado":
             total_income += Decimal(record.total_amount)
@@ -215,7 +268,7 @@ def dashboard_metrics():
         for record in records
         if record.status == "Pendiente de pago"
     )
-    vehicle_count = {vehicle_type: 0 for vehicle_type in VEHICLE_TYPES}
+    vehicle_count = {vehicle_type: 0 for vehicle_type in get_vehicle_types(include_inactive=True)}
     for record in active_records:
         vehicle_count[record.vehicle_type] = vehicle_count.get(record.vehicle_type, 0) + 1
 
@@ -227,3 +280,71 @@ def dashboard_metrics():
         "pending_total": pending,
         "vehicle_count": vehicle_count,
     }
+
+
+def _clean_tariff_payload(form_data):
+    vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
+    billing_scheme = clean_text(form_data.get("billing_scheme"), 30, "esquema de cobro").lower()
+    if billing_scheme not in {scheme for scheme, _label in BILLING_SCHEMES}:
+        raise ValueError("El esquema de cobro no es valido.")
+
+    if billing_scheme == "flat":
+        period_unit = "day"
+    else:
+        period_unit = clean_text(form_data.get("period_unit"), 20, "unidad de periodo").lower()
+        if period_unit not in {unit for unit, _label in PERIOD_UNITS}:
+            raise ValueError("La unidad de periodo no es valida.")
+
+    rate_amount = _clean_decimal(form_data.get("rate_amount"), "tarifa base")
+    min_charge_units = _clean_positive_int(
+        form_data.get("min_charge_units") or "1",
+        "cobro minimo",
+    )
+    offer_label = clean_optional_text(form_data.get("offer_label"), 120) or None
+    offer_trigger_units = form_data.get("offer_trigger_units", "").strip()
+    offer_price = form_data.get("offer_price", "").strip()
+
+    if bool(offer_trigger_units) != bool(offer_price):
+        raise ValueError("La oferta debe incluir unidades y precio promocional.")
+
+    normalized_offer_units = None
+    normalized_offer_price = None
+    if offer_trigger_units:
+        normalized_offer_units = _clean_positive_int(offer_trigger_units, "unidades de oferta")
+        normalized_offer_price = _clean_decimal(offer_price, "precio promocional")
+        if normalized_offer_units <= min_charge_units:
+            raise ValueError("La oferta debe activarse por encima del cobro minimo.")
+
+    return {
+        "vehicle_type": vehicle_type,
+        "billing_scheme": billing_scheme,
+        "rate_amount": rate_amount,
+        "period_unit": period_unit,
+        "min_charge_units": min_charge_units,
+        "offer_label": offer_label,
+        "offer_trigger_units": normalized_offer_units,
+        "offer_price": normalized_offer_price,
+        "notes": clean_optional_text(form_data.get("notes"), 255) or None,
+        "active": form_data.get("active") == "on",
+    }
+
+
+def _clean_decimal(raw_value, field_name):
+    normalized = str(raw_value or "").strip().replace(",", "")
+    try:
+        value = Decimal(normalized)
+    except InvalidOperation as exc:
+        raise ValueError(f"El campo {field_name} debe ser numerico.") from exc
+    if value <= 0:
+        raise ValueError(f"El campo {field_name} debe ser mayor a cero.")
+    return value.quantize(Decimal("0.01"))
+
+
+def _clean_positive_int(raw_value, field_name):
+    normalized = str(raw_value or "").strip()
+    if not normalized.isdigit():
+        raise ValueError(f"El campo {field_name} debe ser un entero positivo.")
+    value = int(normalized)
+    if value <= 0:
+        raise ValueError(f"El campo {field_name} debe ser mayor a cero.")
+    return value

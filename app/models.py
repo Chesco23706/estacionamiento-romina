@@ -76,6 +76,9 @@ class Tariff(TimestampMixin, db.Model):
     rate_amount = db.Column(db.Numeric(10, 2), nullable=False)
     period_unit = db.Column(db.String(20), nullable=False)
     min_charge_units = db.Column(db.Integer, default=1, nullable=False)
+    offer_label = db.Column(db.String(120))
+    offer_trigger_units = db.Column(db.Integer)
+    offer_price = db.Column(db.Numeric(10, 2))
     notes = db.Column(db.String(255))
     active = db.Column(db.Boolean, default=True, nullable=False)
 
@@ -190,28 +193,45 @@ def seed_defaults():
                 db.session.add(user)
 
     tariffs = [
-        ("Moto", "daily_or_weekly", 10, "day", "Se cobra $40 por semana completa."),
-        ("Bicicleta", "daily_or_weekly", 10, "day", "Se cobra $40 por semana completa."),
+        ("Moto", "daily", 10, "day", "Semana completa", 7, 40, "Se cobra $40 por semana completa."),
+        ("Bicicleta", "daily", 10, "day", "Semana completa", 7, 40, "Se cobra $40 por semana completa."),
         (
             "Carrito callejero",
-            "daily_or_weekly",
+            "daily",
             10,
             "day",
+            "Semana completa",
+            7,
+            40,
             "Se cobra $40 por semana completa.",
         ),
-        ("Automóvil", "hourly", 20, "hour", "Se cobra por hora o fracción."),
+        ("Automóvil", "hourly", 20, "hour", None, None, None, "Se cobra por hora o fracción."),
     ]
-    for vehicle_type, scheme, amount, unit, notes in tariffs:
-        if not Tariff.query.filter_by(vehicle_type=vehicle_type).first():
+    for vehicle_type, scheme, amount, unit, offer_label, offer_trigger_units, offer_price, notes in tariffs:
+        tariff = Tariff.query.filter_by(vehicle_type=vehicle_type).first()
+        if not tariff:
             db.session.add(
                 Tariff(
                     vehicle_type=vehicle_type,
                     billing_scheme=scheme,
                     rate_amount=amount,
                     period_unit=unit,
+                    offer_label=offer_label,
+                    offer_trigger_units=offer_trigger_units,
+                    offer_price=offer_price,
                     notes=notes,
                 )
             )
+            continue
+
+        if tariff.billing_scheme == "daily_or_weekly":
+            tariff.billing_scheme = "daily"
+        if not tariff.offer_label:
+            tariff.offer_label = offer_label
+        if not tariff.offer_trigger_units:
+            tariff.offer_trigger_units = offer_trigger_units
+        if not tariff.offer_price:
+            tariff.offer_price = offer_price
 
     db.session.commit()
 
@@ -237,7 +257,8 @@ def bootstrap_admin_user():
 
 def apply_runtime_migrations():
     inspector = inspect(db.engine)
-    if "users" not in inspector.get_table_names():
+    table_names = inspector.get_table_names()
+    if "users" not in table_names:
         return
 
     user_columns = {column["name"] for column in inspector.get_columns("users")}
@@ -250,6 +271,21 @@ def apply_runtime_migrations():
         connection.exec_driver_sql(
             "ALTER TABLE users ADD COLUMN locked_until DATETIME NULL"
         )
+
+    if "tariffs" in table_names:
+        tariff_columns = {column["name"] for column in inspector.get_columns("tariffs")}
+        if "offer_label" not in tariff_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE tariffs ADD COLUMN offer_label VARCHAR(120) NULL"
+            )
+        if "offer_trigger_units" not in tariff_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE tariffs ADD COLUMN offer_trigger_units INTEGER NULL"
+            )
+        if "offer_price" not in tariff_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE tariffs ADD COLUMN offer_price NUMERIC(10, 2) NULL"
+            )
     db.session.commit()
 
 

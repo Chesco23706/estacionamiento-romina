@@ -161,6 +161,11 @@ h2 {
   align-items: stretch;
 }
 
+.auth-stage-compact {
+  max-width: 520px;
+  grid-template-columns: 1fr;
+}
+
 .auth-showcase,
 .auth-card {
   min-height: 100%;
@@ -192,6 +197,14 @@ h2 {
 
 .ticket-card {
   width: min(760px, 100%);
+}
+
+.ticket-frame {
+  width: 100%;
+  min-height: 720px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
 }
 
 .ticket-printable {
@@ -236,7 +249,8 @@ h2 {
 .workspace-grid,
 .type-counter-grid,
 .report-grid,
-.stack-column {
+.stack-column,
+.tariff-stack {
   display: grid;
   gap: 18px;
 }
@@ -329,9 +343,21 @@ h2 {
 .search-grid,
 .compact-form,
 .inline-form,
-.button-column {
+.button-column,
+.checkbox-row {
   display: grid;
   gap: 12px;
+}
+
+.checkbox-row {
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  font-weight: 600;
+}
+
+.checkbox-row input {
+  width: auto;
 }
 
 .form-grid {
@@ -446,6 +472,28 @@ thead {
 
 .records-card .button-column {
   min-width: 180px;
+}
+
+.tariff-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.tariff-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 22px 0;
 }
 
 @media (max-width: 900px) {

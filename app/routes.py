@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from flask import (
     Blueprint,
     flash,
@@ -5,6 +7,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
@@ -12,21 +15,27 @@ from sqlalchemy import or_
 
 from .decorators import role_required
 from .extensions import db
-from .models import CashCut, Role, User, VehicleRecord, log_action
+from .models import CashCut, Role, Tariff, User, VehicleRecord, log_action
 from .pricing import ensure_utc, format_duration, utc_now
 from .services import (
+    BILLING_SCHEMES,
+    PERIOD_UNITS,
     STATUS_OPTIONS,
-    VEHICLE_TYPES,
     create_employee,
+    create_tariff,
     create_vehicle_record,
     dashboard_metrics,
     delete_vehicle_record,
     generate_cash_cut,
+    get_tariffs,
+    get_vehicle_types,
     register_exit,
     register_payment,
     reset_employee_password,
+    update_tariff,
     update_vehicle_record,
 )
+from .tickets import build_ticket_pdf
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
@@ -70,6 +79,12 @@ def datetime_filter(value):
     if not value:
         return "-"
     return ensure_utc(value).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def format_datetime_for_ticket(value):
+    if not value:
+        return "-"
+    return ensure_utc(value).astimezone().strftime("%d/%m/%Y %H:%M")
 
 
 @main_bp.app_context_processor
@@ -141,6 +156,7 @@ def dashboard():
         if current_user.is_admin
         else []
     )
+    tariffs = get_tariffs() if current_user.is_admin else []
     return render_template(
         "dashboard.html",
         records=records,
@@ -148,9 +164,12 @@ def dashboard():
         users=users,
         roles=roles,
         cuts=cuts,
+        tariffs=tariffs,
         filters=filters,
-        vehicle_types=VEHICLE_TYPES,
+        vehicle_types=get_vehicle_types(),
         status_options=STATUS_OPTIONS,
+        billing_schemes=BILLING_SCHEMES,
+        period_units=PERIOD_UNITS,
         format_duration=format_duration,
     )
 
@@ -175,6 +194,25 @@ def print_ticket(record_id):
         flash("No se encontró el registro solicitado.", "danger")
         return redirect(url_for("main.dashboard"))
     return render_template("ticket.html", record=record)
+
+
+@main_bp.route("/records/<int:record_id>/ticket/document")
+@login_required
+def ticket_document(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontró el registro solicitado.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    pdf_bytes = build_ticket_pdf(record, format_datetime_for_ticket)
+    filename = f"ticket_{record.ticket_number}.pdf"
+    as_attachment = request.args.get("download") == "1"
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=as_attachment,
+        download_name=filename,
+    )
 
 
 @main_bp.route("/records/<int:record_id>/exit", methods=["POST"])
@@ -231,9 +269,38 @@ def edit_record(record_id):
     return render_template(
         "record_edit.html",
         record=record,
-        vehicle_types=VEHICLE_TYPES,
+        vehicle_types=get_vehicle_types(include_inactive=True),
         status_options=STATUS_OPTIONS,
     )
+
+
+@main_bp.route("/tariffs/new", methods=["POST"])
+@login_required
+@role_required("admin")
+def create_tariff_route():
+    try:
+        create_tariff(request.form, current_user)
+        flash("Tarifa creada correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/tariffs/<int:tariff_id>/update", methods=["POST"])
+@login_required
+@role_required("admin")
+def update_tariff_route(tariff_id):
+    tariff = db.session.get(Tariff, tariff_id)
+    if not tariff:
+        flash("No se encontró la tarifa solicitada.", "danger")
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        update_tariff(tariff, request.form, current_user)
+        flash("Tarifa actualizada correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.dashboard"))
 
 
 @main_bp.route("/records/<int:record_id>/delete", methods=["POST"])

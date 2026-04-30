@@ -35,7 +35,7 @@ def test_admin_login_and_vehicle_flow():
         follow_redirects=True,
     )
     assert create_response.status_code == 200
-    assert "Comprobante de entrada" in create_response.get_data(as_text=True)
+    assert "Abrir PDF" in create_response.get_data(as_text=True)
 
     with app.app_context():
         record = VehicleRecord.query.filter_by(ticket_number="FLOW-001").first()
@@ -95,5 +95,9 @@ def test_ticket_reprint_route_exists():
     response = client.get(f"/records/{record_id}/ticket")
     body = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "Cliente Ticket" in body
+    assert "Descargar PDF" in body
     assert "FLOW-002" in body
+
+    pdf_response = client.get(f"/records/{record_id}/ticket/document")
+    assert pdf_response.status_code == 200
+    assert pdf_response.mimetype == "application/pdf"

@@ -3,58 +3,26 @@
 {% block content %}
 <main class="single-column">
   <section class="card ticket-card">
-    <div class="ticket-printable">
-      <div class="ticket-header">
-        <img class="ticket-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Romina">
-        <div>
-          <p class="eyebrow">Comprobante de entrada</p>
-          <h2>Estacionamiento Romina</h2>
-          <p class="muted">Izamal, Yucatán</p>
-        </div>
+    <div class="ticket-header">
+      <div>
+        <p class="eyebrow">Documento generado</p>
+        <h2>Ticket {{ record.ticket_number }}</h2>
+        <p class="muted">Ya puedes verlo, descargarlo o imprimirlo.</p>
       </div>
-      <div class="ticket-grid">
-        <div>
-          <span>Ticket</span>
-          <strong>{{ record.ticket_number }}</strong>
-        </div>
-        <div>
-          <span>Cliente</span>
-          <strong>{{ record.client_name }}</strong>
-        </div>
-        <div>
-          <span>Vehículo</span>
-          <strong>{{ record.vehicle_type }}</strong>
-        </div>
-        <div>
-          <span>Placas / identificador</span>
-          <strong>{{ record.plate_number }}</strong>
-        </div>
-        <div>
-          <span>Fecha y hora de entrada</span>
-          <strong>{{ record.entry_at|dt }}</strong>
-        </div>
-        <div>
-          <span>Registró</span>
-          <strong>{{ record.entry_user.full_name }}</strong>
-        </div>
-      </div>
-      {% if record.notes %}
-      <div class="ticket-notes">
-        <span>Notas</span>
-        <strong>{{ record.notes }}</strong>
-      </div>
-      {% endif %}
-      <p class="muted">Presenta este comprobante para agilizar la salida del vehículo.</p>
+      <img class="ticket-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Romina">
     </div>
+
     <div class="button-row no-print">
-      <button class="btn" type="button" onclick="window.print()">Imprimir ahora</button>
+      <a class="btn" href="{{ url_for('main.ticket_document', record_id=record.id) }}" target="_blank" rel="noopener">Abrir PDF</a>
+      <a class="btn btn-secondary" href="{{ url_for('main.ticket_document', record_id=record.id, download=1) }}">Descargar PDF</a>
       <a class="link-button" href="{{ url_for('main.dashboard') }}">Volver al panel</a>
     </div>
+
+    <iframe
+      class="ticket-frame"
+      src="{{ url_for('main.ticket_document', record_id=record.id) }}"
+      title="Vista previa del ticket">
+    </iframe>
   </section>
 </main>
-<script>
-  window.addEventListener("load", () => {
-    window.print();
-  });
-</script>
 {% endblock %}

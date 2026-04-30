@@ -2,10 +2,6 @@ import math
 from datetime import datetime, timezone
 
 
-DAY_BASED_TYPES = {"Moto", "Bicicleta", "Carrito callejero"}
-CAR_TYPE = "Automóvil"
-
-
 def utc_now():
     return datetime.now(timezone.utc)
 
@@ -31,36 +27,53 @@ def format_duration(total_seconds):
 
 
 def calculate_charge(vehicle_type, entry_at, exit_at=None):
-    total_seconds = seconds_between(entry_at, exit_at)
+    from .models import Tariff
 
-    if vehicle_type == CAR_TYPE:
-        billable_hours = max(1, math.ceil(total_seconds / 3600))
-        total = billable_hours * 20
-        label = f"$20 por hora x {billable_hours} hora(s)"
+    tariff = Tariff.query.filter_by(vehicle_type=vehicle_type, active=True).first()
+    if not tariff:
+        tariff = Tariff.query.filter_by(vehicle_type=vehicle_type).first()
+    if not tariff:
+        raise ValueError("No existe una tarifa configurada para este tipo de vehiculo.")
+
+    total_seconds = seconds_between(entry_at, exit_at)
+    scheme = tariff.billing_scheme
+
+    if scheme == "flat":
         return {
             "duration_seconds": total_seconds,
             "duration_label": format_duration(total_seconds),
-            "billing_units": billable_hours,
-            "total": total,
-            "rate_label": label,
+            "billing_units": 1,
+            "total": tariff.rate_amount,
+            "rate_label": f"Tarifa fija ${float(tariff.rate_amount):,.2f}",
         }
 
-    billable_days = max(1, math.ceil(total_seconds / 86400))
-    full_weeks, extra_days = divmod(billable_days, 7)
-    total = (full_weeks * 40) + (extra_days * 10)
+    divisor = 3600 if tariff.period_unit == "hour" else 86400
+    unit_label = "hora" if tariff.period_unit == "hour" else "dia"
+    raw_units = math.ceil(total_seconds / divisor) if total_seconds else 0
+    billable_units = max(int(tariff.min_charge_units or 1), raw_units, 1)
 
-    parts = []
-    if full_weeks:
-        parts.append(f"$40 por semana x {full_weeks}")
-    if extra_days:
-        parts.append(f"$10 por día x {extra_days}")
-    if not parts:
-        parts.append("$10 mínimo por día")
+    total = tariff.rate_amount * billable_units
+    rate_parts = [
+        f"${float(tariff.rate_amount):,.2f} por {unit_label} x {billable_units}"
+    ]
+
+    if tariff.offer_trigger_units and tariff.offer_price and billable_units >= tariff.offer_trigger_units:
+        bundles, remainder = divmod(billable_units, tariff.offer_trigger_units)
+        if bundles:
+            total = (tariff.offer_price * bundles) + (tariff.rate_amount * remainder)
+            bundle_label = tariff.offer_label or "Oferta"
+            rate_parts = [
+                f"{bundle_label}: ${float(tariff.offer_price):,.2f} x {bundles}"
+            ]
+            if remainder:
+                rate_parts.append(
+                    f"${float(tariff.rate_amount):,.2f} por {unit_label} x {remainder}"
+                )
 
     return {
         "duration_seconds": total_seconds,
         "duration_label": format_duration(total_seconds),
-        "billing_units": billable_days,
+        "billing_units": billable_units,
         "total": total,
-        "rate_label": " + ".join(parts),
+        "rate_label": " + ".join(rate_parts),
     }
