@@ -1,4 +1,7 @@
-from server import app
+from bootstrap import load_create_app
+
+create_app = load_create_app()
+app = create_app()
 
 
 if __name__ == "__main__":

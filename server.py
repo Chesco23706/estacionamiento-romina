@@ -1,6 +1,7 @@
-from app import create_app
+from bootstrap import load_create_app
 
 
+create_app = load_create_app()
 app = create_app()
 
 
