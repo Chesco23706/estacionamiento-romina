@@ -31,6 +31,34 @@ function startLiveTimers() {
   window.setInterval(tick, 1000);
 }
 
+function renderDayCounterText(entryAt, contractedDays) {
+  const diff = Date.now() - new Date(entryAt).getTime();
+  const usedDays = Math.max(1, Math.ceil(diff / 86400000));
+  const remainingDays = Math.max(contractedDays - usedDays, 0);
+  return `${usedDays} dia(s) / ${remainingDays} restante(s)`;
+}
+
+function startLiveDayCounters() {
+  const counters = document.querySelectorAll(".live-day-counter");
+  if (!counters.length) {
+    return;
+  }
+
+  const tick = () => {
+    counters.forEach((counter) => {
+      const entryAt = counter.dataset.entryAt;
+      const contractedDays = Number.parseInt(counter.dataset.contractedDays || "1", 10);
+      if (!entryAt) {
+        return;
+      }
+      counter.textContent = renderDayCounterText(entryAt, Math.max(contractedDays, 1));
+    });
+  };
+
+  tick();
+  window.setInterval(tick, 60000);
+}
+
 function setupPasswordToggles() {
   const toggles = document.querySelectorAll("[data-password-toggle]");
   toggles.forEach((toggle) => {
@@ -69,9 +97,37 @@ function syncSectionFromHash() {
   }
 }
 
+function setupRecordModeFields() {
+  const modeSelects = document.querySelectorAll("[data-record-mode]");
+  modeSelects.forEach((modeSelect) => {
+    const form = modeSelect.closest("form");
+    const contractedField = form ? form.querySelector("[data-contracted-days-field]") : null;
+    const contractedInput = contractedField
+      ? contractedField.querySelector("input[name='contracted_days']")
+      : null;
+    if (!contractedField || !contractedInput) {
+      return;
+    }
+
+    const syncField = () => {
+      const isWeekly = modeSelect.value === "weekly";
+      contractedField.hidden = !isWeekly;
+      contractedInput.required = isWeekly;
+      if (!isWeekly) {
+        contractedInput.value = "";
+      }
+    };
+
+    modeSelect.addEventListener("change", syncField);
+    syncField();
+  });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   startLiveTimers();
+  startLiveDayCounters();
   setupPasswordToggles();
+  setupRecordModeFields();
   syncSectionFromHash();
 });
 

@@ -26,7 +26,7 @@ def format_duration(total_seconds):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-def calculate_charge(vehicle_type, entry_at, exit_at=None):
+def calculate_charge(vehicle_type, entry_at, exit_at=None, stay_mode="hourly", contracted_days=None):
     from .models import Tariff
 
     tariff = Tariff.query.filter_by(vehicle_type=vehicle_type, active=True).first()
@@ -47,10 +47,14 @@ def calculate_charge(vehicle_type, entry_at, exit_at=None):
             "rate_label": f"Tarifa fija ${float(tariff.rate_amount):,.2f}",
         }
 
-    divisor = 3600 if tariff.period_unit == "hour" else 86400
-    unit_label = "hora" if tariff.period_unit == "hour" else "dia"
+    use_day_units = stay_mode == "weekly"
+    divisor = 86400 if use_day_units else (3600 if tariff.period_unit == "hour" else 86400)
+    unit_label = "dia" if use_day_units or tariff.period_unit == "day" else "hora"
     raw_units = math.ceil(total_seconds / divisor) if total_seconds else 0
-    billable_units = max(int(tariff.min_charge_units or 1), raw_units, 1)
+    minimum_units = int(tariff.min_charge_units or 1)
+    if use_day_units and contracted_days:
+        minimum_units = max(minimum_units, int(contracted_days))
+    billable_units = max(minimum_units, raw_units, 1)
 
     total = tariff.rate_amount * billable_units
     rate_parts = [

@@ -1,4 +1,5 @@
 import json
+import math
 from datetime import datetime, timedelta, timezone
 
 from flask import current_app
@@ -7,7 +8,7 @@ from sqlalchemy import inspect
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db, login_manager
-from .pricing import calculate_charge, utc_now
+from .pricing import calculate_charge, ensure_utc, utc_now
 
 
 class TimestampMixin:
@@ -91,6 +92,8 @@ class VehicleRecord(TimestampMixin, db.Model):
     client_name = db.Column(db.String(120), nullable=False)
     vehicle_type = db.Column(db.String(50), nullable=False)
     plate_number = db.Column(db.String(50), nullable=False)
+    stay_mode = db.Column(db.String(20), default="hourly", nullable=False)
+    contracted_days = db.Column(db.Integer)
     entry_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
     exit_at = db.Column(db.DateTime(timezone=True))
     duration_seconds = db.Column(db.Integer, default=0, nullable=False)
@@ -105,13 +108,43 @@ class VehicleRecord(TimestampMixin, db.Model):
     exit_user = db.relationship("User", foreign_keys=[exit_user_id])
 
     def close_record(self, user):
-        pricing = calculate_charge(self.vehicle_type, self.entry_at, utc_now())
+        pricing = calculate_charge(
+            self.vehicle_type,
+            self.entry_at,
+            utc_now(),
+            stay_mode=self.stay_mode,
+            contracted_days=self.contracted_days,
+        )
         self.exit_at = utc_now()
         self.exit_user = user
         self.duration_seconds = pricing["duration_seconds"]
         self.applied_rate_label = pricing["rate_label"]
         self.total_amount = pricing["total"]
         self.status = "Pendiente de pago"
+
+    @property
+    def is_hourly(self):
+        return self.stay_mode != "weekly"
+
+    @property
+    def mode_label(self):
+        return "Por hora" if self.is_hourly else "Por dias"
+
+    def consumed_day_units(self, reference_time=None):
+        if self.is_hourly:
+            return None
+        target_time = self.exit_at or reference_time or utc_now()
+        total_seconds = max(
+            0,
+            int((ensure_utc(target_time) - ensure_utc(self.entry_at)).total_seconds()),
+        )
+        return max(1, math.ceil(total_seconds / 86400)) if total_seconds or self.entry_at else 1
+
+    def remaining_day_units(self, reference_time=None):
+        if self.is_hourly or not self.contracted_days:
+            return None
+        consumed = self.consumed_day_units(reference_time=reference_time)
+        return max(self.contracted_days - consumed, 0)
 
     def mark_paid(self):
         if self.status in {"Pendiente de pago", "Salida registrada"}:
@@ -285,6 +318,18 @@ def apply_runtime_migrations():
         if "offer_price" not in tariff_columns:
             connection.exec_driver_sql(
                 "ALTER TABLE tariffs ADD COLUMN offer_price NUMERIC(10, 2) NULL"
+            )
+    if "vehicle_records" in table_names:
+        record_columns = {
+            column["name"] for column in inspector.get_columns("vehicle_records")
+        }
+        if "stay_mode" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN stay_mode VARCHAR(20) NOT NULL DEFAULT 'hourly'"
+            )
+        if "contracted_days" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN contracted_days INTEGER NULL"
             )
     db.session.commit()
 

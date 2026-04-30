@@ -5,7 +5,6 @@
   <section class="card feature-card records-card">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Bitacora</p>
         <h2>Registros disponibles actualmente</h2>
       </div>
       <form method="get" class="search-grid">
@@ -37,6 +36,7 @@
             <th>Placas</th>
             <th>Entrada</th>
             <th>Salida</th>
+            <th>Modalidad</th>
             <th>Tiempo</th>
             <th>Tarifa</th>
             <th>Total</th>
@@ -56,9 +56,20 @@
             <td>{{ record.plate_number }}</td>
             <td>{{ record.entry_at|dt }}</td>
             <td>{{ record.exit_at|dt }}</td>
+            <td>{{ record.mode_label }}</td>
             <td>
-              {% if record.status == 'Dentro del estacionamiento' %}
+              {% if record.status == 'Dentro del estacionamiento' and record.is_hourly %}
               <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
+              {% elif record.status == 'Dentro del estacionamiento' %}
+              <span
+                class="live-day-counter"
+                data-entry-at="{{ record.entry_at.isoformat() }}"
+                data-contracted-days="{{ record.contracted_days or 1 }}"
+              >
+                {{ record.consumed_day_units() }} dia(s) / {{ record.remaining_day_units() }} restante(s)
+              </span>
+              {% elif not record.is_hourly %}
+              {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
               {% else %}
               {{ format_duration(record.duration_seconds) }}
               {% endif %}
@@ -96,7 +107,7 @@
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="14">No hay registros que coincidan con la busqueda.</td></tr>
+          <tr><td colspan="15">No hay registros que coincidan con la busqueda.</td></tr>
           {% endfor %}
         </tbody>
       </table>

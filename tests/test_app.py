@@ -1,7 +1,7 @@
 from app import create_app
 from app.extensions import db
-from config import TestingConfig
 from app.models import CashCut, User, VehicleRecord
+from config import TestingConfig
 
 
 def build_client():
@@ -29,6 +29,8 @@ def test_admin_login_and_vehicle_flow():
             "ticket_number": "FLOW-001",
             "client_name": "Cliente QA",
             "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "7",
             "plate_number": "ABC-123",
             "notes": "Registro de prueba",
         },
@@ -40,6 +42,8 @@ def test_admin_login_and_vehicle_flow():
     with app.app_context():
         record = VehicleRecord.query.filter_by(ticket_number="FLOW-001").first()
         assert record is not None
+        assert record.stay_mode == "weekly"
+        assert record.contracted_days == 7
         record_id = record.id
 
     exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
@@ -60,7 +64,7 @@ def test_admin_login_and_vehicle_flow():
 
 
 def test_employee_cannot_access_admin_routes():
-    app, client = build_client()
+    _app, client = build_client()
     login(client, "empleado1", "EmpleadoUno2026!")
     response = client.post("/cuts/generate", data={"cut_type": "daily"})
     assert response.status_code == 403
@@ -151,7 +155,9 @@ def test_ticket_reprint_route_exists():
         data={
             "ticket_number": "FLOW-002",
             "client_name": "Cliente Ticket",
-            "vehicle_type": "Automóvil",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "5",
             "plate_number": "XYZ-999",
             "notes": "",
         },

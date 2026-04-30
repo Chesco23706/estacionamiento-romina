@@ -21,6 +21,7 @@ from .pricing import ensure_utc, format_duration, utc_now
 from .services import (
     BILLING_SCHEMES,
     PERIOD_UNITS,
+    RECORD_STAY_MODES,
     STATUS_OPTIONS,
     create_employee,
     create_tariff,
@@ -177,7 +178,11 @@ def records_page():
 @main_bp.route("/operations")
 @login_required
 def operations_page():
-    return render_template("operations.html", vehicle_types=get_vehicle_types())
+    return render_template(
+        "operations.html",
+        vehicle_types=get_vehicle_types(),
+        record_stay_modes=RECORD_STAY_MODES,
+    )
 
 
 @main_bp.route("/tariffs")
@@ -297,6 +302,7 @@ def edit_record(record_id):
         "record_edit.html",
         record=record,
         vehicle_types=get_vehicle_types(include_inactive=True),
+        record_stay_modes=RECORD_STAY_MODES,
         status_options=STATUS_OPTIONS,
     )
 

@@ -3,12 +3,11 @@
 {% block content %}
 <main class="single-column">
   <section class="card">
-    <p class="eyebrow">Administrador</p>
     <h2>Editar registro #{{ record.id }}</h2>
     <form method="post" class="form-grid">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>
-        Número asignado
+        Ticket
         <input type="text" name="ticket_number" required value="{{ record.ticket_number }}">
       </label>
       <label>
@@ -16,7 +15,7 @@
         <input type="text" name="client_name" required value="{{ record.client_name }}">
       </label>
       <label>
-        Tipo de vehículo
+        Tipo de vehiculo
         <select name="vehicle_type" required>
           {% for vehicle_type in vehicle_types %}
           <option value="{{ vehicle_type }}" {% if record.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
@@ -24,8 +23,20 @@
         </select>
       </label>
       <label>
+        Modalidad
+        <select name="stay_mode" required data-record-mode>
+          {% for mode, label in record_stay_modes %}
+          <option value="{{ mode }}" {% if record.stay_mode == mode %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
         Placas
         <input type="text" name="plate_number" required value="{{ record.plate_number }}">
+      </label>
+      <label data-contracted-days-field {% if record.stay_mode != 'weekly' %}hidden{% endif %}>
+        Dias contratados
+        <input type="number" name="contracted_days" min="1" step="1" inputmode="numeric" value="{{ record.contracted_days or '' }}">
       </label>
       <label>
         Estado
@@ -41,7 +52,7 @@
       </label>
       <div class="button-row">
         <button class="btn" type="submit">Guardar cambios</button>
-        <a class="link-button" href="{{ url_for('main.dashboard') }}">Volver al panel</a>
+        <a class="link-button" href="{{ url_for('main.records_page') }}">Volver</a>
       </div>
     </form>
   </section>

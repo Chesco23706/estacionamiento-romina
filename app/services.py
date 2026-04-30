@@ -21,6 +21,10 @@ STATUS_OPTIONS = (
     "Pagado",
     "Pendiente de pago",
 )
+RECORD_STAY_MODES = (
+    ("hourly", "Por hora"),
+    ("weekly", "Por dias"),
+)
 BILLING_SCHEMES = (
     ("hourly", "Por hora"),
     ("daily", "Por dia"),
@@ -51,6 +55,8 @@ def create_vehicle_record(form_data, user):
     client_name = clean_text(form_data.get("client_name"), 120, "cliente")
     vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     plate_number = clean_plate(form_data.get("plate_number"))
+    stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
+    contracted_days = _clean_contracted_days(form_data.get("contracted_days"), stay_mode)
     notes = clean_optional_text(form_data.get("notes"), 500)
 
     if vehicle_type not in get_vehicle_types():
@@ -64,6 +70,8 @@ def create_vehicle_record(form_data, user):
         client_name=client_name,
         vehicle_type=vehicle_type,
         plate_number=plate_number,
+        stay_mode=stay_mode,
+        contracted_days=contracted_days,
         notes=notes,
         entry_user=user,
     )
@@ -74,7 +82,12 @@ def create_vehicle_record(form_data, user):
         "vehicle_entry_created",
         "vehicle_record",
         record.id,
-        {"ticket_number": ticket_number, "vehicle_type": vehicle_type},
+        {
+            "ticket_number": ticket_number,
+            "vehicle_type": vehicle_type,
+            "stay_mode": stay_mode,
+            "contracted_days": contracted_days,
+        },
     )
     db.session.commit()
     return record
@@ -85,6 +98,11 @@ def update_vehicle_record(record, form_data, user):
     record.client_name = clean_text(form_data.get("client_name"), 120, "cliente")
     record.vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     record.plate_number = clean_plate(form_data.get("plate_number"))
+    record.stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
+    record.contracted_days = _clean_contracted_days(
+        form_data.get("contracted_days"),
+        record.stay_mode,
+    )
     record.status = clean_text(form_data.get("status"), 30, "estado")
     record.notes = clean_optional_text(form_data.get("notes"), 500)
 
@@ -101,7 +119,13 @@ def update_vehicle_record(record, form_data, user):
         raise ValueError("Ese numero de ticket ya esta asignado a otro registro.")
 
     if record.exit_at:
-        pricing = calculate_charge(record.vehicle_type, record.entry_at, record.exit_at)
+        pricing = calculate_charge(
+            record.vehicle_type,
+            record.entry_at,
+            record.exit_at,
+            stay_mode=record.stay_mode,
+            contracted_days=record.contracted_days,
+        )
         record.duration_seconds = pricing["duration_seconds"]
         record.applied_rate_label = pricing["rate_label"]
         record.total_amount = pricing["total"]
@@ -396,6 +420,19 @@ def _clean_positive_int(raw_value, field_name):
     if value <= 0:
         raise ValueError(f"El campo {field_name} debe ser mayor a cero.")
     return value
+
+
+def _clean_stay_mode(raw_value):
+    stay_mode = clean_text(raw_value, 20, "modalidad").lower()
+    if stay_mode not in {mode for mode, _label in RECORD_STAY_MODES}:
+        raise ValueError("La modalidad seleccionada no es valida.")
+    return stay_mode
+
+
+def _clean_contracted_days(raw_value, stay_mode):
+    if stay_mode != "weekly":
+        return None
+    return _clean_positive_int(raw_value, "dias contratados")
 
 
 def _ensure_employee_role():

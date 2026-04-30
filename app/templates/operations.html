@@ -3,8 +3,7 @@
 {% block content %}
 <main class="single-column">
   <section class="card feature-card form-card">
-    <p class="eyebrow">Operacion</p>
-    <h2>Registrar nueva entrada</h2>
+    <h2>Nueva entrada</h2>
     <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>
@@ -25,8 +24,20 @@
         </select>
       </label>
       <label>
+        Modalidad
+        <select name="stay_mode" required data-record-mode>
+          {% for mode, label in record_stay_modes %}
+          <option value="{{ mode }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
         Placas o identificador
         <input type="text" name="plate_number" required maxlength="50">
+      </label>
+      <label data-contracted-days-field hidden>
+        Dias contratados
+        <input type="number" name="contracted_days" min="1" step="1" inputmode="numeric">
       </label>
       <label class="full-width">
         Notas

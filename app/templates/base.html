@@ -13,9 +13,7 @@
           <div class="brand-block">
             <img class="brand-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Estacionamiento Romina">
             <div>
-              <p class="eyebrow">Bitácora segura</p>
               <h1>{{ config.APP_NAME }}</h1>
-              <p class="brand-subtitle">Izamal, Yucatán · Operación diaria con un aire de hacienda colonial</p>
             </div>
           </div>
           {% if current_user.is_authenticated %}
@@ -35,7 +33,7 @@
             </div>
             <form method="post" action="{{ url_for('main.logout') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-secondary" type="submit">Cerrar sesión</button>
+              <button class="btn btn-secondary" type="submit">Cerrar sesion</button>
             </form>
           </div>
           {% endif %}
