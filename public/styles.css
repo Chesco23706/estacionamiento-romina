@@ -549,6 +549,40 @@ textarea {
   align-items: end;
 }
 
+.employee-actions {
+  min-width: 220px;
+}
+
+.employee-actions summary {
+  list-style: none;
+}
+
+.employee-actions summary::-webkit-details-marker {
+  display: none;
+}
+
+.employee-actions-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  display: grid;
+  gap: 14px;
+}
+
+.employee-action-block {
+  display: grid;
+  gap: 10px;
+}
+
+.employee-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
 .table-wrapper {
   overflow-x: auto;
   border: 1px solid rgba(15, 67, 107, 0.08);

@@ -91,10 +91,7 @@
             <th>Usuario</th>
             <th>Rol</th>
             <th>Estado</th>
-            <th>Editar</th>
-            <th>Cambiar contrasena</th>
-            <th>Estado</th>
-            <th>Eliminar</th>
+            <th>Edicion</th>
           </tr>
         </thead>
         <tbody>
@@ -105,42 +102,52 @@
             <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
             <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
             <td>
-              <form method="post" action="{{ url_for('main.edit_user', user_id=user.id) }}" class="inline-form employee-edit-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="text" name="full_name" value="{{ user.full_name }}" maxlength="120" required>
-                <input type="text" name="username" value="{{ user.username }}" maxlength="50" required>
-                <button class="btn btn-secondary fixed-action-btn" type="submit">Guardar</button>
-              </form>
-            </td>
-            <td>
-              <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form wide-inline-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="password-field">
-                  <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}" required data-password-input>
-                  <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+              <details class="employee-actions">
+                <summary class="btn btn-secondary fixed-action-btn">Editar</summary>
+                <div class="employee-actions-panel">
+                  <form method="post" action="{{ url_for('main.edit_user', user_id=user.id) }}" class="employee-action-block">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <strong>Datos basicos</strong>
+                    <div class="employee-edit-form">
+                      <input type="text" name="full_name" value="{{ user.full_name }}" maxlength="120" required>
+                      <input type="text" name="username" value="{{ user.username }}" maxlength="50" required>
+                      <button class="btn btn-secondary fixed-action-btn" type="submit">Guardar</button>
+                    </div>
+                  </form>
+
+                  <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="employee-action-block">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <strong>Contrasena</strong>
+                    <div class="wide-inline-form">
+                      <div class="password-field">
+                        <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}" required data-password-input>
+                        <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+                      </div>
+                      <button class="btn btn-secondary fixed-action-btn" type="submit">Actualizar</button>
+                    </div>
+                  </form>
+
+                  <div class="employee-action-row">
+                    {% if user.id != current_user.id %}
+                    <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn {% if user.is_active_user %}btn-danger{% else %}btn-secondary{% endif %} fixed-action-btn" type="submit">
+                        {{ 'Desactivar' if user.is_active_user else 'Activar' }}
+                      </button>
+                    </form>
+                    {% else %}
+                    <span class="muted">Sesion actual</span>
+                    {% endif %}
+
+                    {% if user.id != current_user.id and not user.is_admin %}
+                    <form method="post" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este empleado?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-danger fixed-action-btn" type="submit">Eliminar</button>
+                    </form>
+                    {% endif %}
+                  </div>
                 </div>
-                <button class="btn btn-secondary fixed-action-btn" type="submit">Actualizar</button>
-              </form>
-            </td>
-            <td>
-              {% if user.id != current_user.id %}
-              <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-danger fixed-action-btn" type="submit">{{ 'Desactivar' if user.is_active_user else 'Activar' }}</button>
-              </form>
-              {% else %}
-              <span class="muted">Sesion actual</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if user.id != current_user.id and not user.is_admin %}
-              <form method="post" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este empleado?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-danger fixed-action-btn" type="submit">Eliminar</button>
-              </form>
-              {% else %}
-              <span class="muted">No disponible</span>
-              {% endif %}
+              </details>
             </td>
           </tr>
           {% endfor %}
