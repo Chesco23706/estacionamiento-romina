@@ -15,7 +15,10 @@
         </label>
         <label>
           Contrasena
-          <input type="password" name="password" required autocomplete="current-password">
+          <div class="password-field">
+            <input type="password" name="password" required autocomplete="current-password" data-password-input>
+            <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+          </div>
         </label>
         <button class="btn" type="submit">Entrar</button>
       </form>

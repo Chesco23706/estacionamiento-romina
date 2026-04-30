@@ -31,4 +31,48 @@ function startLiveTimers() {
   window.setInterval(tick, 1000);
 }
 
-window.addEventListener("DOMContentLoaded", startLiveTimers);
+function setupPasswordToggles() {
+  const toggles = document.querySelectorAll("[data-password-toggle]");
+  toggles.forEach((toggle) => {
+    const wrapper = toggle.closest(".password-field");
+    const input = wrapper ? wrapper.querySelector("[data-password-input]") : null;
+    if (!input) {
+      return;
+    }
+
+    toggle.addEventListener("click", () => {
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      toggle.textContent = isPassword ? "Ocultar" : "Mostrar";
+    });
+  });
+}
+
+function syncSectionFromHash() {
+  const hash = window.location.hash;
+  if (!hash) {
+    return;
+  }
+
+  const target = document.querySelector(hash);
+  if (!target) {
+    return;
+  }
+
+  if (target.tagName === "DETAILS") {
+    target.open = true;
+  }
+
+  const detailsParent = target.closest("details");
+  if (detailsParent) {
+    detailsParent.open = true;
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  startLiveTimers();
+  setupPasswordToggles();
+  syncSectionFromHash();
+});
+
+window.addEventListener("hashchange", syncSectionFromHash);

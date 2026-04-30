@@ -362,7 +362,11 @@
           </label>
           <label>
             Contrasena inicial
-            <input type="password" name="password" required minlength="8">
+            <div class="password-field">
+              <input type="password" name="password" required minlength="10" data-password-input>
+              <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+            </div>
+            <small class="field-help">Minimo 10 caracteres con mayuscula, minuscula, numero y simbolo.</small>
           </label>
           <button class="btn" type="submit">Crear empleado</button>
         </form>
@@ -389,7 +393,10 @@
                 <td>
                   <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="8" required>
+                    <div class="password-field">
+                      <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" required data-password-input>
+                      <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+                    </div>
                     <button class="btn btn-secondary" type="submit">Actualizar</button>
                   </form>
                 </td>

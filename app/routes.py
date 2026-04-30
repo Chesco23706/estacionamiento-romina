@@ -283,7 +283,7 @@ def create_tariff_route():
         flash("Tarifa creada correctamente.", "success")
     except ValueError as exc:
         flash(str(exc), "danger")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.dashboard", _anchor="tarifas"))
 
 
 @main_bp.route("/tariffs/<int:tariff_id>/update", methods=["POST"])
@@ -300,7 +300,7 @@ def update_tariff_route(tariff_id):
         flash("Tarifa actualizada correctamente.", "success")
     except ValueError as exc:
         flash(str(exc), "danger")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.dashboard", _anchor="tarifas"))
 
 
 @main_bp.route("/records/<int:record_id>/delete", methods=["POST"])
@@ -330,7 +330,7 @@ def create_user():
     except Exception:
         db.session.rollback()
         flash("No fue posible crear el empleado. Revisa que la base tenga permisos y roles activos.", "danger")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.dashboard", _anchor="admin"))
 
 
 @main_bp.route("/users/<int:user_id>/toggle", methods=["POST"])
@@ -355,7 +355,7 @@ def toggle_user(user_id):
     )
     db.session.commit()
     flash("Estado del empleado actualizado.", "success")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.dashboard", _anchor="admin"))
 
 
 @main_bp.route("/users/<int:user_id>/password", methods=["POST"])
@@ -372,7 +372,7 @@ def reset_password(user_id):
         flash("Contraseña actualizada correctamente.", "success")
     except ValueError as exc:
         flash(str(exc), "danger")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.dashboard", _anchor="admin"))
 
 
 @main_bp.route("/cuts/generate", methods=["POST"])

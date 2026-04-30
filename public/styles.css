@@ -377,6 +377,30 @@ h2 {
   gap: 12px;
 }
 
+.password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.password-toggle {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 67, 107, 0.18);
+  background: rgba(15, 67, 107, 0.08);
+  color: var(--secondary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.field-help {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
 .checkbox-row {
   grid-auto-flow: column;
   justify-content: start;
