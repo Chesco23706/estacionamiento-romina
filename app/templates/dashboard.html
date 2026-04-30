@@ -2,17 +2,6 @@
 {% block title %}Inicio | Estacionamiento Romina{% endblock %}
 {% block content %}
 <main class="dashboard-layout">
-  <section class="hero-panel">
-    <article class="card hero-copy">
-      <div class="hero-copy-inner">
-        <div>
-          <h2>Inicio</h2>
-        </div>
-        <img class="hero-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Identidad Romina">
-      </div>
-    </article>
-  </section>
-
   <section class="stats-grid">
     <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
     <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>
