@@ -69,25 +69,25 @@
             <td>{{ record.entry_user.full_name }}</td>
             <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
             <td>
-              <div class="button-column">
-                <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
+              <div class="button-column record-actions">
+                <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
                 {% if current_user.is_admin %}
                 {% if not record.exit_at %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary" type="submit">Registrar salida</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit">Registrar salida</button>
                 </form>
                 {% endif %}
                 {% if record.exit_at and record.status != 'Pagado' %}
                 <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn" type="submit">Marcar pagado</button>
+                  <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
                 </form>
                 {% endif %}
-                <a class="link-button" href="{{ url_for('main.edit_record', record_id=record.id) }}">Editar</a>
+                <a class="link-button fixed-action-btn" href="{{ url_for('main.edit_record', record_id=record.id) }}">Editar</a>
                 <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-danger" type="submit">Eliminar</button>
+                  <button class="btn btn-danger fixed-action-btn" type="submit">Eliminar</button>
                 </form>
                 {% else %}
                 <span class="muted">Solo registro de entrada</span>

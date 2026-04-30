@@ -494,6 +494,15 @@ textarea {
   max-width: 100%;
 }
 
+.action-row {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.compact-action-row {
+  justify-content: flex-start;
+}
+
 .btn-secondary,
 .link-button {
   background: var(--secondary);
@@ -569,6 +578,17 @@ thead {
 
 .records-card .button-column {
   min-width: 180px;
+}
+
+.record-actions form,
+.record-actions a,
+.action-row form {
+  margin: 0;
+}
+
+.record-actions form button,
+.action-row form button {
+  width: 180px;
 }
 
 .collapsible-card {

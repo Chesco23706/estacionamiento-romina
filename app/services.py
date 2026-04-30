@@ -2,6 +2,7 @@ import json
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from .extensions import db
 from .models import CashCut, Role, Tariff, User, VehicleRecord, get_period_bounds, log_action
@@ -157,10 +158,16 @@ def create_employee(form_data, user):
     employee_role = _ensure_employee_role()
     new_user = User(full_name=full_name, username=username, role=employee_role)
     new_user.set_password(password)
-    db.session.add(new_user)
-    db.session.flush()
-    log_action(user, "employee_created", "user", new_user.id, {"username": username})
-    db.session.commit()
+    try:
+        db.session.add(new_user)
+        db.session.flush()
+        log_action(user, "employee_created", "user", new_user.id, {"username": username})
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError(
+            "No se pudo crear el empleado porque el usuario ya existe o la base rechazo el registro."
+        ) from exc
     return new_user
 
 

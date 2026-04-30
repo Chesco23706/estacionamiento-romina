@@ -95,7 +95,7 @@ def test_create_employee_recovers_missing_employee_role():
     )
 
     assert response.status_code == 200
-    assert "Empleado creado correctamente." in response.get_data(as_text=True)
+    assert "Empleado creado correctamente:" in response.get_data(as_text=True)
 
     with app.app_context():
         user = User.query.filter_by(username="nuevooperador").first()

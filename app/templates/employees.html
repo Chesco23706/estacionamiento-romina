@@ -19,12 +19,14 @@
         <label>
           Contrasena inicial
           <div class="password-field">
-            <input type="password" name="password" required minlength="10" data-password-input>
+            <input type="password" name="password" required minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}" data-password-input>
             <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
           </div>
           <small class="field-help">Minimo 10 caracteres con mayuscula, minuscula, numero y simbolo.</small>
         </label>
-        <button class="btn fixed-action-btn" type="submit">Crear empleado</button>
+        <div class="button-row action-row compact-action-row">
+          <button class="btn fixed-action-btn" type="submit">Crear empleado</button>
+        </div>
       </form>
     </article>
 
@@ -63,7 +65,7 @@
               <td>{{ cut.generated_at|dt }}</td>
               <td>{{ cut.total_income|money }}</td>
               <td>{{ cut.total_pending|money }}</td>
-              <td><a class="link-button" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
+              <td><a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
             </tr>
             {% else %}
             <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
@@ -104,7 +106,7 @@
               <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form wide-inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="password-field">
-                  <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" required data-password-input>
+                  <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}" required data-password-input>
                   <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
                 </div>
                 <button class="btn btn-secondary fixed-action-btn" type="submit">Actualizar</button>

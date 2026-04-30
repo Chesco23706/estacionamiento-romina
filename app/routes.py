@@ -2,6 +2,7 @@ from io import BytesIO
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     make_response,
     redirect,
@@ -346,14 +347,18 @@ def delete_record(record_id):
 @role_required("admin")
 def create_user():
     try:
-        create_employee(request.form, current_user)
-        flash("Empleado creado correctamente.", "success")
+        employee = create_employee(request.form, current_user)
+        flash(
+            f"Empleado creado correctamente: {employee.full_name} ({employee.username}).",
+            "success",
+        )
     except ValueError as exc:
         db.session.rollback()
         flash(str(exc), "danger")
-    except Exception:
+    except Exception as exc:
         db.session.rollback()
-        flash("No fue posible crear el empleado. Revisa que la base tenga permisos y roles activos.", "danger")
+        current_app.logger.exception("Employee creation failed")
+        flash(f"No fue posible crear el empleado. Detalle: {exc}", "danger")
     return redirect(url_for("main.employees_page"))
 
 
