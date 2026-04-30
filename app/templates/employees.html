@@ -91,8 +91,10 @@
             <th>Usuario</th>
             <th>Rol</th>
             <th>Estado</th>
+            <th>Editar</th>
             <th>Cambiar contrasena</th>
-            <th>Accion</th>
+            <th>Estado</th>
+            <th>Eliminar</th>
           </tr>
         </thead>
         <tbody>
@@ -102,6 +104,14 @@
             <td>{{ user.username }}</td>
             <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
             <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('main.edit_user', user_id=user.id) }}" class="inline-form employee-edit-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="full_name" value="{{ user.full_name }}" maxlength="120" required>
+                <input type="text" name="username" value="{{ user.username }}" maxlength="50" required>
+                <button class="btn btn-secondary fixed-action-btn" type="submit">Guardar</button>
+              </form>
+            </td>
             <td>
               <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form wide-inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -120,6 +130,16 @@
               </form>
               {% else %}
               <span class="muted">Sesion actual</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.id != current_user.id and not user.is_admin %}
+              <form method="post" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este empleado?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger fixed-action-btn" type="submit">Eliminar</button>
+              </form>
+              {% else %}
+              <span class="muted">No disponible</span>
               {% endif %}
             </td>
           </tr>

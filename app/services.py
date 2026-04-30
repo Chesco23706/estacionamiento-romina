@@ -177,6 +177,47 @@ def reset_employee_password(target_user, new_password, actor):
     db.session.commit()
 
 
+def update_employee(target_user, form_data, actor):
+    full_name = clean_text(form_data.get("full_name"), 120, "nombre completo")
+    username = clean_text(form_data.get("username"), 50, "usuario").lower()
+
+    existing = User.query.filter(
+        func.lower(User.username) == username,
+        User.id != target_user.id,
+    ).first()
+    if existing:
+        raise ValueError("Ese nombre de usuario ya existe.")
+
+    target_user.full_name = full_name
+    target_user.username = username
+    log_action(
+        actor,
+        "employee_updated",
+        "user",
+        target_user.id,
+        {"username": username},
+    )
+    db.session.commit()
+    return target_user
+
+
+def delete_employee(target_user, actor):
+    if target_user.id == actor.id:
+        raise ValueError("No puedes eliminar tu propio usuario.")
+    if target_user.is_admin:
+        raise ValueError("No se permite eliminar administradores desde esta pantalla.")
+
+    log_action(
+        actor,
+        "employee_deleted",
+        "user",
+        target_user.id,
+        {"username": target_user.username},
+    )
+    db.session.delete(target_user)
+    db.session.commit()
+
+
 def create_tariff(form_data, user):
     tariff = Tariff(**_clean_tariff_payload(form_data))
     if Tariff.query.filter(func.lower(Tariff.vehicle_type) == tariff.vehicle_type.lower()).first():

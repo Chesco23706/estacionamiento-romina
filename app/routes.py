@@ -26,6 +26,7 @@ from .services import (
     create_tariff,
     create_vehicle_record,
     dashboard_metrics,
+    delete_employee,
     delete_vehicle_record,
     generate_cash_cut,
     get_tariffs,
@@ -33,6 +34,7 @@ from .services import (
     register_exit,
     register_payment,
     reset_employee_password,
+    update_employee,
     update_tariff,
     update_vehicle_record,
 )
@@ -399,6 +401,40 @@ def reset_password(user_id):
     try:
         reset_employee_password(user, request.form.get("new_password", ""), current_user)
         flash("Contraseña actualizada correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.employees_page"))
+
+
+@main_bp.route("/users/<int:user_id>/edit", methods=["POST"])
+@login_required
+@role_required("admin")
+def edit_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("No se encontró el usuario solicitado.", "danger")
+        return redirect(url_for("main.employees_page"))
+
+    try:
+        update_employee(user, request.form, current_user)
+        flash(f"Empleado actualizado correctamente: {user.full_name} ({user.username}).", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.employees_page"))
+
+
+@main_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@role_required("admin")
+def delete_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("No se encontró el usuario solicitado.", "danger")
+        return redirect(url_for("main.employees_page"))
+
+    try:
+        delete_employee(user, current_user)
+        flash("Empleado eliminado correctamente.", "success")
     except ValueError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("main.employees_page"))

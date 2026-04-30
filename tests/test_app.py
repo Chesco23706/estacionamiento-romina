@@ -104,6 +104,45 @@ def test_create_employee_recovers_missing_employee_role():
         assert user.role.name == "employee"
 
 
+def test_admin_can_edit_and_delete_employee():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/users/new",
+        data={
+            "full_name": "Empleado Editar",
+            "username": "empleadoeditar",
+            "password": "ClaveSegura2026!",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        user = User.query.filter_by(username="empleadoeditar").first()
+        user_id = user.id
+
+    edit_response = client.post(
+        f"/users/{user_id}/edit",
+        data={"full_name": "Empleado Editado", "username": "empleadoeditado"},
+        follow_redirects=True,
+    )
+    assert edit_response.status_code == 200
+    assert "Empleado actualizado correctamente:" in edit_response.get_data(as_text=True)
+
+    with app.app_context():
+        edited_user = db.session.get(User, user_id)
+        assert edited_user.full_name == "Empleado Editado"
+        assert edited_user.username == "empleadoeditado"
+
+    delete_response = client.post(f"/users/{user_id}/delete", follow_redirects=True)
+    assert delete_response.status_code == 200
+    assert "Empleado eliminado correctamente." in delete_response.get_data(as_text=True)
+
+    with app.app_context():
+        assert db.session.get(User, user_id) is None
+
+
 def test_ticket_reprint_route_exists():
     app, client = build_client()
     login(client)
