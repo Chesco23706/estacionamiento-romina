@@ -23,7 +23,7 @@ STATUS_OPTIONS = (
 )
 RECORD_STAY_MODES = (
     ("hourly", "Por hora"),
-    ("weekly", "Por dias"),
+    ("weekly", "Por semana"),
 )
 BILLING_SCHEMES = (
     ("hourly", "Por hora"),
@@ -432,7 +432,7 @@ def _clean_stay_mode(raw_value):
 def _clean_contracted_days(raw_value, stay_mode):
     if stay_mode != "weekly":
         return None
-    return _clean_positive_int(raw_value, "dias contratados")
+    return 7
 
 
 def _ensure_employee_role():

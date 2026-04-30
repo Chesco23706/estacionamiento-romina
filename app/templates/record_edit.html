@@ -30,13 +30,10 @@
           {% endfor %}
         </select>
       </label>
+      <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 7 }}" data-contracted-days-input>
       <label>
         Placas
         <input type="text" name="plate_number" required value="{{ record.plate_number }}">
-      </label>
-      <label data-contracted-days-field {% if record.stay_mode != 'weekly' %}hidden{% endif %}>
-        Dias contratados
-        <input type="number" name="contracted_days" min="1" step="1" inputmode="numeric" value="{{ record.contracted_days or '' }}">
       </label>
       <label>
         Estado

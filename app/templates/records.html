@@ -66,10 +66,10 @@
                 data-entry-at="{{ record.entry_at.isoformat() }}"
                 data-contracted-days="{{ record.contracted_days or 1 }}"
               >
-                {{ record.consumed_day_units() }} dia(s) / {{ record.remaining_day_units() }} restante(s)
+                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
               </span>
               {% elif not record.is_hourly %}
-              {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
+              Semana usada: {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
               {% else %}
               {{ format_duration(record.duration_seconds) }}
               {% endif %}

@@ -128,7 +128,7 @@ class VehicleRecord(TimestampMixin, db.Model):
 
     @property
     def mode_label(self):
-        return "Por hora" if self.is_hourly else "Por dias"
+        return "Por hora" if self.is_hourly else "Por semana"
 
     def consumed_day_units(self, reference_time=None):
         if self.is_hourly:

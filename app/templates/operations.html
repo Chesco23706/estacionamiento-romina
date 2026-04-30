@@ -31,13 +31,10 @@
           {% endfor %}
         </select>
       </label>
+      <input type="hidden" name="contracted_days" value="7" data-contracted-days-input>
       <label>
         Placas o identificador
         <input type="text" name="plate_number" required maxlength="50">
-      </label>
-      <label data-contracted-days-field hidden>
-        Dias contratados
-        <input type="number" name="contracted_days" min="1" step="1" inputmode="numeric">
       </label>
       <label class="full-width">
         Notas

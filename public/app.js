@@ -35,7 +35,7 @@ function renderDayCounterText(entryAt, contractedDays) {
   const diff = Date.now() - new Date(entryAt).getTime();
   const usedDays = Math.max(1, Math.ceil(diff / 86400000));
   const remainingDays = Math.max(contractedDays - usedDays, 0);
-  return `${usedDays} dia(s) / ${remainingDays} restante(s)`;
+  return `Restan ${remainingDays} de ${contractedDays} dias`;
 }
 
 function startLiveDayCounters() {
@@ -101,21 +101,15 @@ function setupRecordModeFields() {
   const modeSelects = document.querySelectorAll("[data-record-mode]");
   modeSelects.forEach((modeSelect) => {
     const form = modeSelect.closest("form");
-    const contractedField = form ? form.querySelector("[data-contracted-days-field]") : null;
-    const contractedInput = contractedField
-      ? contractedField.querySelector("input[name='contracted_days']")
+    const contractedInput = form
+      ? form.querySelector("[data-contracted-days-input]")
       : null;
-    if (!contractedField || !contractedInput) {
+    if (!contractedInput) {
       return;
     }
 
     const syncField = () => {
-      const isWeekly = modeSelect.value === "weekly";
-      contractedField.hidden = !isWeekly;
-      contractedInput.required = isWeekly;
-      if (!isWeekly) {
-        contractedInput.value = "";
-      }
+      contractedInput.value = modeSelect.value === "weekly" ? "7" : "";
     };
 
     modeSelect.addEventListener("change", syncField);
