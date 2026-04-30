@@ -325,7 +325,11 @@ def create_user():
         create_employee(request.form, current_user)
         flash("Empleado creado correctamente.", "success")
     except ValueError as exc:
+        db.session.rollback()
         flash(str(exc), "danger")
+    except Exception:
+        db.session.rollback()
+        flash("No fue posible crear el empleado. Revisa que la base tenga permisos y roles activos.", "danger")
     return redirect(url_for("main.dashboard"))
 
 

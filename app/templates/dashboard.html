@@ -8,61 +8,40 @@
         <div>
           <p class="eyebrow">Panel principal</p>
           <h2>Operacion diaria del estacionamiento</h2>
-          <p>Registra entradas, controla salidas, administra tarifas y genera tickets listos para imprimir.</p>
+          <p>Lo mas importante queda primero: estadisticas actuales y registros disponibles. El resto se organiza por secciones para trabajar con mas claridad.</p>
         </div>
         <img class="hero-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Identidad Romina">
       </div>
     </article>
   </section>
 
-  <section class="stats-grid">
-    <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
-    <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>
-    <article class="stat-card"><span>Total cobrado hoy</span><strong>{{ metrics.total_day|money }}</strong></article>
-    <article class="stat-card"><span>Total semana</span><strong>{{ metrics.total_week|money }}</strong></article>
-    <article class="stat-card"><span>Pendiente</span><strong>{{ metrics.pending_total|money }}</strong></article>
-  </section>
+  <nav class="section-nav">
+    <a href="#resumen" class="section-chip">Resumen actual</a>
+    <a href="#bitacora" class="section-chip">Registros</a>
+    <a href="#operacion" class="section-chip">Operacion</a>
+    {% if current_user.is_admin %}
+    <a href="#tarifas" class="section-chip">Tarifas</a>
+    <a href="#admin" class="section-chip">Administracion</a>
+    {% endif %}
+  </nav>
 
-  <section class="workspace-grid">
-    <article class="card feature-card">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Registro</p>
-          <h2>Nueva entrada</h2>
-        </div>
+  <section id="resumen" class="dashboard-focus">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Vista rapida</p>
+        <h2>Estadisticas actuales</h2>
       </div>
-      <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>
-          Ticket
-          <input type="text" name="ticket_number" required maxlength="30">
-        </label>
-        <label>
-          Cliente
-          <input type="text" name="client_name" required maxlength="120">
-        </label>
-        <label>
-          Tipo de vehiculo
-          <select name="vehicle_type" required>
-            <option value="">Selecciona</option>
-            {% for vehicle_type in vehicle_types %}
-            <option value="{{ vehicle_type }}">{{ vehicle_type }}</option>
-            {% endfor %}
-          </select>
-        </label>
-        <label>
-          Placas o identificador
-          <input type="text" name="plate_number" required maxlength="50">
-        </label>
-        <label class="full-width">
-          Notas
-          <textarea name="notes" rows="2" maxlength="500"></textarea>
-        </label>
-        <button class="btn" type="submit">Guardar entrada</button>
-      </form>
-    </article>
+    </div>
 
-    <aside class="stack-column">
+    <section class="stats-grid">
+      <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
+      <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>
+      <article class="stat-card"><span>Total cobrado hoy</span><strong>{{ metrics.total_day|money }}</strong></article>
+      <article class="stat-card"><span>Total semana</span><strong>{{ metrics.total_week|money }}</strong></article>
+      <article class="stat-card"><span>Pendiente</span><strong>{{ metrics.pending_total|money }}</strong></article>
+    </section>
+
+    <section class="workspace-grid overview-grid">
       <article class="card feature-card">
         <p class="eyebrow">Ocupacion</p>
         <h2>Vehiculos por tipo</h2>
@@ -78,255 +57,21 @@
 
       <article class="card feature-card">
         <p class="eyebrow">Tickets</p>
-        <h2>Salida del documento</h2>
+        <h2>Documento listo para salida</h2>
         <ul class="plain-list">
-          <li>Se genera en PDF.</li>
+          <li>El ticket se genera en PDF.</li>
           <li>Puede abrirse, descargarse o imprimirse.</li>
-          <li>La reimpresion esta disponible desde la bitacora.</li>
+          <li>La reimpresion sigue disponible desde la bitacora.</li>
         </ul>
       </article>
-    </aside>
+    </section>
   </section>
 
-  {% if current_user.is_admin %}
-  <section class="workspace-grid admin-workspace">
-    <article class="card feature-card">
-      <p class="eyebrow">Tarifas y tipos</p>
-      <h2>Configurar precios, ofertas y vehiculos</h2>
-      <form method="post" action="{{ url_for('main.create_tariff_route') }}" class="form-grid compact-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>
-          Tipo de vehiculo
-          <input type="text" name="vehicle_type" required maxlength="50">
-        </label>
-        <label>
-          Esquema de cobro
-          <select name="billing_scheme" required>
-            {% for value, label in billing_schemes %}
-            <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </label>
-        <label>
-          Unidad
-          <select name="period_unit" required>
-            {% for value, label in period_units %}
-            <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </label>
-        <label>
-          Tarifa base
-          <input type="number" step="0.01" min="0.01" name="rate_amount" required>
-        </label>
-        <label>
-          Cobro minimo
-          <input type="number" min="1" step="1" name="min_charge_units" value="1" required>
-        </label>
-        <label>
-          Nombre de oferta
-          <input type="text" name="offer_label" maxlength="120" placeholder="Semana completa">
-        </label>
-        <label>
-          Unidades para oferta
-          <input type="number" min="1" step="1" name="offer_trigger_units">
-        </label>
-        <label>
-          Precio oferta
-          <input type="number" step="0.01" min="0.01" name="offer_price">
-        </label>
-        <label class="full-width">
-          Notas
-          <input type="text" name="notes" maxlength="255">
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" name="active" checked>
-          <span>Activo</span>
-        </label>
-        <button class="btn" type="submit">Agregar tipo y tarifa</button>
-      </form>
-
-      <div class="tariff-stack">
-        {% for tariff in tariffs %}
-        <form method="post" action="{{ url_for('main.update_tariff_route', tariff_id=tariff.id) }}" class="tariff-card">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="tariff-card-head">
-            <strong>{{ tariff.vehicle_type }}</strong>
-            <span class="status-pill">{{ 'Activo' if tariff.active else 'Inactivo' }}</span>
-          </div>
-          <div class="form-grid compact-form">
-            <label>
-              Tipo
-              <input type="text" name="vehicle_type" value="{{ tariff.vehicle_type }}" required maxlength="50">
-            </label>
-            <label>
-              Esquema
-              <select name="billing_scheme" required>
-                {% for value, label in billing_schemes %}
-                <option value="{{ value }}" {% if tariff.billing_scheme == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              Unidad
-              <select name="period_unit" required>
-                {% for value, label in period_units %}
-                <option value="{{ value }}" {% if tariff.period_unit == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>
-              Base
-              <input type="number" step="0.01" min="0.01" name="rate_amount" value="{{ tariff.rate_amount }}" required>
-            </label>
-            <label>
-              Minimo
-              <input type="number" min="1" step="1" name="min_charge_units" value="{{ tariff.min_charge_units }}" required>
-            </label>
-            <label>
-              Oferta
-              <input type="text" name="offer_label" maxlength="120" value="{{ tariff.offer_label or '' }}">
-            </label>
-            <label>
-              Unidades oferta
-              <input type="number" min="1" step="1" name="offer_trigger_units" value="{{ tariff.offer_trigger_units or '' }}">
-            </label>
-            <label>
-              Precio oferta
-              <input type="number" step="0.01" min="0.01" name="offer_price" value="{{ tariff.offer_price or '' }}">
-            </label>
-            <label class="full-width">
-              Notas
-              <input type="text" name="notes" maxlength="255" value="{{ tariff.notes or '' }}">
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" name="active" {% if tariff.active %}checked{% endif %}>
-              <span>Activo</span>
-            </label>
-            <button class="btn btn-secondary" type="submit">Guardar cambios</button>
-          </div>
-        </form>
-        {% else %}
-        <p class="muted">Todavia no hay tarifas configuradas.</p>
-        {% endfor %}
-      </div>
-    </article>
-
-    <article class="card feature-card">
-      <p class="eyebrow">Administracion</p>
-      <h2>Empleados</h2>
-      <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>
-          Nombre completo
-          <input type="text" name="full_name" required maxlength="120">
-        </label>
-        <label>
-          Usuario
-          <input type="text" name="username" required maxlength="50">
-        </label>
-        <label>
-          Contrasena inicial
-          <input type="password" name="password" required minlength="8">
-        </label>
-        <button class="btn" type="submit">Crear empleado</button>
-      </form>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Empleado</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              <th>Cambiar contrasena</th>
-              <th>Accion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in users %}
-            <tr>
-              <td>{{ user.full_name }}</td>
-              <td>{{ user.username }}</td>
-              <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
-              <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
-              <td>
-                <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="8" required>
-                  <button class="btn btn-secondary" type="submit">Actualizar</button>
-                </form>
-              </td>
-              <td>
-                {% if user.id != current_user.id %}
-                <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-danger" type="submit">{{ 'Desactivar' if user.is_active_user else 'Activar' }}</button>
-                </form>
-                {% else %}
-                <span class="muted">Sesion actual</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <hr class="section-divider">
-
-      <p class="eyebrow">Cortes</p>
-      <h2>Caja</h2>
-      <div class="button-row">
-        <form method="post" action="{{ url_for('main.generate_cut') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="cut_type" value="daily">
-          <button class="btn" type="submit">Corte diario</button>
-        </form>
-        <form method="post" action="{{ url_for('main.generate_cut') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="cut_type" value="weekly">
-          <button class="btn btn-secondary" type="submit">Corte semanal</button>
-        </form>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tipo</th>
-              <th>Fecha</th>
-              <th>Ingresos</th>
-              <th>Pendiente</th>
-              <th>Accion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cut in cuts %}
-            <tr>
-              <td>{{ cut.id }}</td>
-              <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
-              <td>{{ cut.generated_at|dt }}</td>
-              <td>{{ cut.total_income|money }}</td>
-              <td>{{ cut.total_pending|money }}</td>
-              <td><a class="link-button" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </article>
-  </section>
-  {% endif %}
-
-  <section class="card feature-card records-card">
+  <section id="bitacora" class="card feature-card records-card">
     <div class="section-heading">
       <div>
         <p class="eyebrow">Bitacora</p>
-        <h2>Registros de vehiculos</h2>
+        <h2>Registros disponibles actualmente</h2>
       </div>
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ticket, nombre, placas o tipo">
@@ -424,5 +169,292 @@
       </table>
     </div>
   </section>
+
+  <section id="operacion" class="section-stack">
+    <details class="card collapsible-card" open>
+      <summary>
+        <div>
+          <p class="eyebrow">Operacion</p>
+          <h2>Nueva entrada</h2>
+        </div>
+      </summary>
+      <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid collapsible-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Ticket
+          <input type="text" name="ticket_number" required maxlength="30">
+        </label>
+        <label>
+          Cliente
+          <input type="text" name="client_name" required maxlength="120">
+        </label>
+        <label>
+          Tipo de vehiculo
+          <select name="vehicle_type" required>
+            <option value="">Selecciona</option>
+            {% for vehicle_type in vehicle_types %}
+            <option value="{{ vehicle_type }}">{{ vehicle_type }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Placas o identificador
+          <input type="text" name="plate_number" required maxlength="50">
+        </label>
+        <label class="full-width">
+          Notas
+          <textarea name="notes" rows="2" maxlength="500"></textarea>
+        </label>
+        <button class="btn" type="submit">Guardar entrada</button>
+      </form>
+    </details>
+  </section>
+
+  {% if current_user.is_admin %}
+  <section class="section-stack">
+    <details id="tarifas" class="card collapsible-card">
+      <summary>
+        <div>
+          <p class="eyebrow">Tarifas y tipos</p>
+          <h2>Precios, ofertas y vehiculos</h2>
+        </div>
+      </summary>
+
+      <div class="collapsible-body section-stack">
+        <form method="post" action="{{ url_for('main.create_tariff_route') }}" class="form-grid compact-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>
+            Tipo de vehiculo
+            <input type="text" name="vehicle_type" required maxlength="50">
+          </label>
+          <label>
+            Esquema de cobro
+            <select name="billing_scheme" required>
+              {% for value, label in billing_schemes %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Unidad
+            <select name="period_unit" required>
+              {% for value, label in period_units %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Tarifa base
+            <input type="number" step="0.01" min="0.01" name="rate_amount" required>
+          </label>
+          <label>
+            Cobro minimo
+            <input type="number" min="1" step="1" name="min_charge_units" value="1" required>
+          </label>
+          <label>
+            Nombre de oferta
+            <input type="text" name="offer_label" maxlength="120" placeholder="Semana completa">
+          </label>
+          <label>
+            Unidades para oferta
+            <input type="number" min="1" step="1" name="offer_trigger_units">
+          </label>
+          <label>
+            Precio oferta
+            <input type="number" step="0.01" min="0.01" name="offer_price">
+          </label>
+          <label class="full-width">
+            Notas
+            <input type="text" name="notes" maxlength="255">
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" name="active" checked>
+            <span>Activo</span>
+          </label>
+          <button class="btn" type="submit">Agregar tipo y tarifa</button>
+        </form>
+
+        <div class="tariff-stack">
+          {% for tariff in tariffs %}
+          <form method="post" action="{{ url_for('main.update_tariff_route', tariff_id=tariff.id) }}" class="tariff-card">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="tariff-card-head">
+              <strong>{{ tariff.vehicle_type }}</strong>
+              <span class="status-pill">{{ 'Activo' if tariff.active else 'Inactivo' }}</span>
+            </div>
+            <div class="form-grid compact-form">
+              <label>
+                Tipo
+                <input type="text" name="vehicle_type" value="{{ tariff.vehicle_type }}" required maxlength="50">
+              </label>
+              <label>
+                Esquema
+                <select name="billing_scheme" required>
+                  {% for value, label in billing_schemes %}
+                  <option value="{{ value }}" {% if tariff.billing_scheme == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                Unidad
+                <select name="period_unit" required>
+                  {% for value, label in period_units %}
+                  <option value="{{ value }}" {% if tariff.period_unit == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                Base
+                <input type="number" step="0.01" min="0.01" name="rate_amount" value="{{ tariff.rate_amount }}" required>
+              </label>
+              <label>
+                Minimo
+                <input type="number" min="1" step="1" name="min_charge_units" value="{{ tariff.min_charge_units }}" required>
+              </label>
+              <label>
+                Oferta
+                <input type="text" name="offer_label" maxlength="120" value="{{ tariff.offer_label or '' }}">
+              </label>
+              <label>
+                Unidades oferta
+                <input type="number" min="1" step="1" name="offer_trigger_units" value="{{ tariff.offer_trigger_units or '' }}">
+              </label>
+              <label>
+                Precio oferta
+                <input type="number" step="0.01" min="0.01" name="offer_price" value="{{ tariff.offer_price or '' }}">
+              </label>
+              <label class="full-width">
+                Notas
+                <input type="text" name="notes" maxlength="255" value="{{ tariff.notes or '' }}">
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" name="active" {% if tariff.active %}checked{% endif %}>
+                <span>Activo</span>
+              </label>
+              <button class="btn btn-secondary" type="submit">Guardar cambios</button>
+            </div>
+          </form>
+          {% else %}
+          <p class="muted">Todavia no hay tarifas configuradas.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </details>
+
+    <details id="admin" class="card collapsible-card">
+      <summary>
+        <div>
+          <p class="eyebrow">Administracion</p>
+          <h2>Empleados y cortes</h2>
+        </div>
+      </summary>
+
+      <div class="collapsible-body section-stack">
+        <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>
+            Nombre completo
+            <input type="text" name="full_name" required maxlength="120">
+          </label>
+          <label>
+            Usuario
+            <input type="text" name="username" required maxlength="50">
+          </label>
+          <label>
+            Contrasena inicial
+            <input type="password" name="password" required minlength="8">
+          </label>
+          <button class="btn" type="submit">Crear empleado</button>
+        </form>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Cambiar contrasena</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users %}
+              <tr>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
+                <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
+                <td>
+                  <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="8" required>
+                    <button class="btn btn-secondary" type="submit">Actualizar</button>
+                  </form>
+                </td>
+                <td>
+                  {% if user.id != current_user.id %}
+                  <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-danger" type="submit">{{ 'Desactivar' if user.is_active_user else 'Activar' }}</button>
+                  </form>
+                  {% else %}
+                  <span class="muted">Sesion actual</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <hr class="section-divider">
+
+        <div class="button-row">
+          <form method="post" action="{{ url_for('main.generate_cut') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="cut_type" value="daily">
+            <button class="btn" type="submit">Corte diario</button>
+          </form>
+          <form method="post" action="{{ url_for('main.generate_cut') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="cut_type" value="weekly">
+            <button class="btn btn-secondary" type="submit">Corte semanal</button>
+          </form>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Ingresos</th>
+                <th>Pendiente</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cut in cuts %}
+              <tr>
+                <td>{{ cut.id }}</td>
+                <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
+                <td>{{ cut.generated_at|dt }}</td>
+                <td>{{ cut.total_income|money }}</td>
+                <td>{{ cut.total_pending|money }}</td>
+                <td><a class="link-button" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  </section>
+  {% endif %}
 </main>
 {% endblock %}

@@ -154,7 +154,7 @@ def create_employee(form_data, user):
     if User.query.filter(func.lower(User.username) == username).first():
         raise ValueError("Ese nombre de usuario ya existe.")
 
-    employee_role = Role.query.filter_by(name="employee").first()
+    employee_role = _ensure_employee_role()
     new_user = User(full_name=full_name, username=username, role=employee_role)
     new_user.set_password(password)
     db.session.add(new_user)
@@ -348,3 +348,17 @@ def _clean_positive_int(raw_value, field_name):
     if value <= 0:
         raise ValueError(f"El campo {field_name} debe ser mayor a cero.")
     return value
+
+
+def _ensure_employee_role():
+    employee_role = Role.query.filter_by(name="employee").first()
+    if employee_role:
+        return employee_role
+
+    employee_role = Role(
+        name="employee",
+        description="Empleado de operacion",
+    )
+    db.session.add(employee_role)
+    db.session.flush()
+    return employee_role

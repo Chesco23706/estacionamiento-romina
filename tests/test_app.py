@@ -73,6 +73,37 @@ def test_bootstrap_users_exist():
     assert {"admin", "empleado1", "empleado2"}.issubset(usernames)
 
 
+def test_create_employee_recovers_missing_employee_role():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        from app.models import Role
+
+        employee_role = Role.query.filter_by(name="employee").first()
+        db.session.delete(employee_role)
+        db.session.commit()
+
+    response = client.post(
+        "/users/new",
+        data={
+            "full_name": "Nuevo Operador",
+            "username": "nuevooperador",
+            "password": "ClaveSegura2026!",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "Empleado creado correctamente." in response.get_data(as_text=True)
+
+    with app.app_context():
+        user = User.query.filter_by(username="nuevooperador").first()
+        assert user is not None
+        assert user.role is not None
+        assert user.role.name == "employee"
+
+
 def test_ticket_reprint_route_exists():
     app, client = build_client()
     login(client)
