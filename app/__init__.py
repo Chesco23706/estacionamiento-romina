@@ -37,12 +37,13 @@ def create_app(config_object=None):
     def set_security_headers(response):
         return apply_security_headers(response)
 
-    if app.config.get("AUTO_INIT_DATABASE", False):
-        with app.app_context():
-            from . import models
+    with app.app_context():
+        from . import models
 
+        models.apply_runtime_migrations()
+
+        if app.config.get("AUTO_INIT_DATABASE", False):
             db.create_all()
-            models.apply_runtime_migrations()
             models.seed_defaults()
 
     app.register_blueprint(main_bp)
