@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Nueva Entrada | Estacionamiento Romina{% endblock %}
+{% block content %}
+<main class="single-column">
+  <section class="card feature-card form-card">
+    <p class="eyebrow">Operacion</p>
+    <h2>Registrar nueva entrada</h2>
+    <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Ticket
+        <input type="text" name="ticket_number" required maxlength="30">
+      </label>
+      <label>
+        Cliente
+        <input type="text" name="client_name" required maxlength="120">
+      </label>
+      <label>
+        Tipo de vehiculo
+        <select name="vehicle_type" required>
+          <option value="">Selecciona</option>
+          {% for vehicle_type in vehicle_types %}
+          <option value="{{ vehicle_type }}">{{ vehicle_type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Placas o identificador
+        <input type="text" name="plate_number" required maxlength="50">
+      </label>
+      <label class="full-width">
+        Notas
+        <textarea name="notes" rows="3" maxlength="500"></textarea>
+      </label>
+      <button class="btn" type="submit">Guardar entrada</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

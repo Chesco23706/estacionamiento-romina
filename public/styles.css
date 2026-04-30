@@ -46,6 +46,31 @@ body {
   gap: 14px;
 }
 
+.topbar-actions {
+  flex-wrap: wrap;
+}
+
+.topbar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.topbar-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  background: rgba(15, 67, 107, 0.08);
+  border: 1px solid rgba(15, 67, 107, 0.12);
+  color: var(--secondary);
+  font-weight: 700;
+}
+
 .topbar-shell {
   margin-bottom: 28px;
   padding: 22px 24px;
@@ -151,6 +176,10 @@ h2 {
 .single-column {
   display: grid;
   place-items: center;
+}
+
+.form-card {
+  width: min(860px, 100%);
 }
 
 .auth-stage {
@@ -460,6 +489,11 @@ textarea {
   box-shadow: 0 10px 22px rgba(191, 138, 40, 0.22);
 }
 
+.fixed-action-btn {
+  width: 180px;
+  max-width: 100%;
+}
+
 .btn-secondary,
 .link-button {
   background: var(--secondary);
@@ -485,8 +519,19 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .search-grid {
   grid-template-columns: minmax(260px, 2fr) repeat(2, minmax(160px, 1fr)) auto;
+  align-items: end;
+}
+
+.wide-inline-form {
+  grid-template-columns: minmax(250px, 1fr) auto;
   align-items: end;
 }
 

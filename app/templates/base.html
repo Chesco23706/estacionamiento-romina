@@ -20,6 +20,15 @@
           </div>
           {% if current_user.is_authenticated %}
           <div class="topbar-actions">
+            <nav class="topbar-nav">
+              <a href="{{ url_for('main.dashboard') }}">Inicio</a>
+              <a href="{{ url_for('main.records_page') }}">Registros</a>
+              <a href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
+              {% if current_user.is_admin %}
+              <a href="{{ url_for('main.tariffs_page') }}">Tarifas</a>
+              <a href="{{ url_for('main.employees_page') }}">Empleados</a>
+              {% endif %}
+            </nav>
             <div class="user-card">
               <strong>{{ current_user.full_name }}</strong>
               <span>{{ 'Administrador' if current_user.is_admin else 'Empleado' }}</span>

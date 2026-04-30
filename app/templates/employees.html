@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Empleados | Estacionamiento Romina{% endblock %}
+{% block content %}
+<main class="dashboard-layout">
+  <section class="workspace-grid admin-workspace">
+    <article class="card feature-card form-card">
+      <p class="eyebrow">Empleados</p>
+      <h2>Crear nuevo empleado</h2>
+      <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Nombre completo
+          <input type="text" name="full_name" required maxlength="120">
+        </label>
+        <label>
+          Usuario
+          <input type="text" name="username" required maxlength="50">
+        </label>
+        <label>
+          Contrasena inicial
+          <div class="password-field">
+            <input type="password" name="password" required minlength="10" data-password-input>
+            <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+          </div>
+          <small class="field-help">Minimo 10 caracteres con mayuscula, minuscula, numero y simbolo.</small>
+        </label>
+        <button class="btn fixed-action-btn" type="submit">Crear empleado</button>
+      </form>
+    </article>
+
+    <article class="card feature-card">
+      <p class="eyebrow">Cortes</p>
+      <h2>Caja</h2>
+      <div class="button-row action-row">
+        <form method="post" action="{{ url_for('main.generate_cut') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="cut_type" value="daily">
+          <button class="btn fixed-action-btn" type="submit">Corte diario</button>
+        </form>
+        <form method="post" action="{{ url_for('main.generate_cut') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="cut_type" value="weekly">
+          <button class="btn btn-secondary fixed-action-btn" type="submit">Corte semanal</button>
+        </form>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Ingresos</th>
+              <th>Pendiente</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cut in cuts %}
+            <tr>
+              <td>{{ cut.id }}</td>
+              <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
+              <td>{{ cut.generated_at|dt }}</td>
+              <td>{{ cut.total_income|money }}</td>
+              <td>{{ cut.total_pending|money }}</td>
+              <td><a class="link-button" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="card feature-card records-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Personal</p>
+        <h2>Usuarios registrados</h2>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Cambiar contrasena</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ 'Administrador' if user.is_admin else 'Empleado' }}</td>
+            <td>{{ 'Activo' if user.is_active_user else 'Inactivo' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="inline-form wide-inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="password-field">
+                  <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" required data-password-input>
+                  <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+                </div>
+                <button class="btn btn-secondary fixed-action-btn" type="submit">Actualizar</button>
+              </form>
+            </td>
+            <td>
+              {% if user.id != current_user.id %}
+              <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger fixed-action-btn" type="submit">{{ 'Desactivar' if user.is_active_user else 'Activar' }}</button>
+              </form>
+              {% else %}
+              <span class="muted">Sesion actual</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}
