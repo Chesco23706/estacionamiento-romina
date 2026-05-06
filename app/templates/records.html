@@ -155,18 +155,28 @@
                       Placas
                       <input type="text" name="plate_number" required value="{{ record.plate_number }}">
                     </label>
-                    <label class="checkbox-row">
-                      <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
-                      Lavado de moto $20
-                    </label>
-                    <label class="checkbox-row">
-                      <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
-                      Cambio de aceite $40
-                    </label>
-                    <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
-                      Precio del aceite
-                      <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">
-                    </label>
+                      <section class="service-panel full-width" data-service-panel>
+                        <div class="service-panel-header">
+                          <span>Servicios</span>
+                          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle>
+                            {% if record.service_wash or record.service_oil_change or record.service_oil_price %}Editar servicios{% else %}Agregar servicios{% endif %}
+                          </button>
+                        </div>
+                        <div class="service-panel-body" data-service-panel-body {% if not (record.service_wash or record.service_oil_change or record.service_oil_price) %}hidden{% endif %}>
+                          <label class="checkbox-row">
+                            <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
+                            Lavado de moto $20
+                          </label>
+                          <label class="checkbox-row">
+                            <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
+                            Cambio de aceite $40
+                          </label>
+                          <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
+                            Precio del aceite
+                            <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">
+                          </label>
+                        </div>
+                      </section>
                     <label>
                       Estado
                       <select name="status" required>

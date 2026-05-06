@@ -118,17 +118,27 @@ function setupRecordModeFields() {
 }
 
 function setupServiceFields() {
-  const serviceToggles = document.querySelectorAll("[data-service-oil-change]");
-  serviceToggles.forEach((toggle) => {
-    const form = toggle.closest("form");
-    const oilPriceField = form ? form.querySelector("[data-oil-price-field]") : null;
+  const servicePanels = document.querySelectorAll("[data-service-panel]");
+  servicePanels.forEach((panel) => {
+    const body = panel.querySelector("[data-service-panel-body]");
+    const toggleButton = panel.querySelector("[data-service-panel-toggle]");
+    const washInput = panel.querySelector("[data-service-wash]");
+    const oilToggle = panel.querySelector("[data-service-oil-change]");
+    const oilPriceField = panel.querySelector("[data-oil-price-field]");
     const oilPriceInput = oilPriceField ? oilPriceField.querySelector("input[name='service_oil_price']") : null;
-    if (!oilPriceField || !oilPriceInput) {
+    if (!body || !toggleButton || !oilToggle || !oilPriceField || !oilPriceInput) {
       return;
     }
 
-    const syncField = () => {
-      const enabled = toggle.checked;
+    const hasSelectedServices = () =>
+      Boolean(
+        (washInput && washInput.checked) ||
+        oilToggle.checked ||
+        (oilPriceInput.value && oilPriceInput.value.trim() !== "")
+      );
+
+    const syncOilField = () => {
+      const enabled = oilToggle.checked && !body.hidden;
       oilPriceField.hidden = !enabled;
       oilPriceInput.required = enabled;
       if (!enabled) {
@@ -136,8 +146,28 @@ function setupServiceFields() {
       }
     };
 
-    toggle.addEventListener("change", syncField);
-    syncField();
+    const syncPanelButton = () => {
+      toggleButton.textContent = body.hidden ? "Agregar servicios" : "Ocultar servicios";
+    };
+
+    const setPanelOpen = (open) => {
+      body.hidden = !open;
+      if (!open) {
+        if (washInput) {
+          washInput.checked = false;
+        }
+        oilToggle.checked = false;
+      }
+      syncOilField();
+      syncPanelButton();
+    };
+
+    toggleButton.addEventListener("click", () => {
+      setPanelOpen(body.hidden);
+    });
+
+    oilToggle.addEventListener("change", syncOilField);
+    setPanelOpen(hasSelectedServices());
   });
 }
 

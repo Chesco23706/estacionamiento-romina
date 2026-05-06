@@ -413,6 +413,32 @@ h2 {
   align-items: center;
 }
 
+.service-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  background: rgba(255, 253, 247, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.service-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.service-panel-body {
+  display: grid;
+  gap: 12px;
+}
+
+.service-toggle-btn {
+  min-width: 190px;
+}
+
 .password-toggle {
   min-height: 44px;
   padding: 0 14px;
