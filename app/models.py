@@ -392,11 +392,11 @@ def apply_runtime_migrations():
             )
         if "service_wash" not in record_columns:
             connection.exec_driver_sql(
-                "ALTER TABLE vehicle_records ADD COLUMN service_wash BOOLEAN NOT NULL DEFAULT 0"
+                "ALTER TABLE vehicle_records ADD COLUMN service_wash BOOLEAN NOT NULL DEFAULT FALSE"
             )
         if "service_oil_change" not in record_columns:
             connection.exec_driver_sql(
-                "ALTER TABLE vehicle_records ADD COLUMN service_oil_change BOOLEAN NOT NULL DEFAULT 0"
+                "ALTER TABLE vehicle_records ADD COLUMN service_oil_change BOOLEAN NOT NULL DEFAULT FALSE"
             )
         if "service_oil_price" not in record_columns:
             connection.exec_driver_sql(
