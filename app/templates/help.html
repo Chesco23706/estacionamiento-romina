@@ -8,28 +8,124 @@
       {% if current_user.is_admin %}
       <article class="help-card">
         <h3>Administrador</h3>
-        <ol class="help-list">
-          <li>Revisa el inicio para ver estadisticas y actividad reciente.</li>
-          <li>En <strong>Nueva entrada</strong> registra ficha, vehiculo, modalidad y servicios extra.</li>
-          <li>En <strong>Registros</strong> usa <strong>Editar</strong> para abrir el modal con todas las acciones del registro.</li>
-          <li>Desde ese modal puedes corregir ficha, cliente, modalidad, servicios, salida, pago o eliminar.</li>
-          <li>En <strong>Tarifas</strong> actualiza precios, promociones y tipos de vehiculo.</li>
-          <li>En <strong>Empleados</strong> crea usuarios, cambia contrasenas y administra accesos.</li>
-          <li>Genera cortes cuando necesites resumen de cobros.</li>
-        </ol>
+        <div class="section-stack">
+          <section class="help-section">
+            <h4>1. Inicio</h4>
+            <ol class="help-list">
+              <li>Entra a <strong>Inicio</strong> para revisar estadisticas actuales, actividad reciente y un resumen rapido del dia.</li>
+              <li>Usa esta pantalla como tablero principal para detectar vehiculos pendientes, pagos por cobrar y movimiento reciente.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>2. Nueva entrada</h4>
+            <ol class="help-list">
+              <li>Captura la <strong>ficha fisica</strong>, el nombre del cliente, tipo de vehiculo y placas o identificador.</li>
+              <li>En <strong>Modalidad</strong> elige si sera <strong>Por hora</strong> o <strong>Por semana</strong>.</li>
+              <li>Si es <strong>Por hora</strong>, el sistema llevara el tiempo en cuenta continua.</li>
+              <li>Si es <strong>Por semana</strong>, el sistema registra automaticamente los 7 dias y mostrara los dias restantes.</li>
+              <li>Si el cliente pide extras, pulsa <strong>Agregar servicios</strong> y selecciona lavado, cambio de aceite y precio del aceite cuando aplique.</li>
+              <li>Guarda la entrada para generar el ticket y dejar el registro activo en el estacionamiento.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>3. Registros</h4>
+            <ol class="help-list">
+              <li>En <strong>Registros</strong> puedes buscar por ficha, cliente, placas o tipo de vehiculo.</li>
+              <li>Usa <strong>Editar</strong> para abrir la ventana del registro y corregir datos, servicios, modalidad, notas y estado.</li>
+              <li>Usa <strong>Registrar salida</strong> para cerrar una estancia por hora.</li>
+              <li>Usa <strong>Marcar pagado</strong> cuando el cliente liquide, incluso si el pago se realiza despues de la salida.</li>
+              <li>Para registros semanales puedes usar <strong>Marcar salida semanal</strong> para llevar control parcial de salidas sin cerrar la semana.</li>
+              <li>Desde la misma ventana puedes reimprimir el ticket o, si es necesario, eliminar un registro.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>4. Tarifas</h4>
+            <ol class="help-list">
+              <li>En <strong>Tarifas</strong> defines los tipos de vehiculo disponibles.</li>
+              <li>Actualiza el precio, esquema de cobro y promociones u ofertas especiales.</li>
+              <li>Si agregas un nuevo tipo de vehiculo aqui, despues aparecera en el formulario de nueva entrada.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>5. Empleados</h4>
+            <ol class="help-list">
+              <li>En <strong>Empleados</strong> puedes crear nuevos accesos para el personal.</li>
+              <li>Tambien puedes editar nombre, usuario, contrasena y estado activo de cada empleado.</li>
+              <li>Si un usuario ya no debe entrar, puedes desactivarlo o eliminarlo segun corresponda.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>6. Tickets y documentos</h4>
+            <ol class="help-list">
+              <li>Despues de cada entrada se genera un ticket con la ficha fisica, datos del vehiculo y servicios aplicados.</li>
+              <li>Puedes abrir el ticket en PDF, descargarlo o imprimirlo desde el mismo registro.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>7. Cortes y control</h4>
+            <ol class="help-list">
+              <li>Usa los cortes para revisar ingresos, pendientes y vehiculos atendidos en un periodo.</li>
+              <li>Esto te ayuda a cerrar turnos y validar el dinero cobrado frente a los registros pagados.</li>
+            </ol>
+          </section>
+        </div>
       </article>
       {% else %}
       <article class="help-card">
         <h3>Empleado</h3>
-        <ol class="help-list">
-          <li>Inicia sesion con tu usuario y contrasena.</li>
-          <li>Entra a <strong>Nueva entrada</strong>.</li>
-          <li>Captura la ficha fisica, cliente, vehiculo, modalidad, placas y servicios si el cliente los solicita.</li>
-          <li>Guarda la entrada y entrega el ticket.</li>
-          <li>Cuando el vehiculo salga, entra a <strong>Registros</strong> y usa <strong>Editar</strong> o <strong>Registrar salida</strong>.</li>
-          <li>Despues de la salida, puedes marcar el pago por separado cuando el cliente liquide.</li>
-          <li>Si solo necesitas revisar, usa el buscador por ficha, nombre o placas.</li>
-        </ol>
+        <div class="section-stack">
+          <section class="help-section">
+            <h4>1. Inicio</h4>
+            <ol class="help-list">
+              <li>Al entrar veras un resumen con informacion actual del estacionamiento.</li>
+              <li>Usa esta vista para ubicar rapido si hay movimientos pendientes o registros recientes.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>2. Nueva entrada</h4>
+            <ol class="help-list">
+              <li>Entra a <strong>Nueva entrada</strong> para registrar un vehiculo nuevo.</li>
+              <li>Captura ficha, cliente, tipo de vehiculo, modalidad y placas.</li>
+              <li>Si el cliente pide extras, pulsa <strong>Agregar servicios</strong> y marca los servicios solicitados.</li>
+              <li>Si seleccionas <strong>Cambio de aceite</strong>, captura tambien el precio del aceite para que se cobre correctamente.</li>
+              <li>Guarda la entrada y entrega el ticket generado al cliente.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>3. Registros</h4>
+            <ol class="help-list">
+              <li>Usa el buscador para localizar un registro por ficha, cliente, placas o tipo de vehiculo.</li>
+              <li>Pulsa <strong>Editar</strong> para corregir datos del registro si hubo un error al capturarlo.</li>
+              <li>Pulsa <strong>Registrar salida</strong> cuando el vehiculo se retire y el sistema calcule el cobro.</li>
+              <li>Si el cliente paga despues, usa <strong>Marcar pagado</strong> por separado.</li>
+              <li>En estancias por semana puedes usar <strong>Marcar salida semanal</strong> para registrar salidas parciales.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>4. Ticket</h4>
+            <ol class="help-list">
+              <li>Desde el registro puedes volver a abrir el ticket PDF cuando el cliente lo necesite.</li>
+              <li>El ticket sirve para imprimir, descargar o volver a revisar la informacion capturada.</li>
+            </ol>
+          </section>
+
+          <section class="help-section">
+            <h4>5. Limites del empleado</h4>
+            <ol class="help-list">
+              <li>El empleado puede registrar entradas, salidas, pagos y correcciones basicas del registro.</li>
+              <li>La administracion de tarifas, usuarios y eliminacion de registros queda reservada al administrador.</li>
+            </ol>
+          </section>
+        </div>
       </article>
       {% endif %}
     </div>
@@ -49,22 +145,30 @@
       <details class="faq-item">
         <summary>Quien puede marcar pagos o eliminar registros?</summary>
         {% if current_user.is_admin %}
-        <p>Puedes marcar pagos y eliminar registros desde el modal de edicion.</p>
+        <p>Como administrador puedes marcar pagos, editar, registrar salidas y eliminar registros desde la vista de registros.</p>
         {% else %}
-        <p>Puedes marcar pagos desde registros, pero la eliminacion queda reservada al administrador.</p>
+        <p>Como empleado puedes marcar pagos y registrar salidas desde registros, pero la eliminacion queda reservada al administrador.</p>
         {% endif %}
       </details>
       <details class="faq-item">
         <summary>Como funciona la modalidad por semana?</summary>
-        <p>La semana cuenta 7 dias completos. En pantalla veras cuantos dias restantes quedan de esa semana.</p>
+        <p>La semana cuenta 7 dias completos. En pantalla veras cuantos dias restantes quedan de esa semana y podras registrar salidas semanales parciales cuando el cliente entre y salga durante esos dias.</p>
       </details>
       <details class="faq-item">
         <summary>Como funcionan los servicios extra?</summary>
-        <p>El lavado de moto suma $20. El cambio de aceite suma $40 mas el precio del aceite que captures al registrar la entrada o al editarla.</p>
+        <p>El lavado de moto suma $20. El cambio de aceite suma $40 mas el precio del aceite que captures al registrar la entrada o al editarla. Todo eso se agrega automaticamente al cobro final.</p>
       </details>
       <details class="faq-item">
         <summary>Que hago si no encuentro un registro?</summary>
         <p>Busca por ficha fisica, nombre del cliente, placas o tipo de vehiculo dentro de la seccion de registros.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Cuando debo usar Editar y cuando Registrar salida?</summary>
+        <p>Usa <strong>Editar</strong> cuando necesites corregir datos del registro. Usa <strong>Registrar salida</strong> cuando el vehiculo realmente abandona el estacionamiento y quieres calcular el cobro.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Que pasa si el cliente paga despues?</summary>
+        <p>Puedes registrar primero la salida y dejar el registro pendiente. Cuando el cliente pague, marca el registro como pagado desde la misma pantalla.</p>
       </details>
     </div>
   </section>
