@@ -354,7 +354,7 @@ def apply_runtime_migrations():
         )
     if "locked_until" not in user_columns:
         connection.exec_driver_sql(
-            "ALTER TABLE users ADD COLUMN locked_until DATETIME NULL"
+            "ALTER TABLE users ADD COLUMN locked_until TIMESTAMP NULL"
         )
 
     if "tariffs" in table_names:
