@@ -272,7 +272,6 @@ def register_vehicle_exit(record_id):
 
 @main_bp.route("/records/<int:record_id>/pay", methods=["POST"])
 @login_required
-@role_required("admin")
 def mark_paid(record_id):
     record = db.session.get(VehicleRecord, record_id)
     if not record:
@@ -315,7 +314,6 @@ def edit_record(record_id):
 
 @main_bp.route("/records/<int:record_id>/update", methods=["POST"])
 @login_required
-@role_required("admin")
 def update_record_from_modal(record_id):
     record = db.session.get(VehicleRecord, record_id)
     if not record:

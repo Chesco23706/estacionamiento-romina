@@ -96,6 +96,9 @@ class VehicleRecord(TimestampMixin, db.Model):
     plate_number = db.Column(db.String(50), nullable=False)
     stay_mode = db.Column(db.String(20), default="hourly", nullable=False)
     contracted_days = db.Column(db.Integer)
+    service_wash = db.Column(db.Boolean, default=False, nullable=False)
+    service_oil_change = db.Column(db.Boolean, default=False, nullable=False)
+    service_oil_price = db.Column(db.Numeric(10, 2), default=0, nullable=False)
     entry_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
     exit_at = db.Column(db.DateTime(timezone=True))
     duration_seconds = db.Column(db.Integer, default=0, nullable=False)
@@ -151,6 +154,20 @@ class VehicleRecord(TimestampMixin, db.Model):
     def mark_paid(self):
         if self.status in {"Pendiente de pago", "Salida registrada"}:
             self.status = "Pagado"
+
+    @property
+    def services_total_amount(self):
+        oil_price = float(self.service_oil_price or 0)
+        return (20.0 if self.service_wash else 0.0) + (40.0 if self.service_oil_change else 0.0) + oil_price
+
+    @property
+    def services_label(self):
+        parts = []
+        if self.service_wash:
+            parts.append("Lavado de moto $20")
+        if self.service_oil_change:
+            parts.append(f"Cambio de aceite $40 + aceite ${float(self.service_oil_price or 0):,.2f}")
+        return " | ".join(parts) if parts else "Sin servicios"
 
     @property
     def display_ticket_number(self):
@@ -343,6 +360,18 @@ def apply_runtime_migrations():
         if "contracted_days" not in record_columns:
             connection.exec_driver_sql(
                 "ALTER TABLE vehicle_records ADD COLUMN contracted_days INTEGER NULL"
+            )
+        if "service_wash" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN service_wash BOOLEAN NOT NULL DEFAULT 0"
+            )
+        if "service_oil_change" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN service_oil_change BOOLEAN NOT NULL DEFAULT 0"
+            )
+        if "service_oil_price" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN service_oil_price NUMERIC(10, 2) NOT NULL DEFAULT 0"
             )
     db.session.commit()
 

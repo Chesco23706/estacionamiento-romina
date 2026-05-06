@@ -88,7 +88,6 @@
                   <button class="btn btn-secondary fixed-action-btn" type="submit">Registrar salida</button>
                 </form>
                 {% endif %}
-                {% if current_user.is_admin %}
                 {% if record.exit_at and record.status != 'Pagado' %}
                 <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -100,11 +99,8 @@
                   type="button"
                   data-open-dialog="record-dialog-{{ record.id }}"
                 >Editar</button>
-                {% else %}
-                <span class="muted">Salida disponible</span>
-                {% endif %}
               </div>
-              {% if current_user.is_admin %}
+              {% if current_user.is_authenticated %}
               <dialog class="record-dialog" id="record-dialog-{{ record.id }}">
                 <article class="record-dialog-card">
                   <div class="section-heading">
@@ -141,6 +137,18 @@
                       Placas
                       <input type="text" name="plate_number" required value="{{ record.plate_number }}">
                     </label>
+                    <label class="checkbox-row">
+                      <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
+                      Lavado de moto $20
+                    </label>
+                    <label class="checkbox-row">
+                      <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
+                      Cambio de aceite $40
+                    </label>
+                    <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
+                      Precio del aceite
+                      <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">
+                    </label>
                     <label>
                       Estado
                       <select name="status" required>
@@ -170,10 +178,12 @@
                       <button class="btn btn-secondary" type="submit">Marcar pagado</button>
                     </form>
                     {% endif %}
+                    {% if current_user.is_admin %}
                     <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-danger" type="submit">Eliminar</button>
                     </form>
+                    {% endif %}
                   </div>
                 </article>
               </dialog>

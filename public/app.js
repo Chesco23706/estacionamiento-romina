@@ -117,6 +117,30 @@ function setupRecordModeFields() {
   });
 }
 
+function setupServiceFields() {
+  const serviceToggles = document.querySelectorAll("[data-service-oil-change]");
+  serviceToggles.forEach((toggle) => {
+    const form = toggle.closest("form");
+    const oilPriceField = form ? form.querySelector("[data-oil-price-field]") : null;
+    const oilPriceInput = oilPriceField ? oilPriceField.querySelector("input[name='service_oil_price']") : null;
+    if (!oilPriceField || !oilPriceInput) {
+      return;
+    }
+
+    const syncField = () => {
+      const enabled = toggle.checked;
+      oilPriceField.hidden = !enabled;
+      oilPriceInput.required = enabled;
+      if (!enabled) {
+        oilPriceInput.value = "";
+      }
+    };
+
+    toggle.addEventListener("change", syncField);
+    syncField();
+  });
+}
+
 function setupDialogs() {
   const openButtons = document.querySelectorAll("[data-open-dialog]");
   const closeButtons = document.querySelectorAll("[data-close-dialog]");
@@ -159,6 +183,7 @@ window.addEventListener("DOMContentLoaded", () => {
   startLiveDayCounters();
   setupPasswordToggles();
   setupRecordModeFields();
+  setupServiceFields();
   setupDialogs();
   syncSectionFromHash();
 });

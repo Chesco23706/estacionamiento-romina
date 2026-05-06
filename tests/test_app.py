@@ -32,6 +32,9 @@ def test_admin_login_and_vehicle_flow():
             "stay_mode": "weekly",
             "contracted_days": "7",
             "plate_number": "ABC-123",
+            "service_wash": "on",
+            "service_oil_change": "on",
+            "service_oil_price": "55.50",
             "notes": "Registro de prueba",
         },
         follow_redirects=True,
@@ -45,6 +48,8 @@ def test_admin_login_and_vehicle_flow():
         assert record.ticket_number.startswith("REC-")
         assert record.stay_mode == "weekly"
         assert record.contracted_days == 7
+        assert record.service_wash is True
+        assert record.service_oil_change is True
         record_id = record.id
 
     exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
@@ -60,11 +65,11 @@ def test_admin_login_and_vehicle_flow():
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
         assert updated.status == "Pagado"
-        assert float(updated.total_amount) >= 10.0
+        assert float(updated.total_amount) >= 115.5
         assert CashCut.query.count() == 1
 
 
-def test_employee_can_register_exit():
+def test_employee_can_register_exit_edit_and_pay():
     app, client = build_client()
     login(client)
     client.post(
@@ -86,12 +91,30 @@ def test_employee_can_register_exit():
 
     client.post("/logout", follow_redirects=True)
     login(client, "empleado1", "EmpleadoUno2026!")
+    edit_response = client.post(
+        f"/records/{record_id}/update",
+        data={
+            "ticket_number": "FICHA-02",
+            "client_name": "Cliente Editado",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "SAL-001",
+            "status": "Dentro del estacionamiento",
+            "notes": "Actualizado por empleado",
+        },
+        follow_redirects=True,
+    )
+    assert edit_response.status_code == 200
     response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
     assert response.status_code == 200
+    pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    assert pay_response.status_code == 200
 
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
+        assert updated.client_name == "Cliente Editado"
         assert updated.exit_user.username == "empleado1"
+        assert updated.status == "Pagado"
 
 
 def test_physical_ticket_can_be_reused_after_exit():
@@ -218,6 +241,7 @@ def test_help_page_and_ticket_reprint_route_exist():
     help_response = client.get("/help")
     assert help_response.status_code == 200
     assert "Preguntas frecuentes" in help_response.get_data(as_text=True)
+    assert "Administrador" in help_response.get_data(as_text=True)
 
     client.post(
         "/records/new",
@@ -246,3 +270,13 @@ def test_help_page_and_ticket_reprint_route_exist():
     pdf_response = client.get(f"/records/{record_id}/ticket/document")
     assert pdf_response.status_code == 200
     assert pdf_response.mimetype == "application/pdf"
+
+
+def test_employee_help_page_is_role_specific():
+    _app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+    response = client.get("/help")
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "<h3>Empleado</h3>" in body
+    assert "<h3>Administrador</h3>" not in body

@@ -66,6 +66,7 @@ def create_vehicle_record(form_data, user):
     plate_number = clean_plate(form_data.get("plate_number"))
     stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
     contracted_days = _clean_contracted_days(form_data.get("contracted_days"), stay_mode)
+    service_wash, service_oil_change, service_oil_price = _clean_service_payload(form_data)
     notes = clean_optional_text(form_data.get("notes"), 500)
 
     if vehicle_type not in get_vehicle_types():
@@ -86,6 +87,9 @@ def create_vehicle_record(form_data, user):
         plate_number=plate_number,
         stay_mode=stay_mode,
         contracted_days=contracted_days,
+        service_wash=service_wash,
+        service_oil_change=service_oil_change,
+        service_oil_price=service_oil_price,
         notes=notes,
         entry_user=user,
     )
@@ -102,6 +106,9 @@ def create_vehicle_record(form_data, user):
             "vehicle_type": vehicle_type,
             "stay_mode": stay_mode,
             "contracted_days": contracted_days,
+            "service_wash": service_wash,
+            "service_oil_change": service_oil_change,
+            "service_oil_price": float(service_oil_price),
         },
     )
     db.session.commit()
@@ -118,6 +125,11 @@ def update_vehicle_record(record, form_data, user):
         form_data.get("contracted_days"),
         record.stay_mode,
     )
+    (
+        record.service_wash,
+        record.service_oil_change,
+        record.service_oil_price,
+    ) = _clean_service_payload(form_data)
     record.status = clean_text(form_data.get("status"), 30, "estado")
     record.notes = clean_optional_text(form_data.get("notes"), 500)
 
@@ -144,7 +156,9 @@ def update_vehicle_record(record, form_data, user):
         )
         record.duration_seconds = pricing["duration_seconds"]
         record.applied_rate_label = pricing["rate_label"]
-        record.total_amount = pricing["total"]
+        record.total_amount = pricing["total"] + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
+        if record.services_total_amount:
+            record.applied_rate_label = f"{record.applied_rate_label} | {record.services_label}"
 
     log_action(user, "vehicle_record_updated", "vehicle_record", record.id)
     db.session.commit()
@@ -155,6 +169,10 @@ def register_exit(record, user):
     if record.exit_at:
         raise ValueError("La salida ya fue registrada previamente.")
     record.close_record(user)
+    record.total_amount = record.total_amount + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
+    if record.services_total_amount:
+        base_label = record.applied_rate_label or ""
+        record.applied_rate_label = f"{base_label} | {record.services_label}".strip(" |")
     log_action(
         user,
         "vehicle_exit_registered",
@@ -449,6 +467,16 @@ def _clean_contracted_days(raw_value, stay_mode):
     if stay_mode != "weekly":
         return None
     return 7
+
+
+def _clean_service_payload(form_data):
+    service_wash = form_data.get("service_wash") == "on"
+    service_oil_change = form_data.get("service_oil_change") == "on"
+    raw_oil_price = (form_data.get("service_oil_price") or "").strip()
+    if not service_oil_change:
+        return service_wash, False, Decimal("0.00")
+    oil_price = _clean_decimal(raw_oil_price or "0", "precio de aceite")
+    return service_wash, True, oil_price
 
 
 def _ensure_employee_role():

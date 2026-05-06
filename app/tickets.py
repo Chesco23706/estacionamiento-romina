@@ -56,6 +56,7 @@ def build_ticket_pdf(record, datetime_formatter):
         ("Registro por", record.entry_user.full_name),
         ("Salida", datetime_formatter(record.exit_at) if record.exit_at else "Pendiente"),
         ("Tarifa aplicada", record.applied_rate_label or "Se calcula al registrar salida"),
+        ("Servicios", record.services_label),
         ("Tiempo", format_duration(record.duration_seconds) if record.duration_seconds else "En curso"),
         ("Total", f"${float(record.total_amount):,.2f}"),
     ]

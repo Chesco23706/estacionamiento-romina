@@ -36,6 +36,18 @@
         Placas o identificador
         <input type="text" name="plate_number" required maxlength="50">
       </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="service_wash" data-service-wash>
+        Lavado de moto $20
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="service_oil_change" data-service-oil-change>
+        Cambio de aceite $40
+      </label>
+      <label data-oil-price-field hidden>
+        Precio del aceite
+        <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal">
+      </label>
       <label class="full-width">
         Notas
         <textarea name="notes" rows="3" maxlength="500"></textarea>
