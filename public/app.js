@@ -130,37 +130,24 @@ function setupServiceFields() {
       return;
     }
 
-    const hasSelectedServices = () =>
-      Boolean(
-        (washInput && washInput.checked) ||
-        oilToggle.checked ||
-        (oilPriceInput.value && oilPriceInput.value.trim() !== "")
-      );
-
     const syncOilField = () => {
-      const enabled = oilToggle.checked && panel.classList.contains("is-open");
+      const enabled = oilToggle.checked && !body.hidden;
       oilPriceField.hidden = !enabled;
       oilPriceInput.required = enabled;
-      if (!enabled) {
+      if (!enabled && !body.hidden) {
         oilPriceInput.value = "";
       }
     };
 
     const syncPanelButton = () => {
-      const open = panel.classList.contains("is-open");
+      const open = !body.hidden;
       toggleButton.textContent = open ? "Ocultar servicios" : "Agregar servicios";
       toggleButton.setAttribute("aria-expanded", open ? "true" : "false");
+      panel.classList.toggle("is-open", open);
     };
 
     const setPanelOpen = (open) => {
-      panel.classList.toggle("is-open", open);
       body.hidden = !open;
-      if (!open) {
-        if (washInput) {
-          washInput.checked = false;
-        }
-        oilToggle.checked = false;
-      }
       syncOilField();
       syncPanelButton();
     };
@@ -170,7 +157,8 @@ function setupServiceFields() {
     });
 
     oilToggle.addEventListener("change", syncOilField);
-    setPanelOpen(hasSelectedServices());
+    syncOilField();
+    syncPanelButton();
   });
 }
 
