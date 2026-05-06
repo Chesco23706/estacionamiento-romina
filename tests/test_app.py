@@ -69,6 +69,43 @@ def test_admin_login_and_vehicle_flow():
         assert CashCut.query.count() == 1
 
 
+def test_weekly_record_tracks_partial_exits():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SEM",
+            "client_name": "Cliente Semana",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "7",
+            "plate_number": "SEM-123",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SEM").first()
+        record_id = record.id
+
+    first_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+    second_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+    final_close = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+
+    assert first_exit.status_code == 200
+    assert second_exit.status_code == 200
+    assert final_close.status_code == 200
+
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.weekly_exit_count == 2
+        assert updated.latest_weekly_exit_at is not None
+        assert updated.exit_at is not None
+
+
 def test_employee_can_register_exit_edit_and_pay():
     app, client = build_client()
     login(client)

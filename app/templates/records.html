@@ -38,6 +38,7 @@
             <th>Salida</th>
             <th>Modalidad</th>
             <th>Tiempo</th>
+            <th>Control semanal</th>
             <th>Tarifa</th>
             <th>Total</th>
             <th>Estado</th>
@@ -74,6 +75,17 @@
               {{ format_duration(record.duration_seconds) }}
               {% endif %}
             </td>
+            <td>
+              {% if not record.is_hourly %}
+              <div class="weekly-summary">
+                <span>Dia {{ record.consumed_day_units() }} de {{ record.contracted_days or 7 }}</span>
+                <span>Salidas: {{ record.weekly_exit_count }}</span>
+                <span>Ultima: {{ record.latest_weekly_exit_at|dt if record.latest_weekly_exit_at else '-' }}</span>
+              </div>
+              {% else %}
+              -
+              {% endif %}
+            </td>
             <td>{{ record.applied_rate_label or '-' }}</td>
             <td>{{ record.total_amount|money }}</td>
             <td><span class="status-pill">{{ record.status }}</span></td>
@@ -83,9 +95,15 @@
               <div class="button-column record-actions">
                 <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
                 {% if not record.exit_at %}
+                {% if not record.is_hourly %}
+                <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-secondary fixed-action-btn" type="submit">Marcar salida semanal</button>
+                </form>
+                {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit">Registrar salida</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit">{{ 'Cerrar semana' if not record.is_hourly else 'Registrar salida' }}</button>
                 </form>
                 {% endif %}
                 {% if record.exit_at and record.status != 'Pagado' %}
@@ -167,9 +185,15 @@
                   </form>
                   <div class="record-modal-actions">
                     {% if not record.exit_at %}
+                    {% if not record.is_hourly %}
+                    <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-secondary" type="submit">Marcar salida semanal</button>
+                    </form>
+                    {% endif %}
                     <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-secondary" type="submit">Registrar salida</button>
+                      <button class="btn btn-secondary" type="submit">{{ 'Cerrar semana' if not record.is_hourly else 'Registrar salida' }}</button>
                     </form>
                     {% endif %}
                     {% if record.exit_at and record.status != 'Pagado' %}
@@ -185,13 +209,38 @@
                     </form>
                     {% endif %}
                   </div>
+                  {% if not record.is_hourly and record.weekly_exit_logs %}
+                  <div class="weekly-log-list">
+                    <h3>Salidas registradas</h3>
+                    <div class="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Hora de salida</th>
+                            <th>Dia transcurrido</th>
+                            <th>Registrado por</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for exit_log in record.weekly_exit_logs %}
+                          <tr>
+                            <td>{{ exit_log.exited_at|dt }}</td>
+                            <td>Dia {{ exit_log.day_number }}</td>
+                            <td>{{ exit_log.created_by.full_name }}</td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  {% endif %}
                 </article>
               </dialog>
               {% endif %}
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="15">No hay registros que coincidan con la busqueda.</td></tr>
+          <tr><td colspan="16">No hay registros que coincidan con la busqueda.</td></tr>
           {% endfor %}
         </tbody>
       </table>

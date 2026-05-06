@@ -774,6 +774,18 @@ thead {
   color: var(--muted);
 }
 
+.weekly-summary {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.weekly-log-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
 @media (max-width: 900px) {
   .topbar,
   .topbar-actions,

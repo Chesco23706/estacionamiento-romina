@@ -11,6 +11,7 @@ from .models import (
     Tariff,
     User,
     VehicleRecord,
+    WeeklyExitLog,
     generate_internal_ticket_code,
     get_period_bounds,
     log_action,
@@ -191,6 +192,31 @@ def register_payment(record, user):
     log_action(user, "vehicle_payment_registered", "vehicle_record", record.id)
     db.session.commit()
     return record
+
+
+def register_weekly_exit(record, user):
+    if record.is_hourly:
+        raise ValueError("Solo los registros semanales permiten salidas parciales.")
+    if record.exit_at:
+        raise ValueError("Este registro semanal ya fue cerrado.")
+
+    day_number = record.consumed_day_units()
+    weekly_exit = WeeklyExitLog(
+        record=record,
+        exited_at=utc_now(),
+        day_number=day_number,
+        created_by=user,
+    )
+    db.session.add(weekly_exit)
+    log_action(
+        user,
+        "weekly_exit_registered",
+        "vehicle_record",
+        record.id,
+        {"day_number": day_number},
+    )
+    db.session.commit()
+    return weekly_exit
 
 
 def delete_vehicle_record(record, user):

@@ -111,6 +111,12 @@ class VehicleRecord(TimestampMixin, db.Model):
 
     entry_user = db.relationship("User", foreign_keys=[entry_user_id])
     exit_user = db.relationship("User", foreign_keys=[exit_user_id])
+    weekly_exit_logs = db.relationship(
+        "WeeklyExitLog",
+        back_populates="record",
+        cascade="all, delete-orphan",
+        order_by="WeeklyExitLog.exited_at.desc()",
+    )
 
     def close_record(self, user):
         pricing = calculate_charge(
@@ -172,6 +178,29 @@ class VehicleRecord(TimestampMixin, db.Model):
     @property
     def display_ticket_number(self):
         return self.physical_ticket_number or self.ticket_number
+
+    @property
+    def weekly_exit_count(self):
+        return len(self.weekly_exit_logs)
+
+    @property
+    def latest_weekly_exit_at(self):
+        if not self.weekly_exit_logs:
+            return None
+        return self.weekly_exit_logs[0].exited_at
+
+
+class WeeklyExitLog(TimestampMixin, db.Model):
+    __tablename__ = "weekly_exit_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    record_id = db.Column(db.Integer, db.ForeignKey("vehicle_records.id"), nullable=False)
+    exited_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
+    day_number = db.Column(db.Integer, nullable=False)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    record = db.relationship("VehicleRecord", back_populates="weekly_exit_logs")
+    created_by = db.relationship("User")
 
 
 class CashCut(TimestampMixin, db.Model):
@@ -373,6 +402,8 @@ def apply_runtime_migrations():
             connection.exec_driver_sql(
                 "ALTER TABLE vehicle_records ADD COLUMN service_oil_price NUMERIC(10, 2) NOT NULL DEFAULT 0"
             )
+    if "weekly_exit_logs" not in table_names:
+        WeeklyExitLog.__table__.create(bind=db.engine, checkfirst=True)
     db.session.commit()
 
 

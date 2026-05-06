@@ -34,6 +34,7 @@ from .services import (
     get_vehicle_types,
     register_exit,
     register_payment,
+    register_weekly_exit,
     reset_employee_password,
     update_employee,
     update_tariff,
@@ -265,6 +266,22 @@ def register_vehicle_exit(record_id):
     try:
         register_exit(record, current_user)
         flash("Salida registrada y cobro calculado automáticamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "warning")
+    return redirect(url_for("main.records_page"))
+
+
+@main_bp.route("/records/<int:record_id>/weekly-exit", methods=["POST"])
+@login_required
+def register_vehicle_weekly_exit(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontrÃ³ el registro solicitado.", "danger")
+        return redirect(url_for("main.records_page"))
+
+    try:
+        register_weekly_exit(record, current_user)
+        flash("Salida semanal registrada correctamente.", "success")
     except ValueError as exc:
         flash(str(exc), "warning")
     return redirect(url_for("main.records_page"))
