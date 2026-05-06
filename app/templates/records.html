@@ -158,19 +158,28 @@
                       <section class="service-panel full-width" data-service-panel>
                         <div class="service-panel-header">
                           <span>Servicios</span>
-                          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle>
+                          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="{% if record.service_wash or record.service_oil_change or record.service_oil_price %}true{% else %}false{% endif %}">
                             {% if record.service_wash or record.service_oil_change or record.service_oil_price %}Editar servicios{% else %}Agregar servicios{% endif %}
                           </button>
                         </div>
                         <div class="service-panel-body" data-service-panel-body {% if not (record.service_wash or record.service_oil_change or record.service_oil_price) %}hidden{% endif %}>
-                          <label class="checkbox-row">
-                            <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
-                            Lavado de moto $20
-                          </label>
-                          <label class="checkbox-row">
-                            <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
-                            Cambio de aceite $40
-                          </label>
+                          <div class="service-intro">
+                            <p>Selecciona los servicios aplicados a este registro. El sistema mantiene el total actualizado.</p>
+                          </div>
+                          <article class="service-option-card">
+                            <label class="checkbox-row">
+                              <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
+                              Lavado de moto $20
+                            </label>
+                            <p class="service-option-note">Servicio rapido de lavado exterior.</p>
+                          </article>
+                          <article class="service-option-card">
+                            <label class="checkbox-row">
+                              <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
+                              Cambio de aceite $40
+                            </label>
+                            <p class="service-option-note">La mano de obra se cobra aqui y el aceite se agrega por separado.</p>
+                          </article>
                           <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
                             Precio del aceite
                             <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">

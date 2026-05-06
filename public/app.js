@@ -138,7 +138,7 @@ function setupServiceFields() {
       );
 
     const syncOilField = () => {
-      const enabled = oilToggle.checked && !body.hidden;
+      const enabled = oilToggle.checked && panel.classList.contains("is-open");
       oilPriceField.hidden = !enabled;
       oilPriceInput.required = enabled;
       if (!enabled) {
@@ -147,10 +147,13 @@ function setupServiceFields() {
     };
 
     const syncPanelButton = () => {
-      toggleButton.textContent = body.hidden ? "Agregar servicios" : "Ocultar servicios";
+      const open = panel.classList.contains("is-open");
+      toggleButton.textContent = open ? "Ocultar servicios" : "Agregar servicios";
+      toggleButton.setAttribute("aria-expanded", open ? "true" : "false");
     };
 
     const setPanelOpen = (open) => {
+      panel.classList.toggle("is-open", open);
       body.hidden = !open;
       if (!open) {
         if (washInput) {

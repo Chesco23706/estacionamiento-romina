@@ -39,19 +39,28 @@
       <section class="service-panel full-width" data-service-panel>
         <div class="service-panel-header">
           <span>Servicios</span>
-          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle>
+          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="false">
             Agregar servicios
           </button>
         </div>
         <div class="service-panel-body" data-service-panel-body hidden>
-          <label class="checkbox-row">
-            <input type="checkbox" name="service_wash" data-service-wash>
-            Lavado de moto $20
-          </label>
-          <label class="checkbox-row">
-            <input type="checkbox" name="service_oil_change" data-service-oil-change>
-            Cambio de aceite $40
-          </label>
+          <div class="service-intro">
+            <p>Activa solo los servicios que el cliente solicite. El sistema los suma automaticamente al cobro final.</p>
+          </div>
+          <article class="service-option-card">
+            <label class="checkbox-row">
+              <input type="checkbox" name="service_wash" data-service-wash>
+              Lavado de moto $20
+            </label>
+            <p class="service-option-note">Incluye lavado exterior rapido para dejar la moto lista al momento de la salida.</p>
+          </article>
+          <article class="service-option-card">
+            <label class="checkbox-row">
+              <input type="checkbox" name="service_oil_change" data-service-oil-change>
+              Cambio de aceite $40
+            </label>
+            <p class="service-option-note">Incluye la mano de obra del cambio. El aceite se captura aparte para sumarlo al total.</p>
+          </article>
           <label data-oil-price-field hidden>
             Precio del aceite
             <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal">
