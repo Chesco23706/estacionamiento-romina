@@ -7,7 +7,7 @@
     <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>
-        Ticket
+        Ficha
         <input type="text" name="ticket_number" required maxlength="30">
       </label>
       <label>

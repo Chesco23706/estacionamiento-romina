@@ -1,5 +1,6 @@
 import json
 import math
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from flask import current_app
@@ -89,6 +90,7 @@ class VehicleRecord(TimestampMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     ticket_number = db.Column(db.String(30), unique=True, nullable=False)
+    physical_ticket_number = db.Column(db.String(30))
     client_name = db.Column(db.String(120), nullable=False)
     vehicle_type = db.Column(db.String(50), nullable=False)
     plate_number = db.Column(db.String(50), nullable=False)
@@ -149,6 +151,10 @@ class VehicleRecord(TimestampMixin, db.Model):
     def mark_paid(self):
         if self.status in {"Pendiente de pago", "Salida registrada"}:
             self.status = "Pagado"
+
+    @property
+    def display_ticket_number(self):
+        return self.physical_ticket_number or self.ticket_number
 
 
 class CashCut(TimestampMixin, db.Model):
@@ -323,6 +329,13 @@ def apply_runtime_migrations():
         record_columns = {
             column["name"] for column in inspector.get_columns("vehicle_records")
         }
+        if "physical_ticket_number" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN physical_ticket_number VARCHAR(30) NULL"
+            )
+            connection.exec_driver_sql(
+                "UPDATE vehicle_records SET physical_ticket_number = ticket_number WHERE physical_ticket_number IS NULL"
+            )
         if "stay_mode" not in record_columns:
             connection.exec_driver_sql(
                 "ALTER TABLE vehicle_records ADD COLUMN stay_mode VARCHAR(20) NOT NULL DEFAULT 'hourly'"
@@ -332,6 +345,10 @@ def apply_runtime_migrations():
                 "ALTER TABLE vehicle_records ADD COLUMN contracted_days INTEGER NULL"
             )
     db.session.commit()
+
+
+def generate_internal_ticket_code():
+    return f"REC-{uuid.uuid4().hex[:12].upper()}"
 
 
 def get_period_bounds(cut_type):

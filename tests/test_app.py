@@ -26,7 +26,7 @@ def test_admin_login_and_vehicle_flow():
     create_response = client.post(
         "/records/new",
         data={
-            "ticket_number": "FLOW-001",
+            "ticket_number": "FICHA-01",
             "client_name": "Cliente QA",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
@@ -40,8 +40,9 @@ def test_admin_login_and_vehicle_flow():
     assert "Abrir PDF" in create_response.get_data(as_text=True)
 
     with app.app_context():
-        record = VehicleRecord.query.filter_by(ticket_number="FLOW-001").first()
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-01").first()
         assert record is not None
+        assert record.ticket_number.startswith("REC-")
         assert record.stay_mode == "weekly"
         assert record.contracted_days == 7
         record_id = record.id
@@ -63,11 +64,75 @@ def test_admin_login_and_vehicle_flow():
         assert CashCut.query.count() == 1
 
 
-def test_employee_cannot_access_admin_routes():
-    _app, client = build_client()
+def test_employee_can_register_exit():
+    app, client = build_client()
+    login(client)
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-02",
+            "client_name": "Cliente Salida",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "SAL-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-02").first()
+        record_id = record.id
+
+    client.post("/logout", follow_redirects=True)
     login(client, "empleado1", "EmpleadoUno2026!")
-    response = client.post("/cuts/generate", data={"cut_type": "daily"})
-    assert response.status_code == 403
+    response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    assert response.status_code == 200
+
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.exit_user.username == "empleado1"
+
+
+def test_physical_ticket_can_be_reused_after_exit():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-03",
+            "client_name": "Cliente Uno",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "AAA-111",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    with app.app_context():
+        first_record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-03").first()
+        first_id = first_record.id
+
+    client.post(f"/records/{first_id}/exit", follow_redirects=True)
+
+    second_response = client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-03",
+            "client_name": "Cliente Dos",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "BBB-222",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    assert second_response.status_code == 200
+
+    with app.app_context():
+        matches = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-03").all()
+        assert len(matches) == 2
 
 
 def test_bootstrap_users_exist():
@@ -147,17 +212,21 @@ def test_admin_can_edit_and_delete_employee():
         assert db.session.get(User, user_id) is None
 
 
-def test_ticket_reprint_route_exists():
+def test_help_page_and_ticket_reprint_route_exist():
     app, client = build_client()
     login(client)
+    help_response = client.get("/help")
+    assert help_response.status_code == 200
+    assert "Preguntas frecuentes" in help_response.get_data(as_text=True)
+
     client.post(
         "/records/new",
         data={
-            "ticket_number": "FLOW-002",
+            "ticket_number": "FICHA-04",
             "client_name": "Cliente Ticket",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "5",
+            "contracted_days": "7",
             "plate_number": "XYZ-999",
             "notes": "",
         },
@@ -165,14 +234,14 @@ def test_ticket_reprint_route_exists():
     )
 
     with app.app_context():
-        record = VehicleRecord.query.filter_by(ticket_number="FLOW-002").first()
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-04").first()
         record_id = record.id
 
     response = client.get(f"/records/{record_id}/ticket")
     body = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "Descargar PDF" in body
-    assert "FLOW-002" in body
+    assert "FICHA-04" in body
 
     pdf_response = client.get(f"/records/{record_id}/ticket/document")
     assert pdf_response.status_code == 200

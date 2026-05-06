@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Guia de Uso | Estacionamiento Romina{% endblock %}
+{% block content %}
+<main class="dashboard-layout">
+  <section class="card feature-card">
+    <h2>Guia de uso</h2>
+    <div class="help-grid">
+      <article class="help-card">
+        <h3>Empleado</h3>
+        <ol class="help-list">
+          <li>Inicia sesion con tu usuario y contrasena.</li>
+          <li>Entra a <strong>Nueva entrada</strong>.</li>
+          <li>Captura la ficha fisica, cliente, vehiculo, modalidad y placas.</li>
+          <li>Guarda la entrada y entrega el ticket.</li>
+          <li>Cuando el vehiculo salga, entra a <strong>Registros</strong> y usa <strong>Registrar salida</strong>.</li>
+          <li>Si solo necesitas revisar, usa el buscador por ficha, nombre o placas.</li>
+        </ol>
+      </article>
+      <article class="help-card">
+        <h3>Administrador</h3>
+        <ol class="help-list">
+          <li>Revisa el inicio para ver estadisticas y actividad reciente.</li>
+          <li>En <strong>Registros</strong> usa el boton <strong>Editar</strong> para abrir todas las acciones del registro.</li>
+          <li>Desde ese modal puedes corregir ficha, cliente, modalidad, salida, pago o eliminar.</li>
+          <li>En <strong>Tarifas</strong> actualiza precios, promociones y tipos de vehiculo.</li>
+          <li>En <strong>Empleados</strong> crea usuarios, cambia contrasenas y administra accesos.</li>
+          <li>Genera cortes cuando necesites resumen de cobros.</li>
+        </ol>
+      </article>
+    </div>
+  </section>
+
+  <section class="card feature-card">
+    <h2>Preguntas frecuentes</h2>
+    <div class="faq-stack">
+      <details class="faq-item">
+        <summary>La ficha fisica ya se uso antes. Puedo volver a usarla?</summary>
+        <p>Si. La ficha es reutilizable. Solo se bloquea si esa misma ficha sigue asignada a un vehiculo que aun no tiene salida.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Quien puede registrar salidas?</summary>
+        <p>Tanto administradores como empleados pueden registrar la salida de un vehiculo desde la pantalla de registros.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Quien puede marcar pagos o eliminar registros?</summary>
+        <p>Esas acciones quedan para el administrador dentro del modal de edicion del registro.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Como funciona la modalidad por semana?</summary>
+        <p>La semana cuenta 7 dias completos. En pantalla veras cuantos dias restantes quedan de esa semana.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Que hago si no encuentro un registro?</summary>
+        <p>Busca por ficha fisica, nombre del cliente, placas o tipo de vehiculo dentro de la seccion de registros.</p>
+      </details>
+    </div>
+  </section>
+</main>
+{% endblock %}

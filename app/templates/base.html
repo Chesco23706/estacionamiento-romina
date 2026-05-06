@@ -22,6 +22,7 @@
               <a href="{{ url_for('main.dashboard') }}">Inicio</a>
               <a href="{{ url_for('main.records_page') }}">Registros</a>
               <a href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
+              <a href="{{ url_for('main.help_page') }}">Guia</a>
               {% if current_user.is_admin %}
               <a href="{{ url_for('main.tariffs_page') }}">Tarifas</a>
               <a href="{{ url_for('main.employees_page') }}">Empleados</a>

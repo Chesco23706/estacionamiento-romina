@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Ticket {{ record.ticket_number }}{% endblock %}
+{% block title %}Ticket {{ record.display_ticket_number }}{% endblock %}
 {% block content %}
 <main class="single-column">
   <section class="card ticket-card">
     <div class="ticket-header">
       <div>
         <p class="eyebrow">Documento generado</p>
-        <h2>Ticket {{ record.ticket_number }}</h2>
+        <h2>Ficha {{ record.display_ticket_number }}</h2>
         <p class="muted">Ya puedes verlo, descargarlo o imprimirlo.</p>
       </div>
       <img class="ticket-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Romina">

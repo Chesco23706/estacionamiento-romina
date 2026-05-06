@@ -5,7 +5,16 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from .extensions import db
-from .models import CashCut, Role, Tariff, User, VehicleRecord, get_period_bounds, log_action
+from .models import (
+    CashCut,
+    Role,
+    Tariff,
+    User,
+    VehicleRecord,
+    generate_internal_ticket_code,
+    get_period_bounds,
+    log_action,
+)
 from .pricing import calculate_charge, ensure_utc, utc_now
 from .validators import (
     clean_optional_text,
@@ -51,7 +60,7 @@ def get_tariffs(include_inactive=True):
 
 
 def create_vehicle_record(form_data, user):
-    ticket_number = clean_ticket(form_data.get("ticket_number"))
+    physical_ticket_number = clean_ticket(form_data.get("ticket_number"))
     client_name = clean_text(form_data.get("client_name"), 120, "cliente")
     vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     plate_number = clean_plate(form_data.get("plate_number"))
@@ -62,11 +71,16 @@ def create_vehicle_record(form_data, user):
     if vehicle_type not in get_vehicle_types():
         raise ValueError("El tipo de vehiculo no es valido o no esta activo.")
 
-    if VehicleRecord.query.filter_by(ticket_number=ticket_number).first():
-        raise ValueError("El numero de ticket ya existe.")
+    active_ticket = VehicleRecord.query.filter(
+        VehicleRecord.physical_ticket_number == physical_ticket_number,
+        VehicleRecord.exit_at.is_(None),
+    ).first()
+    if active_ticket:
+        raise ValueError("Esa ficha fisica ya esta asignada a un vehiculo dentro del estacionamiento.")
 
     record = VehicleRecord(
-        ticket_number=ticket_number,
+        ticket_number=generate_internal_ticket_code(),
+        physical_ticket_number=physical_ticket_number,
         client_name=client_name,
         vehicle_type=vehicle_type,
         plate_number=plate_number,
@@ -83,7 +97,8 @@ def create_vehicle_record(form_data, user):
         "vehicle_record",
         record.id,
         {
-            "ticket_number": ticket_number,
+            "ticket_number": record.ticket_number,
+            "physical_ticket_number": physical_ticket_number,
             "vehicle_type": vehicle_type,
             "stay_mode": stay_mode,
             "contracted_days": contracted_days,
@@ -94,7 +109,7 @@ def create_vehicle_record(form_data, user):
 
 
 def update_vehicle_record(record, form_data, user):
-    record.ticket_number = clean_ticket(form_data.get("ticket_number"))
+    record.physical_ticket_number = clean_ticket(form_data.get("ticket_number"))
     record.client_name = clean_text(form_data.get("client_name"), 120, "cliente")
     record.vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
     record.plate_number = clean_plate(form_data.get("plate_number"))
@@ -112,11 +127,12 @@ def update_vehicle_record(record, form_data, user):
         raise ValueError("El estado seleccionado no es valido.")
 
     existing = VehicleRecord.query.filter(
-        VehicleRecord.ticket_number == record.ticket_number,
+        VehicleRecord.physical_ticket_number == record.physical_ticket_number,
         VehicleRecord.id != record.id,
+        VehicleRecord.exit_at.is_(None),
     ).first()
     if existing:
-        raise ValueError("Ese numero de ticket ya esta asignado a otro registro.")
+        raise ValueError("Esa ficha fisica ya esta asignada a otro vehiculo dentro del estacionamiento.")
 
     if record.exit_at:
         pricing = calculate_charge(

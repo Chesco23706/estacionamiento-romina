@@ -48,7 +48,7 @@
       <table>
         <thead>
           <tr>
-            <th>Ticket</th>
+            <th>Ficha</th>
             <th>Cliente</th>
             <th>Tipo</th>
             <th>Entrada</th>
@@ -59,7 +59,7 @@
         <tbody>
           {% for record in records %}
           <tr>
-            <td>{{ record.ticket_number }}</td>
+            <td>{{ record.display_ticket_number }}</td>
             <td>{{ record.client_name }}</td>
             <td>{{ record.vehicle_type }}</td>
             <td>{{ record.entry_at|dt }}</td>

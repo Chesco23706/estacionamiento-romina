@@ -61,6 +61,7 @@ def build_records_query(filters):
         query = query.filter(
             or_(
                 VehicleRecord.ticket_number.ilike(like_value),
+                VehicleRecord.physical_ticket_number.ilike(like_value),
                 VehicleRecord.client_name.ilike(like_value),
                 VehicleRecord.plate_number.ilike(like_value),
                 VehicleRecord.vehicle_type.ilike(like_value),
@@ -206,6 +207,12 @@ def employees_page():
     return render_template("employees.html", users=users, cuts=cuts)
 
 
+@main_bp.route("/help")
+@login_required
+def help_page():
+    return render_template("help.html")
+
+
 @main_bp.route("/records/new", methods=["POST"])
 @login_required
 def create_record():
@@ -237,7 +244,7 @@ def ticket_document(record_id):
         return redirect(url_for("main.records_page"))
 
     pdf_bytes = build_ticket_pdf(record, format_datetime_for_ticket)
-    filename = f"ticket_{record.ticket_number}.pdf"
+    filename = f"ticket_{record.display_ticket_number}.pdf"
     as_attachment = request.args.get("download") == "1"
     return send_file(
         BytesIO(pdf_bytes),
@@ -249,7 +256,6 @@ def ticket_document(record_id):
 
 @main_bp.route("/records/<int:record_id>/exit", methods=["POST"])
 @login_required
-@role_required("admin")
 def register_vehicle_exit(record_id):
     record = db.session.get(VehicleRecord, record_id)
     if not record:
@@ -305,6 +311,23 @@ def edit_record(record_id):
         record_stay_modes=RECORD_STAY_MODES,
         status_options=STATUS_OPTIONS,
     )
+
+
+@main_bp.route("/records/<int:record_id>/update", methods=["POST"])
+@login_required
+@role_required("admin")
+def update_record_from_modal(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontrÃ³ el registro solicitado.", "danger")
+        return redirect(url_for("main.records_page"))
+
+    try:
+        update_vehicle_record(record, request.form, current_user)
+        flash("Registro actualizado correctamente.", "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("main.records_page"))
 
 
 @main_bp.route("/tariffs/new", methods=["POST"])

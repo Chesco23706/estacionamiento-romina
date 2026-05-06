@@ -8,7 +8,7 @@
         <h2>Registros disponibles actualmente</h2>
       </div>
       <form method="get" class="search-grid">
-        <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ticket, nombre, placas o tipo">
+        <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ficha, nombre, placas o tipo">
         <select name="status">
           <option value="">Todos los estados</option>
           {% for status in status_options %}
@@ -30,7 +30,7 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Ticket</th>
+            <th>Ficha</th>
             <th>Cliente</th>
             <th>Tipo</th>
             <th>Placas</th>
@@ -50,7 +50,7 @@
           {% for record in records %}
           <tr>
             <td>{{ record.id }}</td>
-            <td>{{ record.ticket_number }}</td>
+            <td>{{ record.display_ticket_number }}</td>
             <td>{{ record.client_name }}</td>
             <td>{{ record.vehicle_type }}</td>
             <td>{{ record.plate_number }}</td>
@@ -82,28 +82,102 @@
             <td>
               <div class="button-column record-actions">
                 <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
-                {% if current_user.is_admin %}
                 {% if not record.exit_at %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-secondary fixed-action-btn" type="submit">Registrar salida</button>
                 </form>
                 {% endif %}
+                {% if current_user.is_admin %}
                 {% if record.exit_at and record.status != 'Pagado' %}
                 <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
                 </form>
                 {% endif %}
-                <a class="link-button fixed-action-btn" href="{{ url_for('main.edit_record', record_id=record.id) }}">Editar</a>
-                <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-danger fixed-action-btn" type="submit">Eliminar</button>
-                </form>
+                <button
+                  class="btn fixed-action-btn"
+                  type="button"
+                  data-open-dialog="record-dialog-{{ record.id }}"
+                >Editar</button>
                 {% else %}
-                <span class="muted">Solo registro de entrada</span>
+                <span class="muted">Salida disponible</span>
                 {% endif %}
               </div>
+              {% if current_user.is_admin %}
+              <dialog class="record-dialog" id="record-dialog-{{ record.id }}">
+                <article class="record-dialog-card">
+                  <div class="section-heading">
+                    <h2>Editar registro #{{ record.id }}</h2>
+                    <button class="btn btn-secondary" type="button" data-close-dialog="record-dialog-{{ record.id }}">Cerrar</button>
+                  </div>
+                  <form method="post" action="{{ url_for('main.update_record_from_modal', record_id=record.id) }}" class="form-grid">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label>
+                      Ficha
+                      <input type="text" name="ticket_number" required value="{{ record.display_ticket_number }}">
+                    </label>
+                    <label>
+                      Cliente
+                      <input type="text" name="client_name" required value="{{ record.client_name }}">
+                    </label>
+                    <label>
+                      Tipo de vehiculo
+                      <select name="vehicle_type" required>
+                        {% for vehicle_type in vehicle_types %}
+                        <option value="{{ vehicle_type }}" {% if record.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label>
+                      Modalidad
+                      <select name="stay_mode" required data-record-mode>
+                        <option value="hourly" {% if record.stay_mode == 'hourly' %}selected{% endif %}>Por hora</option>
+                        <option value="weekly" {% if record.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
+                      </select>
+                    </label>
+                    <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 7 }}" data-contracted-days-input>
+                    <label>
+                      Placas
+                      <input type="text" name="plate_number" required value="{{ record.plate_number }}">
+                    </label>
+                    <label>
+                      Estado
+                      <select name="status" required>
+                        {% for status in status_options %}
+                        <option value="{{ status }}" {% if record.status == status %}selected{% endif %}>{{ status }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label class="full-width">
+                      Notas
+                      <textarea name="notes" rows="3">{{ record.notes or '' }}</textarea>
+                    </label>
+                    <div class="record-modal-actions full-width">
+                      <button class="btn" type="submit">Guardar cambios</button>
+                    </div>
+                  </form>
+                  <div class="record-modal-actions">
+                    {% if not record.exit_at %}
+                    <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-secondary" type="submit">Registrar salida</button>
+                    </form>
+                    {% endif %}
+                    {% if record.exit_at and record.status != 'Pagado' %}
+                    <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-secondary" type="submit">Marcar pagado</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-danger" type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                </article>
+              </dialog>
+              {% endif %}
             </td>
           </tr>
           {% else %}

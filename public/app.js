@@ -117,11 +117,49 @@ function setupRecordModeFields() {
   });
 }
 
+function setupDialogs() {
+  const openButtons = document.querySelectorAll("[data-open-dialog]");
+  const closeButtons = document.querySelectorAll("[data-close-dialog]");
+
+  openButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const dialog = document.getElementById(button.dataset.openDialog);
+      if (dialog && typeof dialog.showModal === "function") {
+        dialog.showModal();
+      }
+    });
+  });
+
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const dialog = document.getElementById(button.dataset.closeDialog);
+      if (dialog) {
+        dialog.close();
+      }
+    });
+  });
+
+  document.querySelectorAll("dialog.record-dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      const rect = dialog.getBoundingClientRect();
+      const inside =
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width;
+      if (!inside) {
+        dialog.close();
+      }
+    });
+  });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   startLiveTimers();
   startLiveDayCounters();
   setupPasswordToggles();
   setupRecordModeFields();
+  setupDialogs();
   syncSectionFromHash();
 });
 

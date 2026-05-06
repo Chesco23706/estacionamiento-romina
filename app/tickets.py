@@ -20,7 +20,7 @@ def build_ticket_pdf(record, datetime_formatter):
     ink = HexColor("#2f2416")
     muted = HexColor("#7b6950")
 
-    pdf.setTitle(f"Ticket {record.ticket_number}")
+    pdf.setTitle(f"Ticket {record.display_ticket_number}")
     pdf.setFillColorRGB(1, 1, 1)
     pdf.setStrokeColor(gold)
     pdf.roundRect(18 * mm, 22 * mm, width - 36 * mm, height - 44 * mm, 8 * mm, stroke=1, fill=1)
@@ -47,7 +47,7 @@ def build_ticket_pdf(record, datetime_formatter):
     pdf.line(24 * mm, height - 60 * mm, width - 24 * mm, height - 60 * mm)
 
     fields = [
-        ("Ticket", record.ticket_number),
+        ("Ficha", record.display_ticket_number),
         ("Cliente", record.client_name),
         ("Vehiculo", record.vehicle_type),
         ("Placas / ID", record.plate_number),
