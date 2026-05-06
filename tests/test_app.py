@@ -154,6 +154,40 @@ def test_employee_can_register_exit_edit_and_pay():
         assert updated.status == "Pagado"
 
 
+def test_employee_sees_exit_and_pay_actions_but_not_delete():
+    app, client = build_client()
+    login(client)
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-EMP-01",
+            "client_name": "Cliente Empleado",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "EMP-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(
+            physical_ticket_number="FICHA-EMP-01"
+        ).first()
+        record.close_record(User.query.filter_by(username="admin").first())
+        db.session.commit()
+
+    client.post("/logout", follow_redirects=True)
+    login(client, "empleado1", "EmpleadoUno2026!")
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Marcar pagado" in body
+    assert "Editar" in body
+    assert "Eliminar" not in body
+
+
 def test_physical_ticket_can_be_reused_after_exit():
     app, client = build_client()
     login(client)
