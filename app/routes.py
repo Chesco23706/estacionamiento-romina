@@ -254,6 +254,8 @@ def dashboard():
         metrics=metrics,
         format_duration=format_duration,
         now_local=utc_now().astimezone(),
+        vehicle_types=get_vehicle_types(include_inactive=True),
+        status_options=STATUS_OPTIONS,
     )
 
 

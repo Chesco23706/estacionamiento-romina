@@ -439,10 +439,11 @@ def test_employee_dashboard_shows_simple_core_actions():
     response = client.get("/")
     body = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "Registrar entrada" in body
+    assert "Bitacora de estacionamiento" in body
+    assert "Registrar nueva entrada" in body
     assert "Registrar salida" in body
-    assert "Ver vehiculos activos" in body
-    assert "Buscar vehiculo" in body
+    assert "Registros activos" in body
+    assert "Buscar por placa o folio" in body
 
 
 def test_operations_page_uses_touch_friendly_copy():

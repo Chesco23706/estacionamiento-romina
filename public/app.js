@@ -205,9 +205,17 @@ function setupThemeToggle() {
     return;
   }
 
+  const isIconOnly = toggle.classList.contains("employee-nav-btn");
+
   const applyTheme = (theme) => {
     document.body.dataset.theme = theme;
-    toggle.textContent = theme === "dark" ? "Modo claro" : "Modo oscuro";
+    const label = theme === "dark" ? "Modo claro" : "Modo oscuro";
+    if (isIconOnly) {
+      toggle.setAttribute("title", label);
+      toggle.setAttribute("aria-label", label);
+    } else {
+      toggle.textContent = label;
+    }
   };
 
   const storedTheme = window.localStorage.getItem("romina-theme") || "light";
@@ -226,8 +234,16 @@ function setupSoundToggle() {
     return;
   }
 
+  const isIconOnly = toggle.classList.contains("employee-nav-btn");
+
   const applyState = (enabled) => {
-    toggle.textContent = enabled ? "Sonidos encendidos" : "Sonidos apagados";
+    const label = enabled ? "Sonidos encendidos" : "Sonidos apagados";
+    if (isIconOnly) {
+      toggle.setAttribute("title", label);
+      toggle.setAttribute("aria-label", label);
+    } else {
+      toggle.textContent = label;
+    }
     toggle.dataset.soundEnabled = enabled ? "true" : "false";
   };
 

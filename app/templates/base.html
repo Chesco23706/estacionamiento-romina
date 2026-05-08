@@ -7,6 +7,47 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
+    {% set employee_mode = current_user.is_authenticated and not current_user.is_admin %}
+
+    {% if employee_mode %}
+    <div class="employee-app-shell">
+      <aside class="employee-sidebar-shell">
+        <a class="employee-sidebar-brand" href="{{ url_for('main.dashboard') }}">R</a>
+        <nav class="employee-sidebar-nav">
+          <a class="employee-nav-btn" href="{{ url_for('main.dashboard') }}" title="Inicio">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"/></svg>
+          </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.records_page') }}" title="Registros">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8 9h8M8 13h8M8 17h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></svg>
+          </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.operations_page') }}" title="Nueva entrada">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></svg>
+          </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.tickets_board_page') }}" title="Fichas">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v10H6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10 7v10M14 7v10" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
+          </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.help_page') }}" title="Ayuda">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9.7 9.1a2.6 2.6 0 1 1 4.6 1.7c-.6.7-1.3 1-1.8 1.6-.3.4-.5.8-.5 1.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>
+          </a>
+        </nav>
+        <div class="employee-sidebar-tools">
+          <button class="employee-nav-btn" type="button" data-theme-toggle title="Cambiar modo de color">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
+          </button>
+          <button class="employee-nav-btn" type="button" data-sound-toggle title="Sonidos">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14h3l4 4V6L8 10H5zM16 9a4 4 0 0 1 0 6M18.8 6.5a7.3 7.3 0 0 1 0 11" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></svg>
+          </button>
+          <form method="post" action="{{ url_for('main.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="employee-nav-btn" type="submit" title="Cerrar sesion">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8l4 4-4 4M19 12H9M13 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></svg>
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div class="employee-stage-shell">
+    {% else %}
     <div class="page-shell">
       <header class="topbar-shell">
         <div class="topbar">
@@ -15,9 +56,7 @@
             <div>
               <h1>{{ config.APP_NAME }}</h1>
               {% if current_user.is_authenticated %}
-              <p class="brand-subtitle">
-                {{ 'Centro de control' if current_user.is_admin else 'Terminal de operacion sencilla' }}
-              </p>
+              <p class="brand-subtitle">{{ 'Centro de control' if current_user.is_admin else 'Terminal de operacion sencilla' }}</p>
               {% endif %}
             </div>
           </div>
@@ -32,21 +71,11 @@
               <a href="{{ url_for('main.help_page') }}">Guia</a>
               <a href="{{ url_for('main.tariffs_page') }}">Tarifas</a>
               <a href="{{ url_for('main.employees_page') }}">Empleados</a>
-              {% else %}
-              <a href="{{ url_for('main.dashboard') }}">Inicio</a>
-              <a href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
-              <a href="{{ url_for('main.records_page') }}">Registrar salida</a>
-              <a href="{{ url_for('main.records_page', search='') }}#busqueda">Buscar vehiculo</a>
-              <a href="{{ url_for('main.help_page') }}">Ayuda</a>
               {% endif %}
             </nav>
             <div class="topbar-tools">
-              <button class="tool-chip" type="button" data-theme-toggle aria-label="Cambiar modo de color">
-                Modo oscuro
-              </button>
-              <button class="tool-chip" type="button" data-sound-toggle aria-label="Activar o desactivar sonidos">
-                Sonidos apagados
-              </button>
+              <button class="tool-chip" type="button" data-theme-toggle aria-label="Cambiar modo de color">Modo oscuro</button>
+              <button class="tool-chip" type="button" data-sound-toggle aria-label="Activar o desactivar sonidos">Sonidos apagados</button>
             </div>
             <div class="user-card">
               <strong>{{ current_user.full_name }}</strong>
@@ -60,19 +89,27 @@
           {% endif %}
         </div>
       </header>
+    {% endif %}
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <section class="flash-stack">
-            {% for category, message in messages %}
-              <article class="flash flash-{{ category }}">{{ message }}</article>
-            {% endfor %}
-          </section>
-        {% endif %}
-      {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <section class="flash-stack{% if employee_mode %} employee-flash-stack{% endif %}">
+              {% for category, message in messages %}
+                <article class="flash flash-{{ category }}">{{ message }}</article>
+              {% endfor %}
+            </section>
+          {% endif %}
+        {% endwith %}
 
-      {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
+
+    {% if employee_mode %}
+      </div>
     </div>
+    {% else %}
+    </div>
+    {% endif %}
+
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>
