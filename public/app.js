@@ -199,6 +199,145 @@ function setupDialogs() {
   });
 }
 
+function setupThemeToggle() {
+  const toggle = document.querySelector("[data-theme-toggle]");
+  if (!toggle) {
+    return;
+  }
+
+  const applyTheme = (theme) => {
+    document.body.dataset.theme = theme;
+    toggle.textContent = theme === "dark" ? "Modo claro" : "Modo oscuro";
+  };
+
+  const storedTheme = window.localStorage.getItem("romina-theme") || "light";
+  applyTheme(storedTheme);
+
+  toggle.addEventListener("click", () => {
+    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    window.localStorage.setItem("romina-theme", nextTheme);
+    applyTheme(nextTheme);
+  });
+}
+
+function setupSoundToggle() {
+  const toggle = document.querySelector("[data-sound-toggle]");
+  if (!toggle) {
+    return;
+  }
+
+  const applyState = (enabled) => {
+    toggle.textContent = enabled ? "Sonidos encendidos" : "Sonidos apagados";
+    toggle.dataset.soundEnabled = enabled ? "true" : "false";
+  };
+
+  const storedValue = window.localStorage.getItem("romina-sound") === "on";
+  applyState(storedValue);
+
+  toggle.addEventListener("click", () => {
+    const enabled = toggle.dataset.soundEnabled !== "true";
+    window.localStorage.setItem("romina-sound", enabled ? "on" : "off");
+    applyState(enabled);
+  });
+}
+
+function playSuccessTone() {
+  if (window.localStorage.getItem("romina-sound") !== "on") {
+    return;
+  }
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return;
+  }
+
+  const context = new AudioContextClass();
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.value = 740;
+  gainNode.gain.value = 0.03;
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.12);
+}
+
+function setupFlashSounds() {
+  if (document.querySelector(".flash-success")) {
+    playSuccessTone();
+  }
+}
+
+function setupLiveClock() {
+  const clock = document.querySelector("[data-live-clock]");
+  const date = document.querySelector("[data-live-date]");
+  if (!clock && !date) {
+    return;
+  }
+
+  const render = () => {
+    const now = new Date();
+    if (clock) {
+      clock.textContent = now.toLocaleTimeString("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    if (date) {
+      date.textContent = now.toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+  };
+
+  render();
+  window.setInterval(render, 1000);
+}
+
+function setupFriendlyValidation() {
+  document.querySelectorAll("[data-friendly-form] input[required], [data-friendly-form] textarea[required], [data-friendly-form] select[required]").forEach((field) => {
+    const fieldName = field.dataset.friendlyName || "este dato";
+    field.addEventListener("invalid", () => {
+      if (field.validity.valueMissing) {
+        field.setCustomValidity(`Falta ingresar ${fieldName}.`);
+      } else {
+        field.setCustomValidity("Revisa este dato.");
+      }
+    });
+
+    field.addEventListener("input", () => {
+      field.setCustomValidity("");
+    });
+
+    field.addEventListener("change", () => {
+      field.setCustomValidity("");
+    });
+  });
+}
+
+function setupLiveSearchCards() {
+  const input = document.querySelector("[data-live-search-input]");
+  const cards = document.querySelectorAll("[data-record-search-card]");
+  if (!input || !cards.length) {
+    return;
+  }
+
+  const filterCards = () => {
+    const query = input.value.trim().toLowerCase();
+    cards.forEach((card) => {
+      const haystack = card.dataset.searchText || "";
+      const visible = !query || haystack.includes(query);
+      card.hidden = !visible;
+    });
+  };
+
+  input.addEventListener("input", filterCards);
+  filterCards();
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   startLiveTimers();
   startLiveDayCounters();
@@ -206,6 +345,12 @@ window.addEventListener("DOMContentLoaded", () => {
   setupRecordModeFields();
   setupServiceFields();
   setupDialogs();
+  setupThemeToggle();
+  setupSoundToggle();
+  setupFlashSounds();
+  setupLiveClock();
+  setupFriendlyValidation();
+  setupLiveSearchCards();
   syncSectionFromHash();
 });
 

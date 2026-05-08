@@ -1,0 +1,138 @@
+{% if current_user.is_authenticated %}
+<dialog class="record-dialog" id="record-dialog-{{ record.id }}">
+  <article class="record-dialog-card">
+    <div class="section-heading">
+      <h2>Editar registro #{{ record.id }}</h2>
+      <button class="btn btn-secondary" type="button" data-close-dialog="record-dialog-{{ record.id }}">Cerrar</button>
+    </div>
+    <form method="post" action="{{ url_for('main.update_record_from_modal', record_id=record.id) }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Ficha
+        <input type="text" name="ticket_number" required value="{{ record.display_ticket_number }}">
+      </label>
+      <label>
+        Cliente
+        <input type="text" name="client_name" required value="{{ record.client_name }}">
+      </label>
+      <label>
+        Tipo de vehiculo
+        <select name="vehicle_type" required>
+          {% for vehicle_type in vehicle_types %}
+          <option value="{{ vehicle_type }}" {% if record.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Modalidad
+        <select name="stay_mode" required data-record-mode>
+          <option value="hourly" {% if record.stay_mode == 'hourly' %}selected{% endif %}>Por hora</option>
+          <option value="weekly" {% if record.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
+        </select>
+      </label>
+      <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 7 }}" data-contracted-days-input>
+      <label>
+        Placas
+        <input type="text" name="plate_number" required value="{{ record.plate_number }}">
+      </label>
+      <section class="service-panel full-width" data-service-panel>
+        <div class="service-panel-header">
+          <span>Servicios</span>
+          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="{% if record.service_wash or record.service_oil_change or record.service_oil_price %}true{% else %}false{% endif %}">
+            {% if record.service_wash or record.service_oil_change or record.service_oil_price %}Editar servicios{% else %}Agregar servicios{% endif %}
+          </button>
+        </div>
+        <div class="service-panel-body" data-service-panel-body {% if not (record.service_wash or record.service_oil_change or record.service_oil_price) %}hidden{% endif %}>
+          <div class="service-intro">
+            <p>Selecciona los servicios aplicados a este registro. El sistema mantiene el total actualizado.</p>
+          </div>
+          <article class="service-option-card">
+            <label class="checkbox-row">
+              <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
+              Lavado de moto $20
+            </label>
+            <p class="service-option-note">Servicio rapido de lavado exterior.</p>
+          </article>
+          <article class="service-option-card">
+            <label class="checkbox-row">
+              <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
+              Cambio de aceite $40
+            </label>
+            <p class="service-option-note">La mano de obra se cobra aqui y el aceite se agrega por separado.</p>
+          </article>
+          <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
+            Precio del aceite
+            <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">
+          </label>
+        </div>
+      </section>
+      <label>
+        Estado
+        <select name="status" required>
+          {% for status in status_options %}
+          <option value="{{ status }}" {% if record.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="full-width">
+        Notas
+        <textarea name="notes" rows="3">{{ record.notes or '' }}</textarea>
+      </label>
+      <div class="record-modal-actions full-width">
+        <button class="btn" type="submit">Guardar cambios</button>
+      </div>
+    </form>
+    <div class="record-modal-actions">
+      {% if not record.exit_at %}
+      {% if not record.is_hourly %}
+      <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">Salida semanal</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">Marcar salida</button>
+      </form>
+      {% endif %}
+      {% if record.exit_at and record.status != 'Pagado' %}
+      <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">Marcar pagado</button>
+      </form>
+      {% endif %}
+      {% if current_user.is_admin %}
+      <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger" type="submit">Eliminar</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if not record.is_hourly and record.weekly_exit_logs %}
+    <div class="weekly-log-list">
+      <h3>Salidas registradas</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora de salida</th>
+              <th>Dia transcurrido</th>
+              <th>Registrado por</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exit_log in record.weekly_exit_logs %}
+            <tr>
+              <td>{{ exit_log.exited_at|dt }}</td>
+              <td>Dia {{ exit_log.day_number }}</td>
+              <td>{{ exit_log.created_by.full_name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </article>
+</dialog>
+{% endif %}

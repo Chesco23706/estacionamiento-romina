@@ -14,21 +14,40 @@
             <img class="brand-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Estacionamiento Romina">
             <div>
               <h1>{{ config.APP_NAME }}</h1>
+              {% if current_user.is_authenticated %}
+              <p class="brand-subtitle">
+                {{ 'Centro de control' if current_user.is_admin else 'Terminal de operacion sencilla' }}
+              </p>
+              {% endif %}
             </div>
           </div>
           {% if current_user.is_authenticated %}
           <div class="topbar-actions">
             <nav class="topbar-nav">
+              {% if current_user.is_admin %}
               <a href="{{ url_for('main.dashboard') }}">Inicio</a>
               <a href="{{ url_for('main.tickets_board_page') }}">Fichas</a>
               <a href="{{ url_for('main.records_page') }}">Registros</a>
               <a href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
               <a href="{{ url_for('main.help_page') }}">Guia</a>
-              {% if current_user.is_admin %}
               <a href="{{ url_for('main.tariffs_page') }}">Tarifas</a>
               <a href="{{ url_for('main.employees_page') }}">Empleados</a>
+              {% else %}
+              <a href="{{ url_for('main.dashboard') }}">Inicio</a>
+              <a href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
+              <a href="{{ url_for('main.records_page') }}">Registrar salida</a>
+              <a href="{{ url_for('main.records_page', search='') }}#busqueda">Buscar vehiculo</a>
+              <a href="{{ url_for('main.help_page') }}">Ayuda</a>
               {% endif %}
             </nav>
+            <div class="topbar-tools">
+              <button class="tool-chip" type="button" data-theme-toggle aria-label="Cambiar modo de color">
+                Modo oscuro
+              </button>
+              <button class="tool-chip" type="button" data-sound-toggle aria-label="Activar o desactivar sonidos">
+                Sonidos apagados
+              </button>
+            </div>
             <div class="user-card">
               <strong>{{ current_user.full_name }}</strong>
               <span>{{ 'Administrador' if current_user.is_admin else 'Empleado' }}</span>

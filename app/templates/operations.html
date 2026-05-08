@@ -1,78 +1,180 @@
 {% extends "base.html" %}
 {% block title %}Nueva Entrada | Estacionamiento Romina{% endblock %}
 {% block content %}
-<main class="single-column">
-  <section class="card feature-card form-card">
-    <h2>Nueva entrada</h2>
-    <form method="post" action="{{ url_for('main.create_record') }}" class="form-grid">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label>
-        Ficha
-        <input type="text" name="ticket_number" required maxlength="30">
-      </label>
-      <label>
-        Cliente
-        <input type="text" name="client_name" required maxlength="120">
-      </label>
-      <label>
-        Tipo de vehiculo
-        <select name="vehicle_type" required>
-          <option value="">Selecciona</option>
-          {% for vehicle_type in vehicle_types %}
-          <option value="{{ vehicle_type }}">{{ vehicle_type }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>
-        Modalidad
-        <select name="stay_mode" required data-record-mode>
-          {% for mode, label in record_stay_modes %}
-          <option value="{{ mode }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <input type="hidden" name="contracted_days" value="7" data-contracted-days-input>
-      <label>
-        Placas o identificador
-        <input type="text" name="plate_number" required maxlength="50">
-      </label>
-      <section class="service-panel full-width" data-service-panel>
-        <div class="service-panel-header">
-          <span>Servicios</span>
-          <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="false">
-            Agregar servicios
-          </button>
-        </div>
-        <div class="service-panel-body" data-service-panel-body hidden>
-          <div class="service-intro">
-            <p>Activa solo los servicios que el cliente solicite. El sistema los suma automaticamente al cobro final.</p>
+<main class="employee-entry-shell">
+  <section class="employee-entry-header card">
+    <div>
+      <p class="eyebrow">Registrar entrada</p>
+      <h2>Captura un vehiculo sin pasos complicados</h2>
+      <p>Llena solo lo necesario. La fecha, la hora y el numero interno del registro se generan automaticamente.</p>
+    </div>
+    <div class="entry-meta-grid">
+      <div class="entry-meta-card">
+        <span>Fecha</span>
+        <strong data-live-date>Hoy</strong>
+      </div>
+      <div class="entry-meta-card">
+        <span>Hora</span>
+        <strong data-live-clock>--:--</strong>
+      </div>
+      <div class="entry-meta-card">
+        <span>Registro</span>
+        <strong>Automatico</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="employee-entry-layout">
+    <section class="card touch-form-card">
+      <form method="post" action="{{ url_for('main.create_record') }}" class="touch-form-grid" data-friendly-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label class="touch-field">
+          <span>Ficha fisica</span>
+          <input
+            type="text"
+            name="ticket_number"
+            required
+            maxlength="30"
+            placeholder="Ejemplo: 012"
+            autocomplete="off"
+            data-friendly-name="la ficha"
+          >
+          <small>Es el numero de la ficha que entregas al cliente.</small>
+        </label>
+
+        <label class="touch-field">
+          <span>Nombre del cliente</span>
+          <input
+            type="text"
+            name="client_name"
+            required
+            maxlength="120"
+            placeholder="Escribe el nombre del cliente"
+            autocomplete="off"
+            data-friendly-name="el nombre del cliente"
+          >
+        </label>
+
+        <section class="vehicle-picker full-width">
+          <div class="field-group-title">
+            <span>Tipo de vehiculo</span>
+            <small>Toca una opcion.</small>
           </div>
-          <article class="service-option-card">
-            <label class="checkbox-row">
-              <input type="checkbox" name="service_wash" data-service-wash>
-              Lavado de moto $20
+          <div class="vehicle-option-grid">
+            {% for vehicle_type in vehicle_types %}
+            <label class="vehicle-option-card">
+              <input type="radio" name="vehicle_type" value="{{ vehicle_type }}" required data-friendly-name="el tipo de vehiculo">
+              <span class="vehicle-option-icon vehicle-icon-{{ vehicle_type|lower|replace(' ', '-') }}">
+                {% if vehicle_type == 'Moto' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="2.3"/><circle cx="17" cy="17" r="2.3"/><path d="M7 17h4l3-6h3l2 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg>
+                {% elif 'utom' in vehicle_type %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9h12l2 4v4h-2a2 2 0 0 1-4 0h-4a2 2 0 0 1-4 0H4v-4l2-4z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/></svg>
+                {% elif vehicle_type == 'Bicicleta' %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="2.4"/><circle cx="17" cy="17" r="2.4"/><path d="M9 7h4l2 4h-4l-2 6M11 11H8l3-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg>
+                {% else %}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10h14v7H5zM8 10V7h8v3" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/><path d="M8 17v2M16 17v2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>
+                {% endif %}
+              </span>
+              <strong>{{ vehicle_type }}</strong>
             </label>
-            <p class="service-option-note">Incluye lavado exterior rapido para dejar la moto lista al momento de la salida.</p>
-          </article>
-          <article class="service-option-card">
-            <label class="checkbox-row">
-              <input type="checkbox" name="service_oil_change" data-service-oil-change>
-              Cambio de aceite $40
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="mode-picker full-width">
+          <div class="field-group-title">
+            <span>Como se cobrara</span>
+            <small>Elige la modalidad.</small>
+          </div>
+          <div class="mode-option-grid">
+            {% for mode, label in record_stay_modes %}
+            <label class="mode-option-card">
+              <input type="radio" name="stay_mode" value="{{ mode }}" {% if loop.first %}checked{% endif %} required data-record-mode>
+              <strong>{{ label }}</strong>
+              <span>{% if mode == 'hourly' %}Ideal para estancias cortas.{% else %}Perfecto para fichas semanales.{% endif %}</span>
             </label>
-            <p class="service-option-note">Incluye la mano de obra del cambio. El aceite se captura aparte para sumarlo al total.</p>
-          </article>
-          <label data-oil-price-field hidden>
-            Precio del aceite
-            <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal">
-          </label>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="contracted_days" value="7" data-contracted-days-input>
+        </section>
+
+        <label class="touch-field">
+          <span>Placa o identificador</span>
+          <input
+            type="text"
+            name="plate_number"
+            required
+            maxlength="50"
+            placeholder="Ejemplo: ABC123"
+            autocomplete="off"
+            data-friendly-name="la placa"
+          >
+          <small>Si no tiene placa, escribe una referencia facil de reconocer.</small>
+        </label>
+
+        <section class="service-panel full-width touch-service-panel" data-service-panel>
+          <div class="service-panel-header">
+            <div>
+              <span>Servicios extra</span>
+              <small>Solo si el cliente lo pide.</small>
+            </div>
+            <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="false">
+              Agregar servicios
+            </button>
+          </div>
+          <div class="service-panel-body" data-service-panel-body hidden>
+            <div class="service-intro">
+              <p>Activa un servicio y el sistema lo suma automaticamente al cobro final.</p>
+            </div>
+            <article class="service-option-card">
+              <label class="checkbox-row">
+                <input type="checkbox" name="service_wash" data-service-wash>
+                Lavado de moto $20
+              </label>
+              <p class="service-option-note">Lavado exterior rapido.</p>
+            </article>
+            <article class="service-option-card">
+              <label class="checkbox-row">
+                <input type="checkbox" name="service_oil_change" data-service-oil-change>
+                Cambio de aceite $40
+              </label>
+              <p class="service-option-note">La mano de obra se cobra aqui. El aceite se agrega aparte.</p>
+            </article>
+            <label class="touch-field" data-oil-price-field hidden>
+              <span>Precio del aceite</span>
+              <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" placeholder="Ejemplo: 120">
+            </label>
+          </div>
+        </section>
+
+        <label class="touch-field full-width">
+          <span>Notas</span>
+          <textarea name="notes" rows="3" maxlength="500" placeholder="Opcional: casco negro, deja llaves, etc."></textarea>
+        </label>
+
+        <div class="touch-form-actions full-width">
+          <button class="btn touch-primary-btn" type="submit">Registrar vehiculo</button>
+          <a class="link-button" href="{{ url_for('main.records_page') }}">Ir a salidas</a>
         </div>
-      </section>
-      <label class="full-width">
-        Notas
-        <textarea name="notes" rows="3" maxlength="500"></textarea>
-      </label>
-      <button class="btn" type="submit">Guardar entrada</button>
-    </form>
+      </form>
+    </section>
+
+    <aside class="card employee-side-guide">
+      <p class="eyebrow">Ayuda rapida</p>
+      <h3>Como usar esta pantalla</h3>
+      <ol class="simple-steps">
+        <li>Escribe la ficha fisica.</li>
+        <li>Escribe el nombre del cliente.</li>
+        <li>Toca el tipo de vehiculo.</li>
+        <li>Escribe la placa o referencia.</li>
+        <li>Presiona <strong>Registrar vehiculo</strong>.</li>
+      </ol>
+      <div class="hint-box">
+        <strong>Consejo</strong>
+        <span>Si una ficha ya esta ocupada, el sistema te avisara antes de guardar.</span>
+      </div>
+    </aside>
   </section>
 </main>
 {% endblock %}

@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Inicio | Estacionamiento Romina{% endblock %}
 {% block content %}
+{% if current_user.is_admin %}
 <main class="dashboard-layout">
+  <section class="hero-panel card feature-card">
+    <div class="hero-copy-inner">
+      <div>
+        <p class="eyebrow">Panel administrativo</p>
+        <h2>Todo el control del estacionamiento en una sola vista</h2>
+        <p>Consulta actividad reciente, revisa cobros, abre fichas y administra empleados sin perder de vista la operacion diaria.</p>
+      </div>
+      <img class="hero-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Romina">
+    </div>
+  </section>
+
   <section class="stats-grid">
     <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
     <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>
@@ -29,10 +41,8 @@
         <a class="section-chip" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
         <a class="section-chip" href="{{ url_for('main.records_page') }}">Ver registros</a>
         <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
-        {% if current_user.is_admin %}
         <a class="section-chip" href="{{ url_for('main.employees_page') }}">Gestionar empleados</a>
         <a class="section-chip" href="{{ url_for('main.tariffs_page') }}">Gestionar tarifas</a>
-        {% endif %}
       </div>
     </article>
   </section>
@@ -81,7 +91,7 @@
               {{ format_duration(record.duration_seconds) }}
               {% endif %}
             </td>
-            <td><span class="status-pill">{{ record.status }}</span></td>
+            <td><span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span></td>
           </tr>
           {% else %}
           <tr><td colspan="6">Todavia no hay registros.</td></tr>
@@ -91,4 +101,153 @@
     </div>
   </section>
 </main>
+{% else %}
+<main class="employee-dashboard">
+  <section class="employee-hero card">
+    <div class="employee-hero-copy">
+      <p class="eyebrow">Operacion rapida</p>
+      <h2>Todo listo para registrar, cobrar y buscar en pocos pasos</h2>
+      <p>Usa solo estas acciones. El sistema calcula hora, fecha y cobro automaticamente para reducir errores.</p>
+      <div class="employee-hero-meta">
+        <div class="hero-meta-card">
+          <span>Ahora</span>
+          <strong>{{ now_local.strftime("%H:%M") }}</strong>
+        </div>
+        <div class="hero-meta-card">
+          <span>Fecha</span>
+          <strong>{{ now_local.strftime("%d/%m/%Y") }}</strong>
+        </div>
+        <div class="hero-meta-card">
+          <span>Vehiculos dentro</span>
+          <strong>{{ metrics.inside_count }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="employee-hero-side">
+      <div class="touch-badge">Interfaz tactil</div>
+      <div class="touch-badge">Guia visual</div>
+      <div class="touch-badge">Menos errores</div>
+    </div>
+  </section>
+
+  <section class="employee-action-grid">
+    <a class="employee-action-card action-entry" href="{{ url_for('main.operations_page') }}">
+      <span class="action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.3"/></svg>
+      </span>
+      <strong>Registrar entrada</strong>
+      <span>Captura un vehiculo nuevo en menos de un minuto.</span>
+    </a>
+    <a class="employee-action-card action-exit" href="{{ url_for('main.records_page') }}">
+      <span class="action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7l5 5-5 5M5 12h9M19 5v14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3"/></svg>
+      </span>
+      <strong>Registrar salida</strong>
+      <span>Encuentra el vehiculo y finaliza su salida.</span>
+    </a>
+    <a class="employee-action-card action-active" href="{{ url_for('main.records_page') }}">
+      <span class="action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="8" cy="17.5" r="1.5"/><circle cx="16" cy="17.5" r="1.5"/></svg>
+      </span>
+      <strong>Ver vehiculos activos</strong>
+      <span>Consulta quien sigue dentro del estacionamiento.</span>
+    </a>
+    <a class="employee-action-card action-search" href="{{ url_for('main.records_page') }}#busqueda">
+      <span class="action-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-4.2-4.2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/></svg>
+      </span>
+      <strong>Buscar vehiculo</strong>
+      <span>Busca por ficha o placa sin recorrer listas largas.</span>
+    </a>
+  </section>
+
+  <section class="employee-dashboard-grid">
+    <article class="card employee-search-card" id="busqueda">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Busqueda rapida</p>
+          <h2>Encuentra un vehiculo al instante</h2>
+        </div>
+      </div>
+      <form method="get" action="{{ url_for('main.records_page') }}" class="employee-search-form">
+        <label class="search-field">
+          <span>Numero de ficha o placa</span>
+          <input type="text" name="search" placeholder="Ejemplo: 012 o ABC123" autocomplete="off">
+        </label>
+        <button class="btn" type="submit">Buscar vehiculo</button>
+      </form>
+      <p class="employee-helper-text">Tip: si el cliente no recuerda su ficha, prueba con la placa.</p>
+    </article>
+
+    <article class="card employee-status-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Cobros</p>
+          <h2>Listos para cobrar</h2>
+        </div>
+      </div>
+      <div class="mini-stat-list">
+        <div class="mini-stat-item">
+          <span>Salidas registradas</span>
+          <strong>{{ pending_checkout_records|length }}</strong>
+        </div>
+        <div class="mini-stat-item">
+          <span>Vehiculos dentro</span>
+          <strong>{{ metrics.inside_count }}</strong>
+        </div>
+      </div>
+      <a class="link-button" href="{{ url_for('main.records_page', status='Salida registrada') }}">Abrir lista para cobrar</a>
+    </article>
+  </section>
+
+  <section class="card employee-live-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">En este momento</p>
+        <h2>Vehiculos activos</h2>
+      </div>
+      <a class="link-button" href="{{ url_for('main.records_page') }}">Abrir panel de salidas</a>
+    </div>
+    <div class="employee-live-grid">
+      {% for record in active_records %}
+      <article class="employee-record-card" data-record-search-card data-search-text="{{ (record.display_ticket_number ~ ' ' ~ record.client_name ~ ' ' ~ record.plate_number ~ ' ' ~ record.vehicle_type)|lower }}">
+        <div class="employee-record-top">
+          <span class="employee-record-ticket">Ficha {{ record.display_ticket_number }}</span>
+          <span class="status-pill status-pill-{{ record.status_theme }}">Activo</span>
+        </div>
+        <strong>{{ record.client_name }}</strong>
+        <div class="employee-record-meta">
+          <span>{{ record.vehicle_type }}</span>
+          <span>{{ record.plate_number }}</span>
+          <span>Entrada {{ record.entry_at|dt }}</span>
+        </div>
+        <div class="employee-record-total">
+          <span>Tiempo transcurrido</span>
+          {% if record.is_hourly %}
+          <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
+          {% else %}
+          <strong
+            class="live-day-counter"
+            data-entry-at="{{ record.entry_at.isoformat() }}"
+            data-contracted-days="{{ record.contracted_days or 7 }}"
+          >
+            Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+          </strong>
+          {% endif %}
+        </div>
+        <div class="employee-record-total amount-block">
+          <span>Total estimado</span>
+          <strong>{{ record.live_total_amount|money }}</strong>
+        </div>
+      </article>
+      {% else %}
+      <article class="empty-state-card">
+        <strong>No hay vehiculos dentro ahora.</strong>
+        <span>Cuando registres una nueva entrada apareceran aqui.</span>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+{% endif %}
 {% endblock %}

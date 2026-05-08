@@ -17,7 +17,7 @@ from sqlalchemy import or_
 from .decorators import role_required
 from .extensions import db
 from .models import CashCut, Role, Tariff, User, VehicleRecord, log_action
-from .pricing import ensure_utc, format_duration, utc_now
+from .pricing import calculate_charge, ensure_utc, format_duration, utc_now
 from .services import (
     BILLING_SCHEMES,
     PERIOD_UNITS,
@@ -128,6 +128,27 @@ def build_ticket_board():
     return board_records, metrics
 
 
+def enrich_record_display(record, reference_time=None):
+    target_time = reference_time or utc_now()
+    if record.exit_at:
+        record.live_total_amount = float(record.total_amount or 0)
+        record.live_rate_label = record.applied_rate_label or "-"
+        return record
+
+    pricing = calculate_charge(
+        record.vehicle_type,
+        record.entry_at,
+        target_time,
+        stay_mode=record.stay_mode,
+        contracted_days=record.contracted_days,
+    )
+    record.live_total_amount = float(pricing["total"]) + float(record.services_total_amount or 0)
+    record.live_rate_label = pricing["rate_label"]
+    if record.services_total_amount:
+        record.live_rate_label = f"{pricing['rate_label']} | {record.services_label}"
+    return record
+
+
 @main_bp.app_template_filter("money")
 def money_filter(value):
     return f"${float(value):,.2f}"
@@ -206,12 +227,33 @@ def logout():
 @login_required
 def dashboard():
     records = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).limit(8).all()
+    active_records = (
+        VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+        .order_by(VehicleRecord.entry_at.desc())
+        .limit(8)
+        .all()
+    )
+    pending_checkout_records = (
+        VehicleRecord.query.filter(VehicleRecord.status == "Salida registrada")
+        .order_by(VehicleRecord.exit_at.desc())
+        .limit(6)
+        .all()
+    )
+    for record in records:
+        enrich_record_display(record)
+    for record in active_records:
+        enrich_record_display(record)
+    for record in pending_checkout_records:
+        enrich_record_display(record)
     metrics = dashboard_metrics()
     return render_template(
         "dashboard.html",
         records=records,
+        active_records=active_records,
+        pending_checkout_records=pending_checkout_records,
         metrics=metrics,
         format_duration=format_duration,
+        now_local=utc_now().astimezone(),
     )
 
 
@@ -228,6 +270,10 @@ def records_page():
             .limit(8)
             .all()
         )
+    for record in records:
+        enrich_record_display(record)
+    for record in pending_checkout_records:
+        enrich_record_display(record)
     return render_template(
         "records.html",
         records=records,

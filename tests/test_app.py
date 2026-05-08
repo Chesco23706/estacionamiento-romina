@@ -433,6 +433,29 @@ def test_employee_help_page_is_role_specific():
     assert "<h3>Administrador</h3>" not in body
 
 
+def test_employee_dashboard_shows_simple_core_actions():
+    _app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+    response = client.get("/")
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Registrar entrada" in body
+    assert "Registrar salida" in body
+    assert "Ver vehiculos activos" in body
+    assert "Buscar vehiculo" in body
+
+
+def test_operations_page_uses_touch_friendly_copy():
+    _app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+    response = client.get("/operations")
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Captura un vehiculo sin pasos complicados" in body
+    assert "Registrar vehiculo" in body
+    assert "Ficha fisica" in body
+
+
 def test_ticket_board_page_exists_and_shows_records():
     app, client = build_client()
     login(client)
