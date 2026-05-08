@@ -2,10 +2,64 @@
 {% block title %}Registros | Estacionamiento Romina{% endblock %}
 {% block content %}
 <main class="dashboard-layout">
+  <section class="card feature-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Vista rapida</p>
+        <h2>Accesos directos</h2>
+      </div>
+      <a class="link-button" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
+    </div>
+    <div class="quick-links">
+      <a class="section-chip" href="{{ url_for('main.records_page') }}">Vehiculos dentro</a>
+      <a class="section-chip" href="{{ url_for('main.records_page', status='Salida registrada') }}">Salidas por cobrar</a>
+      <a class="section-chip" href="{{ url_for('main.records_page', status='Pagado') }}">Pagados</a>
+      <a class="section-chip" href="{{ url_for('main.records_page', status='') }}">Todos</a>
+      <a class="section-chip" href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
+    </div>
+  </section>
+
+  {% if pending_checkout_records %}
+  <section class="card feature-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Pendientes</p>
+        <h2>Salidas registradas por cobrar</h2>
+      </div>
+      <a class="link-button" href="{{ url_for('main.records_page', status='Salida registrada') }}">Abrir lista completa</a>
+    </div>
+    <div class="pending-records-grid">
+      {% for record in pending_checkout_records %}
+      <article class="pending-record-card">
+        <strong>Ficha {{ record.display_ticket_number }}</strong>
+        <span>{{ record.client_name }}</span>
+        <span>{{ record.vehicle_type }} · {{ record.total_amount|money }}</span>
+        <span>Salida: {{ record.exit_at|dt }}</span>
+        <div class="button-column">
+          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
+          </form>
+          <button class="btn btn-secondary fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
   <section class="card feature-card records-card">
     <div class="section-heading">
       <div>
-        <h2>Registros disponibles actualmente</h2>
+        <h2>
+          {% if filters.status == 'Dentro del estacionamiento' %}
+          Vehiculos dentro del estacionamiento
+          {% elif filters.status %}
+          Registros con estado: {{ filters.status }}
+          {% else %}
+          Todos los registros
+          {% endif %}
+        </h2>
       </div>
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ficha, nombre, placas o tipo">
@@ -88,7 +142,7 @@
             </td>
             <td>{{ record.applied_rate_label or '-' }}</td>
             <td>{{ record.total_amount|money }}</td>
-            <td><span class="status-pill">{{ record.status }}</span></td>
+            <td><span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span></td>
             <td>{{ record.entry_user.full_name }}</td>
             <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
             <td>
@@ -98,7 +152,7 @@
                 {% if not record.is_hourly %}
                 <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit">Marcar salida semanal</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit">Salida semanal</button>
                 </form>
                 {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
@@ -207,7 +261,7 @@
                     {% if not record.is_hourly %}
                     <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-secondary" type="submit">Marcar salida semanal</button>
+                      <button class="btn btn-secondary" type="submit">Salida semanal</button>
                     </form>
                     {% endif %}
                     <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">

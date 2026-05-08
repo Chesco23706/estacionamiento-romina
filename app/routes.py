@@ -220,9 +220,18 @@ def dashboard():
 def records_page():
     filters = parse_record_filters()
     records = build_records_query(filters).all()
+    pending_checkout_records = []
+    if filters["status"] == "Dentro del estacionamiento":
+        pending_checkout_records = (
+            VehicleRecord.query.filter(VehicleRecord.status == "Salida registrada")
+            .order_by(VehicleRecord.exit_at.desc())
+            .limit(8)
+            .all()
+        )
     return render_template(
         "records.html",
         records=records,
+        pending_checkout_records=pending_checkout_records,
         filters=filters,
         vehicle_types=get_vehicle_types(),
         status_options=STATUS_OPTIONS,

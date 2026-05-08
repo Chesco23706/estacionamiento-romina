@@ -197,6 +197,76 @@ def test_employee_sees_exit_and_pay_actions_but_not_delete():
     assert "Eliminar" not in body
 
 
+def test_records_default_view_shows_inside_and_pending_checkout_panel():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "010",
+            "client_name": "Cliente Dentro",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "DNT-010",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "011",
+            "client_name": "Cliente Salio",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "SAL-011",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        exited_record = VehicleRecord.query.filter_by(physical_ticket_number="011").first()
+        exited_id = exited_record.id
+
+    client.post(f"/records/{exited_id}/exit", follow_redirects=True)
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Vehiculos dentro del estacionamiento" in body
+    assert "Cliente Dentro" in body
+    assert "Salidas registradas por cobrar" in body
+    assert "Cliente Salio" in body
+    assert "Marcar pagado" in body
+
+
+def test_weekly_records_default_view_shows_weekly_exit_action():
+    app, client = build_client()
+    login(client)
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "012",
+            "client_name": "Cliente Semana Activa",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "7",
+            "plate_number": "SEM-012",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Semana Activa" in body
+    assert "Salida semanal" in body
+
+
 def test_physical_ticket_can_be_reused_after_exit():
     app, client = build_client()
     login(client)
@@ -274,6 +344,7 @@ def test_create_employee_recovers_missing_employee_role():
         assert user is not None
         assert user.role is not None
         assert user.role.name == "employee"
+        assert user.password_reference == "ClaveSegura2026!"
 
 
 def test_admin_can_edit_and_delete_employee():
@@ -382,5 +453,7 @@ def test_ticket_board_page_exists_and_shows_records():
     body = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "Tablero de fichas" in body
-    assert "FICHA-TAB-01" in body
+    assert "001" in body
+    assert "100" in body
+    assert "Cliente Tablero" in body
     assert "Marcar salida" in body
