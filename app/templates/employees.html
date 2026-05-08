@@ -118,6 +118,16 @@
                   <form method="post" action="{{ url_for('main.reset_password', user_id=user.id) }}" class="employee-action-block">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <strong>Contrasena</strong>
+                    <div class="password-reference-block">
+                      <label>
+                        Ultima contrasena asignada
+                        <div class="password-field">
+                          <input type="password" value="{{ user.password_reference or 'No disponible' }}" readonly data-password-input>
+                          <button class="password-toggle" type="button" data-password-toggle>Mostrar</button>
+                        </div>
+                      </label>
+                      <small class="field-help">Este valor solo muestra la ultima contrasena creada o restablecida desde el panel administrativo.</small>
+                    </div>
                     <div class="wide-inline-form">
                       <div class="password-field">
                         <input type="password" name="new_password" placeholder="Nueva contrasena" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}" required data-password-input>

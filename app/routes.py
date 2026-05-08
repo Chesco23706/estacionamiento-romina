@@ -47,9 +47,12 @@ main_bp = Blueprint("main", __name__)
 
 
 def parse_record_filters():
+    requested_status = request.args.get("status")
     return {
         "search": request.args.get("search", "").strip(),
-        "status": request.args.get("status", "").strip(),
+        "status": "Dentro del estacionamiento"
+        if requested_status is None
+        else requested_status.strip(),
         "vehicle_type": request.args.get("vehicle_type", "").strip(),
     }
 
@@ -83,26 +86,44 @@ def natural_ticket_sort_key(ticket_number):
     return (1, ticket_text.lower())
 
 
+def parse_ticket_slot_number(ticket_number):
+    ticket_text = (ticket_number or "").strip()
+    if not ticket_text:
+        return None
+    digits = "".join(character for character in ticket_text if character.isdigit())
+    if not digits:
+        return None
+    slot_number = int(digits)
+    if 1 <= slot_number <= 100:
+        return slot_number
+    return None
+
+
 def build_ticket_board():
     latest_by_ticket = {}
     for record in VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).all():
-        ticket_key = record.display_ticket_number
-        if ticket_key and ticket_key not in latest_by_ticket:
-            latest_by_ticket[ticket_key] = record
+        slot_number = parse_ticket_slot_number(record.display_ticket_number)
+        if slot_number and slot_number not in latest_by_ticket:
+            latest_by_ticket[slot_number] = record
 
-    board_records = sorted(
-        latest_by_ticket.values(),
-        key=lambda record: (
-            0 if record.exit_at is None else 1,
-            natural_ticket_sort_key(record.display_ticket_number),
-        ),
-    )
+    board_records = []
+    for slot_number in range(1, 101):
+        record = latest_by_ticket.get(slot_number)
+        board_records.append(
+            {
+                "slot_number": slot_number,
+                "slot_label": f"{slot_number:03d}",
+                "record": record,
+                "status_theme": record.status_theme if record else "available",
+            }
+        )
 
     metrics = {
-        "inside": sum(1 for record in board_records if record.status_theme == "inside"),
-        "weekly": sum(1 for record in board_records if record.status_theme == "weekly"),
-        "checkout": sum(1 for record in board_records if record.status_theme == "checkout"),
-        "paid": sum(1 for record in board_records if record.status_theme == "paid"),
+        "available": sum(1 for slot in board_records if slot["status_theme"] == "available"),
+        "inside": sum(1 for slot in board_records if slot["status_theme"] == "inside"),
+        "weekly": sum(1 for slot in board_records if slot["status_theme"] == "weekly"),
+        "checkout": sum(1 for slot in board_records if slot["status_theme"] == "checkout"),
+        "paid": sum(1 for slot in board_records if slot["status_theme"] == "paid"),
     }
     return board_records, metrics
 

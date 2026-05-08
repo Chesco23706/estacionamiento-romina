@@ -242,6 +242,7 @@ def create_employee(form_data, user):
     employee_role = _ensure_employee_role()
     new_user = User(full_name=full_name, username=username, role=employee_role)
     new_user.set_password(password)
+    new_user.password_reference = password
     try:
         db.session.add(new_user)
         db.session.flush()
@@ -256,7 +257,9 @@ def create_employee(form_data, user):
 
 
 def reset_employee_password(target_user, new_password, actor):
-    target_user.set_password(validate_password_strength(new_password))
+    validated_password = validate_password_strength(new_password)
+    target_user.set_password(validated_password)
+    target_user.password_reference = validated_password
     log_action(actor, "employee_password_reset", "user", target_user.id)
     db.session.commit()
 

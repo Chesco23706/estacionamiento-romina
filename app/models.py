@@ -34,6 +34,7 @@ class User(UserMixin, TimestampMixin, db.Model):
     full_name = db.Column(db.String(120), nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    password_reference = db.Column(db.String(255))
     is_active_user = db.Column(db.Boolean, default=True, nullable=False)
     last_login_at = db.Column(db.DateTime(timezone=True))
     failed_login_attempts = db.Column(db.Integer, default=0, nullable=False)
@@ -285,6 +286,7 @@ def seed_defaults():
             if not User.query.filter_by(username=username).first():
                 user = User(full_name=full_name, username=username, role=role)
                 user.set_password(password)
+                user.password_reference = password
                 db.session.add(user)
 
     tariffs = [
@@ -361,6 +363,10 @@ def apply_runtime_migrations():
     if "failed_login_attempts" not in user_columns:
         connection.exec_driver_sql(
             "ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0"
+        )
+    if "password_reference" not in user_columns:
+        connection.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN password_reference VARCHAR(255) NULL"
         )
     if "locked_until" not in user_columns:
         connection.exec_driver_sql(

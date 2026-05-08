@@ -571,7 +571,7 @@ textarea {
 .stat-card:hover,
 .report-card:hover,
 .service-panel:hover,
-.ticket-board-card:hover {
+.ticket-slot:hover {
   transform: translateY(-2px);
   box-shadow: 0 24px 50px rgba(74, 46, 15, 0.16);
 }
@@ -699,71 +699,130 @@ dialog::backdrop {
   gap: 12px;
 }
 
-.ticket-board-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 18px;
+.ticket-board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.ticket-board-card {
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.legend-available {
+  background: rgba(122, 122, 122, 0.12);
+  color: #5f5f5f;
+}
+
+.legend-inside {
+  background: rgba(67, 106, 69, 0.18);
+  color: #234125;
+}
+
+.legend-weekly {
+  background: rgba(15, 67, 107, 0.16);
+  color: #123f65;
+}
+
+.legend-checkout {
+  background: rgba(191, 138, 40, 0.2);
+  color: #744f10;
+}
+
+.legend-paid {
+  background: rgba(94, 79, 57, 0.14);
+  color: #514333;
+}
+
+.ticket-slot-grid {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 12px;
+}
+
+.ticket-slot {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  min-height: 146px;
+  padding: 12px;
+  border-radius: 18px;
   border: 1px solid var(--border);
   background: rgba(255, 251, 244, 0.95);
   box-shadow: var(--shadow-soft);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.ticket-board-card-inside {
+.ticket-slot-available {
+  border-color: rgba(122, 122, 122, 0.22);
+  background: linear-gradient(180deg, rgba(249, 249, 249, 0.96), rgba(234, 234, 234, 0.92));
+}
+
+.ticket-slot-inside {
   border-color: rgba(67, 106, 69, 0.3);
   background: linear-gradient(180deg, rgba(236, 248, 236, 0.96), rgba(221, 240, 223, 0.92));
 }
 
-.ticket-board-card-weekly {
+.ticket-slot-weekly {
   border-color: rgba(15, 67, 107, 0.3);
   background: linear-gradient(180deg, rgba(233, 243, 252, 0.96), rgba(214, 231, 245, 0.92));
 }
 
-.ticket-board-card-checkout {
+.ticket-slot-checkout {
   border-color: rgba(191, 138, 40, 0.32);
   background: linear-gradient(180deg, rgba(255, 246, 223, 0.96), rgba(245, 227, 180, 0.92));
 }
 
-.ticket-board-card-paid {
+.ticket-slot-paid {
   border-color: rgba(94, 79, 57, 0.22);
   background: linear-gradient(180deg, rgba(247, 242, 233, 0.96), rgba(236, 227, 212, 0.92));
 }
 
-.ticket-board-card-top,
-.ticket-board-status-row {
-  display: flex;
+.ticket-slot-number {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  width: 46px;
+  min-height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+  font-weight: 800;
 }
 
-.ticket-board-label {
-  color: var(--muted);
+.ticket-slot-body,
+.ticket-slot-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.ticket-slot-body strong,
+.ticket-slot-body span {
+  color: var(--ink);
   font-size: 0.86rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
-.ticket-board-number {
-  font-size: 1.55rem;
+.ticket-slot-actions {
+  align-content: end;
 }
 
-.ticket-board-meta,
-.ticket-board-actions {
+.ticket-slot-btn {
+  width: 100%;
+  min-height: 34px;
+  font-size: 0.82rem;
+  padding: 0 10px;
+}
+
+.password-reference-block {
   display: grid;
   gap: 8px;
-}
-
-.ticket-board-meta span {
-  color: var(--ink);
-  font-weight: 600;
+  margin: 10px 0 12px;
 }
 
 .search-grid {

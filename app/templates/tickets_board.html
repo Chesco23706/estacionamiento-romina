@@ -3,6 +3,7 @@
 {% block content %}
 <main class="dashboard-layout">
   <section class="stats-grid">
+    <article class="stat-card"><span>Disponibles</span><strong>{{ board_metrics.available }}</strong></article>
     <article class="stat-card"><span>Dentro</span><strong>{{ board_metrics.inside }}</strong></article>
     <article class="stat-card"><span>Semana activa</span><strong>{{ board_metrics.weekly }}</strong></article>
     <article class="stat-card"><span>Salida registrada</span><strong>{{ board_metrics.checkout }}</strong></article>
@@ -12,82 +13,70 @@
   <section class="card feature-card">
     <div class="section-heading">
       <div>
-        <h2>Tablero de fichas</h2>
-        <p class="section-note">Cada ficha cambia de color segun su estado actual y te deja hacer acciones rapidas.</p>
+        <h2>Tablero de fichas 1 al 100</h2>
+        <p class="section-note">Cada cuadro representa una ficha. El color cambia segun su estado actual.</p>
       </div>
-      <a class="link-button" href="{{ url_for('main.records_page') }}">Ir a registros</a>
+      <a class="link-button" href="{{ url_for('main.records_page', status='') }}">Ver todos los registros</a>
     </div>
 
-    <div class="ticket-board-grid">
-      {% for record in records %}
-      <article class="ticket-board-card ticket-board-card-{{ record.status_theme }}">
-        <div class="ticket-board-card-top">
-          <span class="ticket-board-label">Ficha</span>
-          <strong class="ticket-board-number">{{ record.display_ticket_number }}</strong>
+    <div class="ticket-board-legend">
+      <span class="legend-chip legend-available">Disponible</span>
+      <span class="legend-chip legend-inside">Dentro</span>
+      <span class="legend-chip legend-weekly">Semana activa</span>
+      <span class="legend-chip legend-checkout">Salida registrada</span>
+      <span class="legend-chip legend-paid">Pagado</span>
+    </div>
+
+    <div class="ticket-slot-grid">
+      {% for slot in records %}
+      {% set record = slot.record %}
+      <article class="ticket-slot ticket-slot-{{ slot.status_theme }}">
+        <div class="ticket-slot-number">{{ slot.slot_label }}</div>
+        {% if record %}
+        <div class="ticket-slot-body">
+          <strong>{{ record.client_name }}</strong>
+          <span>{{ record.vehicle_type }}</span>
+          <span>{{ record.status }}</span>
         </div>
-        <div class="ticket-board-meta">
-          <span>{{ record.client_name }}</span>
-          <span>{{ record.vehicle_type }} · {{ record.mode_label }}</span>
-          <span>{{ record.plate_number }}</span>
-        </div>
-        <div class="ticket-board-status-row">
-          <span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span>
-          {% if record.status == 'Dentro del estacionamiento' and record.is_hourly %}
-          <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
-          {% elif record.status == 'Dentro del estacionamiento' %}
-          <span
-            class="live-day-counter"
-            data-entry-at="{{ record.entry_at.isoformat() }}"
-            data-contracted-days="{{ record.contracted_days or 7 }}"
-          >
-            Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
-          </span>
-          {% elif record.exit_at %}
-          <span>{{ record.total_amount|money }}</span>
-          {% endif %}
-        </div>
-        {% if not record.is_hourly %}
-        <div class="weekly-summary">
-          <span>Dia {{ record.consumed_day_units() if not record.exit_at else record.consumed_day_units(reference_time=record.exit_at) }} de {{ record.contracted_days or 7 }}</span>
-          <span>Salidas: {{ record.weekly_exit_count }}</span>
-        </div>
-        {% endif %}
-        <div class="ticket-board-actions">
-          <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket</a>
+        <div class="ticket-slot-actions">
           {% if not record.exit_at %}
           {% if not record.is_hourly %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary fixed-action-btn" type="submit">Salida semanal</button>
+            <button class="btn btn-secondary ticket-slot-btn" type="submit">Salida semanal</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary fixed-action-btn" type="submit">Marcar salida</button>
+            <button class="btn btn-secondary ticket-slot-btn" type="submit">Salida</button>
           </form>
           {% endif %}
           {% if record.exit_at and record.status != 'Pagado' %}
           <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
+            <button class="btn ticket-slot-btn" type="submit">Pagado</button>
           </form>
           {% endif %}
-          <button class="btn fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
+          <button class="btn ticket-slot-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>
-      </article>
-      {% else %}
-      <article class="card feature-card">
-        <p>No hay fichas registradas todavia.</p>
+        {% else %}
+        <div class="ticket-slot-body">
+          <strong>Libre</strong>
+          <span>Sin vehiculo</span>
+          <span>Disponible</span>
+        </div>
+        {% endif %}
       </article>
       {% endfor %}
     </div>
   </section>
 
-  {% for record in records %}
+  {% for slot in records if slot.record %}
+  {% set record = slot.record %}
   <dialog class="record-dialog" id="record-dialog-{{ record.id }}">
     <article class="record-dialog-card">
       <div class="section-heading">
-        <h2>Editar ficha {{ record.display_ticket_number }}</h2>
+        <h2>Editar ficha {{ slot.slot_label }}</h2>
         <button class="btn btn-secondary" type="button" data-close-dialog="record-dialog-{{ record.id }}">Cerrar</button>
       </div>
       <form method="post" action="{{ url_for('main.update_record_from_modal', record_id=record.id) }}" class="form-grid">

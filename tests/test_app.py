@@ -188,7 +188,7 @@ def test_employee_sees_exit_and_pay_actions_but_not_delete():
 
     client.post("/logout", follow_redirects=True)
     login(client, "empleado1", "EmpleadoUno2026!")
-    response = client.get("/records")
+    response = client.get("/records?status=Salida+registrada")
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
