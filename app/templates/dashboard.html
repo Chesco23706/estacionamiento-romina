@@ -26,6 +26,7 @@
     <article class="card feature-card">
       <h2>Secciones principales</h2>
       <div class="quick-links">
+        <a class="section-chip" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
         <a class="section-chip" href="{{ url_for('main.records_page') }}">Ver registros</a>
         <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
         {% if current_user.is_admin %}

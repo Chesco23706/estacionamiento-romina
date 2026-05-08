@@ -75,6 +75,38 @@ def build_records_query(filters):
     return query
 
 
+def natural_ticket_sort_key(ticket_number):
+    ticket_text = (ticket_number or "").strip()
+    digits = "".join(character for character in ticket_text if character.isdigit())
+    if digits:
+        return (0, int(digits), ticket_text.lower())
+    return (1, ticket_text.lower())
+
+
+def build_ticket_board():
+    latest_by_ticket = {}
+    for record in VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).all():
+        ticket_key = record.display_ticket_number
+        if ticket_key and ticket_key not in latest_by_ticket:
+            latest_by_ticket[ticket_key] = record
+
+    board_records = sorted(
+        latest_by_ticket.values(),
+        key=lambda record: (
+            0 if record.exit_at is None else 1,
+            natural_ticket_sort_key(record.display_ticket_number),
+        ),
+    )
+
+    metrics = {
+        "inside": sum(1 for record in board_records if record.status_theme == "inside"),
+        "weekly": sum(1 for record in board_records if record.status_theme == "weekly"),
+        "checkout": sum(1 for record in board_records if record.status_theme == "checkout"),
+        "paid": sum(1 for record in board_records if record.status_theme == "paid"),
+    }
+    return board_records, metrics
+
+
 @main_bp.app_template_filter("money")
 def money_filter(value):
     return f"${float(value):,.2f}"
@@ -173,6 +205,19 @@ def records_page():
         filters=filters,
         vehicle_types=get_vehicle_types(),
         status_options=STATUS_OPTIONS,
+        format_duration=format_duration,
+    )
+
+
+@main_bp.route("/tickets-board")
+@login_required
+def tickets_board_page():
+    board_records, board_metrics = build_ticket_board()
+    return render_template(
+        "tickets_board.html",
+        records=board_records,
+        board_metrics=board_metrics,
+        vehicle_types=get_vehicle_types(include_inactive=True),
         format_duration=format_duration,
     )
 

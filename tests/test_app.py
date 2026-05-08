@@ -53,6 +53,10 @@ def test_admin_login_and_vehicle_flow():
         record_id = record.id
 
     exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.status == "Salida registrada"
+
     pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     cut_response = client.post(
         "/cuts/generate", data={"cut_type": "daily"}, follow_redirects=True
@@ -104,6 +108,7 @@ def test_weekly_record_tracks_partial_exits():
         assert updated.weekly_exit_count == 2
         assert updated.latest_weekly_exit_at is not None
         assert updated.exit_at is not None
+        assert updated.status == "Salida registrada"
 
 
 def test_employee_can_register_exit_edit_and_pay():
@@ -144,6 +149,10 @@ def test_employee_can_register_exit_edit_and_pay():
     assert edit_response.status_code == 200
     response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
     assert response.status_code == 200
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.status == "Salida registrada"
+
     pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     assert pay_response.status_code == 200
 
@@ -351,3 +360,27 @@ def test_employee_help_page_is_role_specific():
     assert response.status_code == 200
     assert "<h3>Empleado</h3>" in body
     assert "<h3>Administrador</h3>" not in body
+
+
+def test_ticket_board_page_exists_and_shows_records():
+    app, client = build_client()
+    login(client)
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-TAB-01",
+            "client_name": "Cliente Tablero",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "TAB-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    response = client.get("/tickets-board")
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Tablero de fichas" in body
+    assert "FICHA-TAB-01" in body
+    assert "Marcar salida" in body

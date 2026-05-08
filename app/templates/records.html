@@ -103,7 +103,7 @@
                 {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit">{{ 'Cerrar semana' if not record.is_hourly else 'Registrar salida' }}</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit">Marcar salida</button>
                 </form>
                 {% endif %}
                 {% if record.exit_at and record.status != 'Pagado' %}
@@ -212,7 +212,7 @@
                     {% endif %}
                     <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-secondary" type="submit">{{ 'Cerrar semana' if not record.is_hourly else 'Registrar salida' }}</button>
+                      <button class="btn btn-secondary" type="submit">Marcar salida</button>
                     </form>
                     {% endif %}
                     {% if record.exit_at and record.status != 'Pagado' %}

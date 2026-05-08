@@ -131,7 +131,7 @@ class VehicleRecord(TimestampMixin, db.Model):
         self.duration_seconds = pricing["duration_seconds"]
         self.applied_rate_label = pricing["rate_label"]
         self.total_amount = pricing["total"]
-        self.status = "Pendiente de pago"
+        self.status = "Salida registrada"
 
     @property
     def is_hourly(self):
@@ -188,6 +188,16 @@ class VehicleRecord(TimestampMixin, db.Model):
         if not self.weekly_exit_logs:
             return None
         return self.weekly_exit_logs[0].exited_at
+
+    @property
+    def status_theme(self):
+        if self.status == "Pagado":
+            return "paid"
+        if self.status in {"Salida registrada", "Pendiente de pago"}:
+            return "checkout"
+        if not self.is_hourly and self.weekly_exit_count:
+            return "weekly"
+        return "inside"
 
 
 class WeeklyExitLog(TimestampMixin, db.Model):
