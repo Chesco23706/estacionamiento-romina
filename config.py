@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.pool import NullPool
 
@@ -49,6 +50,7 @@ class Config:
     ADMIN_BOOTSTRAP_USERNAME = os.environ.get("ADMIN_BOOTSTRAP_USERNAME", "admin")
     ADMIN_BOOTSTRAP_NAME = os.environ.get("ADMIN_BOOTSTRAP_NAME", "Administrador General")
     ADMIN_BOOTSTRAP_PASSWORD = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD")
+    APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Mexico_City")
 
 
 class DevelopmentConfig(Config):

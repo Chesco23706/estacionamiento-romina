@@ -1,6 +1,7 @@
 from app import create_app
 from app.extensions import db
 from app.models import CashCut, User, VehicleRecord
+from app.pricing import utc_now
 from config import TestingConfig
 
 
@@ -52,12 +53,13 @@ def test_admin_login_and_vehicle_flow():
         assert record.service_oil_change is True
         record_id = record.id
 
-    exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
-        assert updated.status == "Salida registrada"
+        assert updated.is_paid is True
+        assert updated.exit_at is None
 
-    pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
     cut_response = client.post(
         "/cuts/generate", data={"cut_type": "daily"}, follow_redirects=True
     )
@@ -95,10 +97,12 @@ def test_weekly_record_tracks_partial_exits():
         record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SEM").first()
         record_id = record.id
 
+    pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     first_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
     second_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
     final_close = client.post(f"/records/{record_id}/exit", follow_redirects=True)
 
+    assert pay_response.status_code == 200
     assert first_exit.status_code == 200
     assert second_exit.status_code == 200
     assert final_close.status_code == 200
@@ -108,7 +112,7 @@ def test_weekly_record_tracks_partial_exits():
         assert updated.weekly_exit_count == 2
         assert updated.latest_weekly_exit_at is not None
         assert updated.exit_at is not None
-        assert updated.status == "Salida registrada"
+        assert updated.status == "Pagado"
 
 
 def test_employee_can_register_exit_edit_and_pay():
@@ -147,14 +151,17 @@ def test_employee_can_register_exit_edit_and_pay():
         follow_redirects=True,
     )
     assert edit_response.status_code == 200
-    response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
-    assert response.status_code == 200
+    blocked_exit = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    assert blocked_exit.status_code == 200
+    assert "Primero registra el pago antes de marcar la salida." in blocked_exit.get_data(as_text=True)
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
-        assert updated.status == "Salida registrada"
+        assert updated.exit_at is None
 
     pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     assert pay_response.status_code == 200
+    exit_response = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    assert exit_response.status_code == 200
 
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
@@ -183,16 +190,19 @@ def test_employee_sees_exit_and_pay_actions_but_not_delete():
         record = VehicleRecord.query.filter_by(
             physical_ticket_number="FICHA-EMP-01"
         ).first()
-        record.close_record(User.query.filter_by(username="admin").first())
+        admin_user = User.query.filter_by(username="admin").first()
+        record.paid_at = record.entry_at
+        record.payment_user = admin_user
         db.session.commit()
 
     client.post("/logout", follow_redirects=True)
     login(client, "empleado1", "EmpleadoUno2026!")
-    response = client.get("/records?status=Salida+registrada")
+    response = client.get("/records")
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Marcar pagado" in body
+    assert "Pago registrado" in body
+    assert "Marcar salida" in body
     assert "Editar" in body
     assert "Eliminar" not in body
 
@@ -230,16 +240,16 @@ def test_records_default_view_shows_inside_and_pending_checkout_panel():
         exited_record = VehicleRecord.query.filter_by(physical_ticket_number="011").first()
         exited_id = exited_record.id
 
-    client.post(f"/records/{exited_id}/exit", follow_redirects=True)
+    client.post(f"/records/{exited_id}/pay", follow_redirects=True)
     response = client.get("/records")
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
     assert "Vehiculos dentro del estacionamiento" in body
     assert "Cliente Dentro" in body
-    assert "Salidas registradas por cobrar" in body
+    assert "Pagados listos para salir" in body
     assert "Cliente Salio" in body
-    assert "Marcar pagado" in body
+    assert "Marcar salida" in body
 
 
 def test_weekly_records_default_view_shows_weekly_exit_action():
@@ -287,6 +297,7 @@ def test_physical_ticket_can_be_reused_after_exit():
         first_record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-03").first()
         first_id = first_record.id
 
+    client.post(f"/records/{first_id}/pay", follow_redirects=True)
     client.post(f"/records/{first_id}/exit", follow_redirects=True)
 
     second_response = client.post(
@@ -444,6 +455,7 @@ def test_employee_dashboard_shows_simple_core_actions():
     assert "Registrar salida" in body
     assert "Registros activos" in body
     assert "Buscar por placa o folio" in body
+    assert "Registrar pago" in body
 
 
 def test_operations_page_uses_touch_friendly_copy():
@@ -480,4 +492,13 @@ def test_ticket_board_page_exists_and_shows_records():
     assert "001" in body
     assert "100" in body
     assert "Cliente Tablero" in body
-    assert "Marcar salida" in body
+    assert "Pagar" in body
+    assert "Salida" in body
+
+
+def test_datetime_filter_uses_mexico_city_timezone():
+    app, _client = build_client()
+    with app.app_context():
+        rendered = app.jinja_env.filters["dt"](utc_now())
+    assert len(rendered) == 19
+    assert rendered.count(":") == 2

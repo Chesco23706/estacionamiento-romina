@@ -1,4 +1,5 @@
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from flask import (
     Blueprint,
@@ -44,6 +45,31 @@ from .tickets import build_ticket_pdf
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
+
+SPANISH_WEEKDAYS = (
+    "lunes",
+    "martes",
+    "miercoles",
+    "jueves",
+    "viernes",
+    "sabado",
+    "domingo",
+)
+
+SPANISH_MONTHS = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
 
 
 def parse_record_filters():
@@ -128,9 +154,35 @@ def build_ticket_board():
     return board_records, metrics
 
 
+def get_local_timezone():
+    timezone_name = current_app.config.get("APP_TIMEZONE", "America/Mexico_City")
+    try:
+        return ZoneInfo(timezone_name)
+    except Exception:
+        return ZoneInfo("America/Mexico_City")
+
+
+def localize_datetime(moment):
+    return ensure_utc(moment).astimezone(get_local_timezone())
+
+
+def format_operating_date_label(moment):
+    local_moment = localize_datetime(moment)
+    weekday = SPANISH_WEEKDAYS[local_moment.weekday()]
+    month = SPANISH_MONTHS[local_moment.month - 1]
+    return f"{weekday}, {local_moment.day:02d} {month} {local_moment.year}".upper()
+
+
+def format_operating_time_label(moment):
+    local_moment = localize_datetime(moment)
+    hour = local_moment.strftime("%I:%M")
+    suffix = "a. m." if local_moment.hour < 12 else "p. m."
+    return f"{hour} {suffix}"
+
+
 def enrich_record_display(record, reference_time=None):
     target_time = reference_time or utc_now()
-    if record.exit_at:
+    if record.exit_at or record.is_paid:
         record.live_total_amount = float(record.total_amount or 0)
         record.live_rate_label = record.applied_rate_label or "-"
         return record
@@ -158,13 +210,13 @@ def money_filter(value):
 def datetime_filter(value):
     if not value:
         return "-"
-    return ensure_utc(value).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    return localize_datetime(value).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def format_datetime_for_ticket(value):
     if not value:
         return "-"
-    return ensure_utc(value).astimezone().strftime("%d/%m/%Y %H:%M")
+    return localize_datetime(value).strftime("%d/%m/%Y %H:%M")
 
 
 @main_bp.app_context_processor
@@ -226,6 +278,7 @@ def logout():
 @main_bp.route("/")
 @login_required
 def dashboard():
+    now_local = localize_datetime(utc_now())
     records = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).limit(8).all()
     active_records = (
         VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
@@ -234,8 +287,12 @@ def dashboard():
         .all()
     )
     pending_checkout_records = (
-        VehicleRecord.query.filter(VehicleRecord.status == "Salida registrada")
-        .order_by(VehicleRecord.exit_at.desc())
+        VehicleRecord.query.filter(
+            VehicleRecord.status == "Dentro del estacionamiento",
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.exit_at.is_(None),
+        )
+        .order_by(VehicleRecord.paid_at.desc())
         .limit(6)
         .all()
     )
@@ -253,7 +310,9 @@ def dashboard():
         pending_checkout_records=pending_checkout_records,
         metrics=metrics,
         format_duration=format_duration,
-        now_local=utc_now().astimezone(),
+        now_local=now_local,
+        now_local_label=format_operating_date_label(now_local),
+        now_time_label=format_operating_time_label(now_local),
         vehicle_types=get_vehicle_types(include_inactive=True),
         status_options=STATUS_OPTIONS,
     )
@@ -267,8 +326,12 @@ def records_page():
     pending_checkout_records = []
     if filters["status"] == "Dentro del estacionamiento":
         pending_checkout_records = (
-            VehicleRecord.query.filter(VehicleRecord.status == "Salida registrada")
-            .order_by(VehicleRecord.exit_at.desc())
+            VehicleRecord.query.filter(
+                VehicleRecord.status == "Dentro del estacionamiento",
+                VehicleRecord.paid_at.isnot(None),
+                VehicleRecord.exit_at.is_(None),
+            )
+            .order_by(VehicleRecord.paid_at.desc())
             .limit(8)
             .all()
         )

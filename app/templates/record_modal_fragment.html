@@ -84,21 +84,21 @@
     </form>
     <div class="record-modal-actions">
       {% if not record.exit_at %}
+      <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
+          {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+        </button>
+      </form>
       {% if not record.is_hourly %}
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit">Salida semanal</button>
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
       </form>
       {% endif %}
       <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit">Marcar salida</button>
-      </form>
-      {% endif %}
-      {% if record.exit_at and record.status != 'Pagado' %}
-      <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit">Marcar pagado</button>
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Marcar salida</button>
       </form>
       {% endif %}
       {% if current_user.is_admin %}
@@ -116,6 +116,7 @@
           <thead>
             <tr>
               <th>Hora de salida</th>
+              <th>Registrado en sistema</th>
               <th>Dia transcurrido</th>
               <th>Registrado por</th>
             </tr>
@@ -124,6 +125,7 @@
             {% for exit_log in record.weekly_exit_logs %}
             <tr>
               <td>{{ exit_log.exited_at|dt }}</td>
+              <td>{{ exit_log.created_at|dt }}</td>
               <td>Dia {{ exit_log.day_number }}</td>
               <td>{{ exit_log.created_by.full_name }}</td>
             </tr>
