@@ -106,12 +106,15 @@ class VehicleRecord(TimestampMixin, db.Model):
     applied_rate_label = db.Column(db.String(255))
     total_amount = db.Column(db.Numeric(10, 2), default=0, nullable=False)
     status = db.Column(db.String(30), default="Dentro del estacionamiento", nullable=False)
+    paid_at = db.Column(db.DateTime(timezone=True))
     notes = db.Column(db.Text)
     entry_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     exit_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    payment_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
     entry_user = db.relationship("User", foreign_keys=[entry_user_id])
     exit_user = db.relationship("User", foreign_keys=[exit_user_id])
+    payment_user = db.relationship("User", foreign_keys=[payment_user_id])
     weekly_exit_logs = db.relationship(
         "WeeklyExitLog",
         back_populates="record",
@@ -120,19 +123,23 @@ class VehicleRecord(TimestampMixin, db.Model):
     )
 
     def close_record(self, user):
+        if not self.is_paid:
+            raise ValueError("Primero registra el pago para permitir la salida.")
+        closed_at = utc_now()
         pricing = calculate_charge(
             self.vehicle_type,
             self.entry_at,
-            utc_now(),
+            closed_at,
             stay_mode=self.stay_mode,
             contracted_days=self.contracted_days,
         )
-        self.exit_at = utc_now()
+        self.exit_at = closed_at
         self.exit_user = user
         self.duration_seconds = pricing["duration_seconds"]
-        self.applied_rate_label = pricing["rate_label"]
-        self.total_amount = pricing["total"]
-        self.status = "Salida registrada"
+        if not self.total_amount:
+            self.applied_rate_label = pricing["rate_label"]
+            self.total_amount = pricing["total"]
+        self.status = "Pagado"
 
     @property
     def is_hourly(self):
@@ -159,8 +166,22 @@ class VehicleRecord(TimestampMixin, db.Model):
         return max(self.contracted_days - consumed, 0)
 
     def mark_paid(self):
-        if self.status in {"Pendiente de pago", "Salida registrada"}:
+        if self.exit_at:
             self.status = "Pagado"
+        else:
+            self.status = "Dentro del estacionamiento"
+
+    @property
+    def is_paid(self):
+        return self.paid_at is not None or self.status == "Pagado"
+
+    @property
+    def payment_state_label(self):
+        return "Pagado" if self.is_paid else "Pendiente"
+
+    @property
+    def payment_theme(self):
+        return "paid" if self.is_paid else "checkout"
 
     @property
     def services_total_amount(self):
@@ -192,9 +213,11 @@ class VehicleRecord(TimestampMixin, db.Model):
 
     @property
     def status_theme(self):
-        if self.status == "Pagado":
+        if self.status == "Pagado" and self.exit_at:
             return "paid"
         if self.status in {"Salida registrada", "Pendiente de pago"}:
+            return "checkout"
+        if self.is_paid:
             return "checkout"
         if not self.is_hourly and self.weekly_exit_count:
             return "weekly"
@@ -417,6 +440,14 @@ def apply_runtime_migrations():
         if "service_oil_price" not in record_columns:
             connection.exec_driver_sql(
                 "ALTER TABLE vehicle_records ADD COLUMN service_oil_price NUMERIC(10, 2) NOT NULL DEFAULT 0"
+            )
+        if "paid_at" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN paid_at TIMESTAMP NULL"
+            )
+        if "payment_user_id" not in record_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN payment_user_id INTEGER NULL"
             )
     if "weekly_exit_logs" not in table_names:
         WeeklyExitLog.__table__.create(bind=db.engine, checkfirst=True)

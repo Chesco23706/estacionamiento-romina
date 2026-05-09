@@ -13,7 +13,6 @@
     </div>
     <div class="quick-links">
       <a class="section-chip" href="{{ url_for('main.records_page') }}">Vehiculos dentro</a>
-      <a class="section-chip" href="{{ url_for('main.records_page', status='Salida registrada') }}">Salidas por cobrar</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='Pagado') }}">Pagados</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='') }}">Todos</a>
       <a class="section-chip" href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
@@ -25,9 +24,9 @@
     <div class="section-heading">
       <div>
         <p class="eyebrow">Pendientes</p>
-        <h2>Salidas registradas por cobrar</h2>
+        <h2>Pagados listos para salir</h2>
       </div>
-      <a class="link-button" href="{{ url_for('main.records_page', status='Salida registrada') }}">Abrir lista completa</a>
+      <a class="link-button" href="{{ url_for('main.records_page') }}">Abrir lista completa</a>
     </div>
     <div class="pending-records-grid">
       {% for record in pending_checkout_records %}
@@ -35,11 +34,11 @@
         <strong>Ficha {{ record.display_ticket_number }}</strong>
         <span>{{ record.client_name }}</span>
         <span>{{ record.vehicle_type }} | {{ record.total_amount|money }}</span>
-        <span>Salida: {{ record.exit_at|dt }}</span>
+        <span>Pago: {{ record.paid_at|dt }}</span>
         <div class="button-column">
-          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+          <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
+            <button class="btn fixed-action-btn" type="submit">Marcar salida</button>
           </form>
           <button class="btn btn-secondary fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>
@@ -146,21 +145,21 @@
               <div class="button-column record-actions">
                 <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
                 {% if not record.exit_at %}
+                <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn fixed-action-btn" type="submit" {% if record.is_paid %}disabled{% endif %}>
+                    {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+                  </button>
+                </form>
                 {% if not record.is_hourly %}
                 <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit">Salida semanal</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
                 </form>
                 {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit">Marcar salida</button>
-                </form>
-                {% endif %}
-                {% if record.exit_at and record.status != 'Pagado' %}
-                <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn fixed-action-btn" type="submit">Marcar pagado</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Marcar salida</button>
                 </form>
                 {% endif %}
                 <button class="btn fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
@@ -190,12 +189,12 @@
         Todos los registros
         {% endif %}
       </h2>
-      <p>Busca por ficha o placa y usa botones grandes para salida, pago o edicion.</p>
+      <p>Busca por ficha o placa y usa botones separados para pago y salida.</p>
     </div>
     <div class="quick-links employee-chip-row">
       <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
       <a class="section-chip" href="{{ url_for('main.records_page') }}">Vehiculos activos</a>
-      <a class="section-chip" href="{{ url_for('main.records_page', status='Salida registrada') }}">Listos para cobrar</a>
+      <a class="section-chip" href="{{ url_for('main.records_page') }}">Pagados listos para salir</a>
       <a class="section-chip" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
     </div>
   </section>
@@ -224,31 +223,31 @@
     <div class="section-heading">
       <div>
         <p class="eyebrow">Cobro pendiente</p>
-        <h2>Salidas registradas por cobrar</h2>
+        <h2>Pagados listos para salir</h2>
       </div>
-      <a class="link-button" href="{{ url_for('main.records_page', status='Salida registrada') }}">Ver todas</a>
+      <a class="link-button" href="{{ url_for('main.records_page') }}">Ver todas</a>
     </div>
     <div class="employee-record-grid employee-pending-grid">
       {% for record in pending_checkout_records %}
       <article class="employee-record-card checkout-card" data-record-search-card data-search-text="{{ (record.display_ticket_number ~ ' ' ~ record.client_name ~ ' ' ~ record.plate_number ~ ' ' ~ record.vehicle_type)|lower }}">
         <div class="employee-record-top">
           <span class="employee-record-ticket">Ficha {{ record.display_ticket_number }}</span>
-          <span class="status-pill status-pill-checkout">Pendiente</span>
+          <span class="status-pill status-pill-paid">Pagado</span>
         </div>
         <strong>{{ record.client_name }}</strong>
         <div class="employee-record-meta">
           <span>{{ record.vehicle_type }}</span>
           <span>{{ record.plate_number }}</span>
-          <span>Salida {{ record.exit_at|dt }}</span>
+          <span>Pago {{ record.paid_at|dt }}</span>
         </div>
         <div class="employee-record-total amount-block">
-          <span>Total a pagar</span>
+          <span>Total pagado</span>
           <strong>{{ record.total_amount|money }}</strong>
         </div>
         <div class="employee-record-actions">
-          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+          <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn touch-primary-btn" type="submit">Marcar pagado</button>
+            <button class="btn touch-primary-btn" type="submit">Marcar salida</button>
           </form>
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
           <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket</a>
@@ -290,6 +289,7 @@
           <span>{{ record.vehicle_type }}</span>
           <span>{{ record.plate_number }}</span>
           <span>Entrada {{ record.entry_at|dt }}</span>
+          <span class="status-pill status-pill-{{ record.payment_theme }}">{{ record.payment_state_label }}</span>
         </div>
         <div class="employee-record-info-strip">
           <div>
@@ -320,21 +320,21 @@
         {% endif %}
         <div class="employee-record-actions">
           {% if not record.exit_at %}
+          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
+              {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+            </button>
+          </form>
           {% if not record.is_hourly %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary" type="submit">Salida semanal</button>
+            <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn touch-primary-btn" type="submit">Finalizar salida</button>
-          </form>
-          {% endif %}
-          {% if record.exit_at and record.status != 'Pagado' %}
-          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn touch-primary-btn" type="submit">Marcar pagado</button>
+            <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Registrar salida</button>
           </form>
           {% endif %}
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>

@@ -169,11 +169,9 @@ def update_vehicle_record(record, form_data, user):
 def register_exit(record, user):
     if record.exit_at:
         raise ValueError("La salida ya fue registrada previamente.")
+    if not record.is_paid:
+        raise ValueError("Primero registra el pago antes de marcar la salida.")
     record.close_record(user)
-    record.total_amount = record.total_amount + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
-    if record.services_total_amount:
-        base_label = record.applied_rate_label or ""
-        record.applied_rate_label = f"{base_label} | {record.services_label}".strip(" |")
     log_action(
         user,
         "vehicle_exit_registered",
@@ -186,8 +184,23 @@ def register_exit(record, user):
 
 
 def register_payment(record, user):
-    if not record.exit_at:
-        raise ValueError("Primero debes registrar la salida del vehiculo.")
+    if record.is_paid:
+        raise ValueError("Ese registro ya fue marcado como pagado.")
+    paid_at = utc_now()
+    pricing = calculate_charge(
+        record.vehicle_type,
+        record.entry_at,
+        paid_at,
+        stay_mode=record.stay_mode,
+        contracted_days=record.contracted_days,
+    )
+    record.duration_seconds = pricing["duration_seconds"]
+    record.applied_rate_label = pricing["rate_label"]
+    record.total_amount = pricing["total"] + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
+    if record.services_total_amount:
+        record.applied_rate_label = f"{record.applied_rate_label} | {record.services_label}"
+    record.paid_at = paid_at
+    record.payment_user = user
     record.mark_paid()
     log_action(user, "vehicle_payment_registered", "vehicle_record", record.id)
     db.session.commit()
@@ -199,6 +212,8 @@ def register_weekly_exit(record, user):
         raise ValueError("Solo los registros semanales permiten salidas parciales.")
     if record.exit_at:
         raise ValueError("Este registro semanal ya fue cerrado.")
+    if not record.is_paid:
+        raise ValueError("Primero registra el pago antes de registrar la salida semanal.")
 
     day_number = record.consumed_day_units()
     weekly_exit = WeeklyExitLog(
@@ -350,10 +365,10 @@ def generate_cash_cut(cut_type, user):
     for record in records:
         by_type.setdefault(record.vehicle_type, {"count": 0, "income": 0.0})
         by_type[record.vehicle_type]["count"] += 1
-        if record.status == "Pagado":
+        if record.is_paid:
             total_income += Decimal(record.total_amount)
             by_type[record.vehicle_type]["income"] += float(record.total_amount)
-        elif record.status == "Pendiente de pago":
+        else:
             total_pending += Decimal(record.total_amount)
 
     cut = CashCut(
@@ -364,7 +379,7 @@ def generate_cash_cut(cut_type, user):
         total_income=total_income,
         total_pending=total_pending,
         vehicles_served=len(records),
-        vehicles_paid=sum(1 for record in records if record.status == "Pagado"),
+        vehicles_paid=sum(1 for record in records if record.is_paid),
         breakdown_json=json.dumps(by_type),
     )
     db.session.add(cut)
@@ -381,12 +396,12 @@ def dashboard_metrics():
     exited_records = [
         record
         for record in records
-        if record.status in {"Pendiente de pago", "Pagado", "Salida registrada"}
+        if record.exit_at
     ]
     total_day = sum(
         float(record.total_amount)
         for record in records
-        if record.status == "Pagado"
+        if record.is_paid
         and record.exit_at
         and ensure_utc(record.exit_at).date() == utc_now().date()
     )
@@ -394,14 +409,14 @@ def dashboard_metrics():
     total_week = sum(
         float(record.total_amount)
         for record in records
-        if record.status == "Pagado"
+        if record.is_paid
         and record.exit_at
         and week_start <= ensure_utc(record.exit_at) < week_end
     )
     pending = sum(
         float(record.total_amount)
         for record in records
-        if record.status == "Pendiente de pago"
+        if record.exit_at and not record.is_paid
     )
     vehicle_count = {vehicle_type: 0 for vehicle_type in get_vehicle_types(include_inactive=True)}
     for record in active_records:

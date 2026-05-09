@@ -6,7 +6,7 @@
     <article class="stat-card"><span>Disponibles</span><strong>{{ board_metrics.available }}</strong></article>
     <article class="stat-card"><span>Dentro</span><strong>{{ board_metrics.inside }}</strong></article>
     <article class="stat-card"><span>Semana activa</span><strong>{{ board_metrics.weekly }}</strong></article>
-    <article class="stat-card"><span>Salida registrada</span><strong>{{ board_metrics.checkout }}</strong></article>
+    <article class="stat-card"><span>Pagadas listas para salir</span><strong>{{ board_metrics.checkout }}</strong></article>
     <article class="stat-card"><span>Pagadas</span><strong>{{ board_metrics.paid }}</strong></article>
   </section>
 
@@ -23,7 +23,7 @@
       <span class="legend-chip legend-available">Disponible</span>
       <span class="legend-chip legend-inside">Dentro</span>
       <span class="legend-chip legend-weekly">Semana activa</span>
-      <span class="legend-chip legend-checkout">Salida registrada</span>
+      <span class="legend-chip legend-checkout">Pagado listo para salir</span>
       <span class="legend-chip legend-paid">Pagado</span>
     </div>
 
@@ -40,21 +40,21 @@
         </div>
         <div class="ticket-slot-actions">
           {% if not record.exit_at %}
+          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn ticket-slot-btn" type="submit" {% if record.is_paid %}disabled{% endif %}>
+              {% if record.is_paid %}Pago listo{% else %}Pagar{% endif %}
+            </button>
+          </form>
           {% if not record.is_hourly %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary ticket-slot-btn" type="submit">Salida semanal</button>
+            <button class="btn btn-secondary ticket-slot-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary ticket-slot-btn" type="submit">Salida</button>
-          </form>
-          {% endif %}
-          {% if record.exit_at and record.status != 'Pagado' %}
-          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn ticket-slot-btn" type="submit">Pagado</button>
+            <button class="btn btn-secondary ticket-slot-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida</button>
           </form>
           {% endif %}
           <button class="btn ticket-slot-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
@@ -157,21 +157,21 @@
       </form>
       <div class="record-modal-actions">
         {% if not record.exit_at %}
+        <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
+            {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+          </button>
+        </form>
         {% if not record.is_hourly %}
         <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit">Salida semanal</button>
+          <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
         </form>
         {% endif %}
         <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit">Marcar salida</button>
-        </form>
-        {% endif %}
-        {% if record.exit_at and record.status != 'Pagado' %}
-        <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit">Marcar pagado</button>
+          <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Marcar salida</button>
         </form>
         {% endif %}
         {% if current_user.is_admin %}

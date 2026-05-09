@@ -107,7 +107,7 @@
     <div class="employee-console-title">
       <p class="eyebrow">Administracion general</p>
       <h2>Bitacora de estacionamiento</h2>
-      <p>{{ now_local.strftime("%A, %d %B %Y").upper() }} - {{ now_local.strftime("%I:%M %p") }}</p>
+      <p>{{ now_local_label }} - {{ now_time_label }}</p>
     </div>
     <div class="employee-console-actions">
       <form method="get" action="{{ url_for('main.records_page') }}" class="employee-hero-search" id="busqueda">
@@ -140,9 +140,9 @@
       <p>Cobrado en el turno actual</p>
     </article>
     <article class="employee-summary-card exit-card">
-      <span>Salidas recientes</span>
+      <span>Listos para salir</span>
       <strong>{{ pending_checkout_records|length }}</strong>
-      <p>Listas para cobrar</p>
+      <p>Vehiculos ya pagados</p>
     </article>
   </section>
 
@@ -185,20 +185,29 @@
             </strong>
             {% endif %}
           </span>
-          <span><mark class="employee-status-tag employee-status-tag-{{ record.status_theme }}">Activo</mark></span>
+          <span class="employee-status-stack">
+            <mark class="employee-status-tag employee-status-tag-{{ record.status_theme }}">Activo</mark>
+            <mark class="employee-status-tag employee-status-tag-{{ record.payment_theme }}">{{ record.payment_state_label }}</mark>
+          </span>
           <span>{{ record.live_total_amount|money }}</span>
           <div class="employee-row-actions">
+            <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="icon-action-btn icon-action-blue" type="submit" title="{% if record.is_paid %}Pago ya registrado{% else %}Registrar pago{% endif %}" {% if record.is_paid %}disabled{% endif %}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM7 12h.01M10 12h7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+              </button>
+            </form>
             {% if not record.is_hourly %}
             <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="icon-action-btn icon-action-blue" type="submit" title="Salida semanal">
+              <button class="icon-action-btn icon-action-sky" type="submit" title="{% if record.is_paid %}Salida semanal{% else %}Paga primero para registrar la salida semanal{% endif %}" {% if not record.is_paid %}disabled{% endif %}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
               </button>
             </form>
             {% endif %}
             <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="icon-action-btn icon-action-green" type="submit" title="Registrar salida">
+              <button class="icon-action-btn icon-action-green" type="submit" title="{% if record.is_paid %}Registrar salida{% else %}Paga primero para permitir la salida{% endif %}" {% if not record.is_paid %}disabled{% endif %}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7l5 5-5 5M5 12h9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
               </button>
             </form>
@@ -221,7 +230,7 @@
       <section class="card side-mini-panel">
         <div class="employee-panel-header compact">
           <div>
-            <h3>Salidas recientes</h3>
+            <h3>Listos para salir</h3>
           </div>
         </div>
         <div class="recent-exit-list">
@@ -235,7 +244,7 @@
           </article>
           {% else %}
           <article class="recent-exit-item empty-mini">
-            <span>No hay salidas pendientes.</span>
+            <span>No hay vehiculos pagados en espera.</span>
           </article>
           {% endfor %}
         </div>
@@ -248,7 +257,7 @@
           </div>
         </div>
         <div class="quick-action-stack">
-          <a class="quick-action-btn quick-action-blue" href="{{ url_for('main.records_page', status='Salida registrada') }}">Registrar pago</a>
+          <a class="quick-action-btn quick-action-blue" href="{{ url_for('main.records_page') }}">Registrar pago</a>
           <a class="quick-action-btn quick-action-green" href="{{ url_for('main.records_page') }}">Registrar salida</a>
           <a class="quick-action-btn quick-action-slate" href="{{ url_for('main.records_page') }}">Editar registros</a>
           <a class="quick-action-btn quick-action-slate" href="{{ url_for('main.tickets_board_page') }}">Imprimir ticket</a>

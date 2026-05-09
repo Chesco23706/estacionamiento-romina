@@ -47,6 +47,13 @@
       </aside>
 
       <div class="employee-stage-shell">
+        <section class="employee-session-bar">
+          <div class="employee-session-card">
+            <span>Cuenta activa</span>
+            <strong>{{ current_user.full_name }}</strong>
+            <small>@{{ current_user.username }} · Empleado</small>
+          </div>
+        </section>
     {% else %}
     <div class="page-shell">
       <header class="topbar-shell">
