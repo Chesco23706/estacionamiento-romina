@@ -208,7 +208,9 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
           </form>
+          <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>
+        {% include "record_modal_fragment.html" %}
       </article>
       {% else %}
       <article class="empty-state-card">
@@ -251,6 +253,10 @@
             <strong>{{ record.exit_at|dt }}</strong>
           </div>
         </div>
+        <div class="employee-record-actions">
+          <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
+        </div>
+        {% include "record_modal_fragment.html" %}
       </article>
       {% else %}
       <article class="empty-state-card">
