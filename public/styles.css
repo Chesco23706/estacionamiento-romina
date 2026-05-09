@@ -1156,7 +1156,7 @@ thead {
 
 .employee-app-shell {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
@@ -1168,8 +1168,8 @@ thead {
 .employee-sidebar-shell {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 16px;
-  padding: 14px 10px;
+  gap: 12px;
+  padding: 12px 8px;
   background: rgba(255, 255, 255, 0.82);
   border-right: 1px solid rgba(15, 67, 107, 0.1);
   box-shadow: 12px 0 28px rgba(15, 67, 107, 0.06);
@@ -1206,8 +1206,8 @@ thead {
 }
 
 .employee-nav-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1221,8 +1221,8 @@ thead {
 }
 
 .employee-nav-btn svg {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
 }
 
 .employee-nav-btn:hover,
@@ -1234,7 +1234,9 @@ thead {
 }
 
 .employee-stage-shell {
-  padding: 18px 18px 22px;
+  width: min(1260px, 100%);
+  margin: 0 auto;
+  padding: 12px 12px 18px;
   min-width: 0;
   overflow-x: hidden;
 }
@@ -1242,15 +1244,15 @@ thead {
 .employee-session-bar {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .employee-session-card {
   display: grid;
   gap: 3px;
-  min-width: 220px;
-  padding: 10px 14px;
-  border-radius: 16px;
+  min-width: 200px;
+  padding: 8px 12px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(15, 67, 107, 0.1);
   box-shadow: var(--shadow-soft);
@@ -1300,7 +1302,7 @@ thead {
 .employee-entry-shell,
 .employee-records-shell {
   display: grid;
-  gap: 20px;
+  gap: 14px;
 }
 
 .employee-console {
@@ -1313,12 +1315,12 @@ thead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
 }
 
 .employee-console-title h2 {
-  margin-bottom: 6px;
-  font-size: clamp(1.8rem, 2.6vw, 2.5rem);
+  margin-bottom: 4px;
+  font-size: clamp(1.45rem, 2vw, 2rem);
   line-height: 1;
   text-transform: uppercase;
 }
@@ -1326,33 +1328,33 @@ thead {
 .employee-console-title p:last-child {
   margin-bottom: 0;
   color: var(--ink);
-  font-size: 0.98rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
 .employee-console-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
 .employee-hero-search {
-  min-width: min(460px, 100%);
+  min-width: min(340px, 100%);
 }
 
 .employee-hero-search input {
-  min-height: 50px;
-  padding: 12px 16px;
-  border-radius: 15px;
-  font-size: 0.98rem;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 13px;
+  font-size: 0.92rem;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: var(--shadow-soft);
 }
 
 .employee-cta-btn {
-  min-width: 228px;
-  min-height: 50px;
-  border-radius: 14px;
+  min-width: 186px;
+  min-height: 44px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #1e6dd8, #1456ba);
   color: #fff;
   box-shadow: 0 16px 28px rgba(30, 109, 216, 0.2);
@@ -1360,13 +1362,13 @@ thead {
 
 .employee-summary-row {
   display: grid;
-  grid-template-columns: 1.25fr 0.9fr 0.9fr 0.9fr;
-  gap: 12px;
+  grid-template-columns: 1.1fr 0.85fr 0.85fr 0.85fr;
+  gap: 10px;
 }
 
 .employee-summary-card {
-  padding: 18px;
-  border-radius: 18px;
+  padding: 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(15, 67, 107, 0.08);
   box-shadow: var(--shadow-soft);
@@ -1379,14 +1381,14 @@ thead {
   text-transform: uppercase;
   font-size: 0.76rem;
   letter-spacing: 0.05em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .employee-summary-card strong {
   display: block;
-  font-size: 1.65rem;
+  font-size: 1.38rem;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #2f2416;
 }
 
@@ -1394,12 +1396,12 @@ thead {
   margin-bottom: 0;
   color: #6c7683;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .capacity-bar {
-  height: 8px;
-  margin-top: 12px;
+  height: 7px;
+  margin-top: 10px;
   border-radius: 999px;
   background: rgba(15, 67, 107, 0.08);
   overflow: hidden;
@@ -1421,8 +1423,8 @@ thead {
 
 .employee-console-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(255px, 0.62fr);
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.82fr) minmax(220px, 0.52fr);
+  gap: 12px;
   align-items: start;
   min-width: 0;
 }
@@ -1438,8 +1440,8 @@ thead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .employee-panel-header.compact {
@@ -1460,13 +1462,13 @@ thead {
 }
 
 .employee-inline-search {
-  min-width: min(260px, 100%);
+  min-width: min(220px, 100%);
 }
 
 .employee-inline-search input {
-  min-height: 42px;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  min-height: 38px;
+  border-radius: 11px;
+  font-size: 0.9rem;
 }
 
 .employee-board-table {
@@ -1482,17 +1484,17 @@ thead {
 .employee-board-row {
   display: grid;
   grid-template-columns: 0.75fr 0.95fr 1.35fr 1.05fr 1.1fr 0.8fr 0.8fr 0.9fr;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 12px 14px;
-  min-width: 860px;
+  padding: 10px 12px;
+  min-width: 760px;
 }
 
 .employee-board-head {
   background: linear-gradient(180deg, rgba(247, 250, 255, 0.98), rgba(235, 243, 252, 0.94));
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: #28425f;
 }
 
@@ -1512,7 +1514,7 @@ thead {
   display: block;
   margin-top: 2px;
   color: #6f8398;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
 .employee-status-tag {
@@ -1560,8 +1562,8 @@ thead {
 }
 
 .icon-action-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1582,8 +1584,8 @@ thead {
 }
 
 .icon-action-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
 }
 
 .icon-action-btn:hover,
@@ -1606,7 +1608,7 @@ thead {
 
 .employee-console-side {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .recent-exit-list,
@@ -1619,7 +1621,7 @@ thead {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-top: 1px solid rgba(15, 67, 107, 0.08);
 }
 
@@ -1642,13 +1644,13 @@ thead {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
   text-decoration: none;
   font-weight: 800;
   box-shadow: var(--shadow-soft);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .quick-action-blue {
@@ -1671,9 +1673,9 @@ thead {
 .employee-entry-header,
 .employee-page-top {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
-  gap: 18px;
-  padding: 28px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.74fr);
+  gap: 14px;
+  padding: 20px;
   background:
     radial-gradient(circle at top right, rgba(15, 67, 107, 0.14), transparent 30%),
     linear-gradient(135deg, rgba(255, 250, 241, 0.98), rgba(246, 233, 205, 0.92));
@@ -1682,9 +1684,9 @@ thead {
 .employee-hero h2,
 .employee-entry-header h2,
 .employee-page-top h2 {
-  font-size: clamp(2rem, 3vw, 2.9rem);
+  font-size: clamp(1.55rem, 2.2vw, 2.15rem);
   line-height: 1.05;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .employee-hero-copy p:last-child,
@@ -1697,14 +1699,14 @@ thead {
 .entry-meta-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .hero-meta-card,
 .entry-meta-card,
 .mini-stat-item {
-  padding: 16px;
-  border-radius: 20px;
+  padding: 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(15, 67, 107, 0.08);
   box-shadow: var(--shadow-soft);
@@ -1721,7 +1723,7 @@ thead {
 .hero-meta-card strong,
 .entry-meta-card strong,
 .mini-stat-item strong {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
 }
 
 .employee-hero-side {
@@ -1734,9 +1736,9 @@ thead {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 54px;
-  padding: 0 18px;
-  border-radius: 18px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 15px;
   background: rgba(15, 67, 107, 0.08);
   color: var(--secondary);
   font-weight: 700;
@@ -1746,14 +1748,14 @@ thead {
 .employee-action-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
 .employee-action-card {
   display: grid;
-  gap: 12px;
-  padding: 24px;
-  border-radius: 26px;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
   text-decoration: none;
   color: var(--ink);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 240, 222, 0.92));
@@ -1763,7 +1765,7 @@ thead {
 }
 
 .employee-action-card strong {
-  font-size: 1.2rem;
+  font-size: 1.02rem;
 }
 
 .employee-action-card span:last-child {
@@ -1777,8 +1779,8 @@ thead {
 }
 
 .action-icon {
-  width: 68px;
-  height: 68px;
+  width: 56px;
+  height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1787,8 +1789,8 @@ thead {
 }
 
 .action-icon svg {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
 }
 
 .action-entry .action-icon { background: linear-gradient(135deg, #168a5c, #0f6b47); }
@@ -1799,8 +1801,8 @@ thead {
 .employee-dashboard-grid,
 .employee-entry-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.42fr) minmax(230px, 0.7fr);
+  gap: 14px;
 }
 
 .employee-search-card,
@@ -1808,19 +1810,19 @@ thead {
 .employee-side-guide,
 .employee-records-toolbar {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .employee-search-form,
 .employee-toolbar-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 10px;
   align-items: end;
 }
 
 .employee-toolbar-form {
-  grid-template-columns: minmax(0, 1.6fr) minmax(180px, 0.6fr) auto;
+  grid-template-columns: minmax(0, 1.5fr) minmax(150px, 0.52fr) auto;
 }
 
 .search-field {
@@ -1836,27 +1838,27 @@ thead {
 .mini-stat-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .employee-live-section {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .employee-live-grid,
 .employee-record-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
 }
 
 .employee-record-card,
 .empty-state-card {
   display: grid;
   gap: 12px;
-  padding: 20px;
-  border-radius: 24px;
+  padding: 16px;
+  border-radius: 20px;
   border: 1px solid rgba(15, 67, 107, 0.1);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 223, 0.92));
   color: #2f2416;
@@ -1954,13 +1956,13 @@ thead {
 }
 
 .touch-form-card {
-  padding: 28px;
+  padding: 20px;
 }
 
 .touch-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 14px;
 }
 
 .touch-field {
@@ -1985,10 +1987,10 @@ thead {
 .employee-search-form input,
 .employee-toolbar-form input,
 .employee-toolbar-form select {
-  min-height: 58px;
-  padding: 14px 18px;
-  border-radius: 18px;
-  font-size: 1.05rem;
+  min-height: 50px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  font-size: 0.98rem;
 }
 
 .touch-field textarea {
