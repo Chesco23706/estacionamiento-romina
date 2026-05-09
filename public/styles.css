@@ -1370,11 +1370,12 @@ thead {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(15, 67, 107, 0.08);
   box-shadow: var(--shadow-soft);
+  color: #2f2416;
 }
 
 .employee-summary-card span {
   display: block;
-  color: var(--muted);
+  color: #6c7683;
   text-transform: uppercase;
   font-size: 0.76rem;
   letter-spacing: 0.05em;
@@ -1386,11 +1387,12 @@ thead {
   font-size: 1.65rem;
   line-height: 1;
   margin-bottom: 6px;
+  color: #2f2416;
 }
 
 .employee-summary-card p {
   margin-bottom: 0;
-  color: var(--muted);
+  color: #6c7683;
   font-weight: 600;
   font-size: 0.88rem;
 }
@@ -1429,6 +1431,7 @@ thead {
 .side-mini-panel {
   background: rgba(255, 255, 255, 0.96);
   min-width: 0;
+  color: #2f2416;
 }
 
 .employee-panel-header {
@@ -1447,11 +1450,12 @@ thead {
   margin-bottom: 2px;
   font-size: 1rem;
   text-transform: uppercase;
+  color: #2f2416;
 }
 
 .employee-panel-header p {
   margin-bottom: 0;
-  color: var(--muted);
+  color: #6c7683;
   font-size: 0.88rem;
 }
 
@@ -1855,6 +1859,7 @@ thead {
   border-radius: 24px;
   border: 1px solid rgba(15, 67, 107, 0.1);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 223, 0.92));
+  color: #2f2416;
   box-shadow: var(--shadow-soft);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
@@ -1893,6 +1898,11 @@ thead {
   font-weight: 800;
 }
 
+.employee-record-card strong,
+.empty-state-card strong {
+  color: #2f2416;
+}
+
 .employee-record-meta {
   justify-content: flex-start;
 }
@@ -1906,7 +1916,7 @@ thead {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.76);
   border: 1px solid rgba(15, 67, 107, 0.08);
-  color: var(--muted);
+  color: #6c7683;
 }
 
 .employee-record-info-strip > div,
@@ -1917,12 +1927,13 @@ thead {
 
 .employee-record-info-strip span,
 .amount-block span {
-  color: var(--muted);
+  color: #6c7683;
 }
 
 .employee-record-info-strip strong,
 .amount-block strong {
   font-size: 1.2rem;
+  color: #2f2416;
 }
 
 .employee-record-actions {
@@ -2089,6 +2100,58 @@ thead {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(191, 138, 40, 0.2);
+  color: #2f2416;
+}
+
+.pending-record-card strong {
+  color: #2f2416;
+}
+
+.pending-record-card span {
+  color: #6c7683;
+}
+
+.employee-page-top,
+.employee-records-toolbar,
+.employee-pending-section,
+.employee-live-section,
+.employee-side-guide,
+.touch-form-card,
+.record-dialog-card {
+  color: #2f2416;
+}
+
+.employee-page-top h2,
+.employee-records-toolbar h2,
+.employee-pending-section h2,
+.employee-live-section h2,
+.employee-side-guide h3,
+.touch-form-card h2,
+.record-dialog-card h2,
+.record-dialog-card h3 {
+  color: #2f2416;
+}
+
+.employee-page-top p,
+.employee-records-toolbar p,
+.employee-pending-section p,
+.employee-live-section p,
+.employee-side-guide p,
+.touch-form-card p,
+.record-dialog-card p,
+.record-dialog-card label,
+.touch-field small,
+.field-group-title small,
+.simple-steps,
+.hint-box span {
+  color: #6c7683;
+}
+
+.weekly-action-note {
+  margin: 0;
+  color: #6c7683;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 body[data-theme="dark"] {
@@ -2179,6 +2242,52 @@ body[data-theme="dark"] .service-intro {
 
 body[data-theme="dark"] .service-panel input::placeholder {
   color: #93a9bf;
+}
+
+body[data-theme="dark"] .employee-summary-card,
+body[data-theme="dark"] .side-mini-panel,
+body[data-theme="dark"] .employee-record-card,
+body[data-theme="dark"] .empty-state-card,
+body[data-theme="dark"] .pending-record-card,
+body[data-theme="dark"] .employee-page-top,
+body[data-theme="dark"] .employee-records-toolbar,
+body[data-theme="dark"] .employee-pending-section,
+body[data-theme="dark"] .employee-live-section,
+body[data-theme="dark"] .employee-side-guide,
+body[data-theme="dark"] .touch-form-card,
+body[data-theme="dark"] .record-dialog-card,
+body[data-theme="dark"] .employee-panel-header h3,
+body[data-theme="dark"] .employee-record-card strong,
+body[data-theme="dark"] .pending-record-card strong,
+body[data-theme="dark"] .employee-record-info-strip strong,
+body[data-theme="dark"] .amount-block strong,
+body[data-theme="dark"] .employee-page-top h2,
+body[data-theme="dark"] .employee-pending-section h2,
+body[data-theme="dark"] .employee-live-section h2,
+body[data-theme="dark"] .employee-side-guide h3,
+body[data-theme="dark"] .record-dialog-card h2,
+body[data-theme="dark"] .record-dialog-card h3 {
+  color: #eef4fb;
+}
+
+body[data-theme="dark"] .employee-summary-card span,
+body[data-theme="dark"] .employee-summary-card p,
+body[data-theme="dark"] .employee-panel-header p,
+body[data-theme="dark"] .employee-record-meta span,
+body[data-theme="dark"] .employee-weekly-summary span,
+body[data-theme="dark"] .employee-record-info-strip span,
+body[data-theme="dark"] .amount-block span,
+body[data-theme="dark"] .pending-record-card span,
+body[data-theme="dark"] .employee-page-top p,
+body[data-theme="dark"] .employee-side-guide p,
+body[data-theme="dark"] .record-dialog-card p,
+body[data-theme="dark"] .record-dialog-card label,
+body[data-theme="dark"] .touch-field small,
+body[data-theme="dark"] .field-group-title small,
+body[data-theme="dark"] .simple-steps,
+body[data-theme="dark"] .hint-box span,
+body[data-theme="dark"] .weekly-action-note {
+  color: #a2b5ca;
 }
 
 body[data-theme="dark"] .employee-board-head {

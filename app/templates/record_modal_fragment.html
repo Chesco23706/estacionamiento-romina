@@ -93,12 +93,12 @@
       {% if not record.is_hourly %}
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
       </form>
       {% endif %}
       <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Marcar salida</button>
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Marcar salida{% else %}Salida final{% endif %}</button>
       </form>
       {% endif %}
       {% if current_user.is_admin %}
@@ -111,11 +111,12 @@
     {% if not record.is_hourly and record.weekly_exit_logs %}
     <div class="weekly-log-list">
       <h3>Salidas registradas</h3>
+      <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>Hora de salida</th>
+              <th>Hora de salida del dia</th>
               <th>Registrado en sistema</th>
               <th>Dia transcurrido</th>
               <th>Registrado por</th>

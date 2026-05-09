@@ -154,12 +154,12 @@
                 {% if not record.is_hourly %}
                 <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
                 </form>
                 {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Marcar salida</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Marcar salida{% else %}Salida final{% endif %}</button>
                 </form>
                 {% endif %}
                 <button class="btn fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
@@ -189,7 +189,7 @@
         Todos los registros
         {% endif %}
       </h2>
-      <p>Busca por ficha o placa y usa botones separados para pago y salida.</p>
+      <p>Busca por ficha o placa y usa botones separados para pago, salida del dia y salida final.</p>
     </div>
     <div class="quick-links employee-chip-row">
       <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
@@ -314,9 +314,10 @@
         {% if not record.is_hourly %}
         <div class="weekly-summary employee-weekly-summary">
           <span>Dia {{ record.consumed_day_units() }} de {{ record.contracted_days or 7 }}</span>
-          <span>Salidas: {{ record.weekly_exit_count }}</span>
-          <span>Ultima: {{ record.latest_weekly_exit_at|dt if record.latest_weekly_exit_at else '-' }}</span>
+          <span>Salidas del dia: {{ record.weekly_exit_count }}</span>
+          <span>Ultima salida del dia: {{ record.latest_weekly_exit_at|dt if record.latest_weekly_exit_at else '-' }}</span>
         </div>
+        <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
         {% endif %}
         <div class="employee-record-actions">
           {% if not record.exit_at %}
@@ -329,12 +330,12 @@
           {% if not record.is_hourly %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida semanal</button>
+            <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Registrar salida</button>
+            <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Registrar salida final{% endif %}</button>
           </form>
           {% endif %}
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
