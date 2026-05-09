@@ -591,6 +591,12 @@ textarea {
   background: rgba(15, 67, 107, 0.12);
 }
 
+.section-chip.is-active {
+  background: linear-gradient(135deg, #1e6dd8, #1456ba);
+  color: #fff;
+  border-color: rgba(30, 109, 216, 0.28);
+}
+
 .card:hover,
 .stat-card:hover,
 .report-card:hover,
@@ -780,6 +786,11 @@ dialog::backdrop {
   gap: 12px;
 }
 
+.simple-ticket-slot-grid {
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+}
+
 .ticket-slot {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -792,6 +803,14 @@ dialog::backdrop {
   color: #2f2416;
   box-shadow: var(--shadow-soft);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.simple-ticket-slot {
+  min-height: 64px;
+  padding: 8px;
+  border-radius: 14px;
+  grid-template-rows: 1fr;
+  place-items: center;
 }
 
 .ticket-slot-available {
@@ -829,6 +848,13 @@ dialog::backdrop {
   background: rgba(255, 255, 255, 0.65);
   font-weight: 800;
   color: #2f2416;
+}
+
+.simple-ticket-slot .ticket-slot-number {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+  font-size: 0.95rem;
 }
 
 .ticket-slot-body,
@@ -1448,6 +1474,10 @@ thead {
   margin-bottom: 10px;
 }
 
+.employee-panel-header-stack {
+  align-items: flex-start;
+}
+
 .employee-panel-header h3 {
   margin-bottom: 2px;
   font-size: 1rem;
@@ -1488,6 +1518,16 @@ thead {
   align-items: center;
   padding: 10px 12px;
   min-width: 760px;
+}
+
+.employee-board-head-simple,
+.employee-board-row-simple {
+  grid-template-columns: 0.7fr 1fr 1.2fr 1.1fr 1.3fr 0.9fr 1.55fr;
+}
+
+.employee-board-head-current,
+.employee-board-row-current {
+  grid-template-columns: 0.7fr 1.15fr 1.25fr 0.9fr;
 }
 
 .employee-board-head {
@@ -1553,6 +1593,10 @@ thead {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.employee-row-actions-wide .btn {
+  min-width: 118px;
 }
 
 .employee-status-stack {
@@ -1667,6 +1711,18 @@ thead {
   background: rgba(243, 247, 252, 0.98);
   color: var(--ink);
   border: 1px solid rgba(15, 67, 107, 0.1);
+}
+
+.employee-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.employee-muted-inline {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .employee-hero,
@@ -1949,6 +2005,13 @@ thead {
 .employee-record-actions .btn,
 .employee-record-actions .link-button {
   min-width: 148px;
+}
+
+.btn-small {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 0.88rem;
 }
 
 .employee-entry-layout {
@@ -2308,6 +2371,11 @@ body[data-theme="dark"] .employee-board-row {
   color: #eef4fb;
 }
 
+body[data-theme="dark"] .section-chip.is-active {
+  background: linear-gradient(135deg, #3d89ef, #1f64c6);
+  color: #fff;
+}
+
 body[data-theme="dark"] .employee-board-row small {
   color: #a2b5ca;
 }
@@ -2393,6 +2461,10 @@ body[data-theme="dark"] .ticket-slot-body span {
   .employee-inline-search,
   .employee-cta-btn {
     min-width: 0;
+    width: 100%;
+  }
+
+  .employee-filter-row {
     width: 100%;
   }
 

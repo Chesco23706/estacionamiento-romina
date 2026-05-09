@@ -202,8 +202,8 @@ def test_employee_sees_exit_and_pay_actions_but_not_delete():
 
     assert response.status_code == 200
     assert "Pago registrado" in body
-    assert "Marcar salida" in body
-    assert "Editar" in body
+    assert "Registrar salida" in body
+    assert "Vehiculos actuales y movimientos del dia" in body
     assert "Eliminar" not in body
 
 
@@ -245,11 +245,10 @@ def test_records_default_view_shows_inside_and_pending_checkout_panel():
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Vehiculos dentro del estacionamiento" in body
+    assert "Historial de registros" in body
     assert "Cliente Dentro" in body
-    assert "Pagados listos para salir" in body
     assert "Cliente Salio" in body
-    assert "Marcar salida" in body
+    assert "Pago registrado" in body
 
 
 def test_weekly_records_default_view_shows_weekly_exit_action():
@@ -274,7 +273,7 @@ def test_weekly_records_default_view_shows_weekly_exit_action():
 
     assert response.status_code == 200
     assert "Cliente Semana Activa" in body
-    assert "Salida semanal" in body
+    assert "Salida del dia" in body
 
 
 def test_physical_ticket_can_be_reused_after_exit():
@@ -451,11 +450,11 @@ def test_employee_dashboard_shows_simple_core_actions():
     body = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "Bitacora de estacionamiento" in body
-    assert "Registrar nueva entrada" in body
-    assert "Registrar salida" in body
-    assert "Registros activos" in body
-    assert "Buscar por placa o folio" in body
-    assert "Registrar pago" in body
+    assert "Movimientos del dia" in body
+    assert "Vehiculos de hoy" in body
+    assert "Dentro ahora" in body
+    assert "Ya pagaron" in body
+    assert "No pagados" in body
 
 
 def test_operations_page_uses_touch_friendly_copy():
@@ -491,9 +490,8 @@ def test_ticket_board_page_exists_and_shows_records():
     assert "Tablero de fichas" in body
     assert "001" in body
     assert "100" in body
-    assert "Cliente Tablero" in body
-    assert "Pagar" in body
-    assert "Salida" in body
+    assert "Pendiente de salida" in body
+    assert "Pagada o cerrada" in body
 
 
 def test_datetime_filter_uses_mexico_city_timezone():

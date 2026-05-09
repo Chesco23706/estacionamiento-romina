@@ -1,4 +1,5 @@
 from io import BytesIO
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from flask import (
@@ -74,12 +75,12 @@ SPANISH_MONTHS = (
 
 def parse_record_filters():
     requested_status = request.args.get("status")
+    requested_date = request.args.get("date", "").strip()
     return {
         "search": request.args.get("search", "").strip(),
-        "status": "Dentro del estacionamiento"
-        if requested_status is None
-        else requested_status.strip(),
+        "status": requested_status.strip() if requested_status is not None else "",
         "vehicle_type": request.args.get("vehicle_type", "").strip(),
+        "date": requested_date,
     }
 
 
@@ -101,6 +102,16 @@ def build_records_query(filters):
         query = query.filter(VehicleRecord.status == filters["status"])
     if filters["vehicle_type"]:
         query = query.filter(VehicleRecord.vehicle_type == filters["vehicle_type"])
+    if filters.get("date"):
+        try:
+            requested_day = datetime.fromisoformat(filters["date"]).date()
+            day_start, day_end = get_local_day_bounds(requested_day)
+            query = query.filter(
+                VehicleRecord.entry_at >= day_start,
+                VehicleRecord.entry_at < day_end,
+            )
+        except ValueError:
+            pass
     return query
 
 
@@ -127,7 +138,11 @@ def parse_ticket_slot_number(ticket_number):
 
 def build_ticket_board():
     latest_by_ticket = {}
-    for record in VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).all():
+    for record in (
+        VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
+        .order_by(VehicleRecord.entry_at.desc())
+        .all()
+    ):
         slot_number = parse_ticket_slot_number(record.display_ticket_number)
         if slot_number and slot_number not in latest_by_ticket:
             latest_by_ticket[slot_number] = record
@@ -164,6 +179,18 @@ def get_local_timezone():
 
 def localize_datetime(moment):
     return ensure_utc(moment).astimezone(get_local_timezone())
+
+
+def get_local_day_bounds(reference_day=None):
+    timezone = get_local_timezone()
+    if reference_day is None:
+        local_reference = localize_datetime(utc_now())
+        target_day = local_reference.date()
+    else:
+        target_day = reference_day
+    local_start = datetime.combine(target_day, datetime.min.time(), tzinfo=timezone)
+    local_end = local_start + timedelta(days=1)
+    return ensure_utc(local_start), ensure_utc(local_end)
 
 
 def format_operating_date_label(moment):
@@ -279,42 +306,103 @@ def logout():
 @login_required
 def dashboard():
     now_local = localize_datetime(utc_now())
-    records = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).limit(8).all()
-    active_records = (
+    if current_user.is_admin:
+        records = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).limit(8).all()
+        active_records = (
+            VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+            .order_by(VehicleRecord.entry_at.desc())
+            .limit(8)
+            .all()
+        )
+        pending_checkout_records = (
+            VehicleRecord.query.filter(
+                VehicleRecord.status == "Dentro del estacionamiento",
+                VehicleRecord.paid_at.isnot(None),
+                VehicleRecord.exit_at.is_(None),
+            )
+            .order_by(VehicleRecord.paid_at.desc())
+            .limit(6)
+            .all()
+        )
+        for record in records:
+            enrich_record_display(record)
+        for record in active_records:
+            enrich_record_display(record)
+        for record in pending_checkout_records:
+            enrich_record_display(record)
+        metrics = dashboard_metrics()
+        return render_template(
+            "dashboard.html",
+            records=records,
+            active_records=active_records,
+            pending_checkout_records=pending_checkout_records,
+            metrics=metrics,
+            format_duration=format_duration,
+            now_local=now_local,
+            now_local_label=format_operating_date_label(now_local),
+            now_time_label=format_operating_time_label(now_local),
+            vehicle_types=get_vehicle_types(include_inactive=True),
+            status_options=STATUS_OPTIONS,
+        )
+
+    today_view = request.args.get("view", "dentro").strip().lower() or "dentro"
+    day_start, day_end = get_local_day_bounds()
+    today_records = (
+        VehicleRecord.query.filter(
+            VehicleRecord.entry_at >= day_start,
+            VehicleRecord.entry_at < day_end,
+        )
+        .order_by(VehicleRecord.entry_at.desc())
+        .all()
+    )
+    current_inside_records = (
         VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
         .order_by(VehicleRecord.entry_at.desc())
         .limit(8)
         .all()
     )
-    pending_checkout_records = (
-        VehicleRecord.query.filter(
-            VehicleRecord.status == "Dentro del estacionamiento",
-            VehicleRecord.paid_at.isnot(None),
-            VehicleRecord.exit_at.is_(None),
-        )
-        .order_by(VehicleRecord.paid_at.desc())
-        .limit(6)
-        .all()
-    )
-    for record in records:
+    if today_view == "pagados":
+        filtered_today_records = [record for record in today_records if record.is_paid]
+    elif today_view == "no_pagados":
+        filtered_today_records = [record for record in today_records if not record.is_paid]
+    elif today_view == "salidos":
+        filtered_today_records = [record for record in today_records if record.exit_at]
+    else:
+        filtered_today_records = [
+            record for record in today_records if record.status == "Dentro del estacionamiento"
+        ]
+
+    for record in filtered_today_records:
         enrich_record_display(record)
-    for record in active_records:
+    for record in current_inside_records:
         enrich_record_display(record)
-    for record in pending_checkout_records:
-        enrich_record_display(record)
-    metrics = dashboard_metrics()
+
+    employee_metrics = {
+        "today_count": len(today_records),
+        "inside_count": VehicleRecord.query.filter(
+            VehicleRecord.status == "Dentro del estacionamiento"
+        ).count(),
+        "total_day": sum(
+            float(record.total_amount)
+            for record in today_records
+            if record.paid_at and day_start <= ensure_utc(record.paid_at) < day_end
+        ),
+        "paid_today_count": sum(1 for record in today_records if record.is_paid),
+        "unpaid_today_count": sum(1 for record in today_records if not record.is_paid),
+        "exited_today_count": sum(1 for record in today_records if record.exit_at),
+    }
+
     return render_template(
         "dashboard.html",
-        records=records,
-        active_records=active_records,
-        pending_checkout_records=pending_checkout_records,
-        metrics=metrics,
+        today_records=filtered_today_records[:10],
+        current_inside_records=current_inside_records,
+        employee_metrics=employee_metrics,
+        today_view=today_view,
+        today_label=now_local.strftime("%d/%m/%Y"),
         format_duration=format_duration,
         now_local=now_local,
         now_local_label=format_operating_date_label(now_local),
         now_time_label=format_operating_time_label(now_local),
-        vehicle_types=get_vehicle_types(include_inactive=True),
-        status_options=STATUS_OPTIONS,
     )
 
 
@@ -322,6 +410,8 @@ def dashboard():
 @login_required
 def records_page():
     filters = parse_record_filters()
+    if not current_user.is_admin and not filters["date"]:
+        filters["date"] = localize_datetime(utc_now()).date().isoformat()
     records = build_records_query(filters).all()
     pending_checkout_records = []
     if filters["status"] == "Dentro del estacionamiento":
@@ -339,6 +429,24 @@ def records_page():
         enrich_record_display(record)
     for record in pending_checkout_records:
         enrich_record_display(record)
+    if not current_user.is_admin:
+        current_records = (
+            VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+            .order_by(VehicleRecord.entry_at.desc())
+            .all()
+        )
+        for record in current_records:
+            enrich_record_display(record)
+        return render_template(
+            "records.html",
+            records=records,
+            current_records=current_records,
+            pending_checkout_records=pending_checkout_records,
+            filters=filters,
+            vehicle_types=get_vehicle_types(),
+            status_options=STATUS_OPTIONS,
+            format_duration=format_duration,
+        )
     return render_template(
         "records.html",
         records=records,

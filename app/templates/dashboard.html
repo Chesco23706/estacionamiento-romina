@@ -109,161 +109,137 @@
       <h2>Bitacora de estacionamiento</h2>
       <p>{{ now_local_label }} - {{ now_time_label }}</p>
     </div>
-    <div class="employee-console-actions">
-      <form method="get" action="{{ url_for('main.records_page') }}" class="employee-hero-search" id="busqueda">
-        <label class="search-field">
-          <span class="sr-only">Buscar por placa o folio</span>
-          <input type="text" name="search" placeholder="Buscar por placa o folio..." autocomplete="off">
-        </label>
-      </form>
-      <a class="btn employee-cta-btn" href="{{ url_for('main.operations_page') }}">Registrar nueva entrada</a>
-    </div>
   </section>
 
   <section class="employee-summary-row">
     <article class="employee-summary-card capacity-card">
-      <span>Capacidad actual</span>
-      <strong>{{ metrics.inside_count }}/100</strong>
-      <p>Lugares ocupados</p>
+      <span>Vehiculos de hoy</span>
+      <strong>{{ employee_metrics.today_count }}</strong>
+      <p>Registros del {{ today_label }}</p>
       <div class="capacity-bar">
-        <div class="capacity-bar-fill" style="width: {{ [metrics.inside_count, 100]|min }}%;"></div>
+        <div class="capacity-bar-fill" style="width: {{ [employee_metrics.today_count, 100]|min }}%;"></div>
       </div>
     </article>
     <article class="employee-summary-card">
-      <span>Registros activos</span>
-      <strong>{{ metrics.inside_count }}</strong>
-      <p>Vehiculos dentro del estacionamiento</p>
+      <span>Dentro ahora</span>
+      <strong>{{ employee_metrics.inside_count }}</strong>
+      <p>Vehiculos actualmente dentro</p>
     </article>
     <article class="employee-summary-card money-card">
       <span>Ingresos hoy</span>
-      <strong>{{ metrics.total_day|money }}</strong>
-      <p>Cobrado en el turno actual</p>
+      <strong>{{ employee_metrics.total_day|money }}</strong>
+      <p>Pagos registrados hoy</p>
     </article>
     <article class="employee-summary-card exit-card">
-      <span>Listos para salir</span>
-      <strong>{{ pending_checkout_records|length }}</strong>
-      <p>Vehiculos ya pagados</p>
+      <span>Ya salieron</span>
+      <strong>{{ employee_metrics.exited_today_count }}</strong>
+      <p>No pagados hoy: {{ employee_metrics.unpaid_today_count }}</p>
     </article>
   </section>
 
-  <section class="employee-console-grid">
-    <section class="employee-board-panel card">
-      <div class="employee-panel-header">
+  <section class="employee-board-panel card">
+      <div class="employee-panel-header employee-panel-header-stack">
         <div>
-          <h3>Registros activos</h3>
-          <p>Solo se muestra lo importante para operar rapido.</p>
+          <h3>Movimientos del dia</h3>
+          <p>Filtra solo la actividad de hoy para encontrar rapido lo que necesitas.</p>
         </div>
-        <form method="get" action="{{ url_for('main.records_page') }}" class="employee-inline-search">
-          <input type="text" name="search" placeholder="Buscar dentro de activos" autocomplete="off" data-live-search-input>
-        </form>
+        <div class="employee-filter-row">
+          <a class="section-chip {% if today_view == 'dentro' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='dentro') }}">Dentro</a>
+          <a class="section-chip {% if today_view == 'pagados' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='pagados') }}">Ya pagaron</a>
+          <a class="section-chip {% if today_view == 'no_pagados' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='no_pagados') }}">No pagados</a>
+          <a class="section-chip {% if today_view == 'salidos' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='salidos') }}">Ya salieron</a>
+        </div>
       </div>
 
       <div class="employee-board-table">
-        <div class="employee-board-head">
+        <div class="employee-board-head employee-board-head-simple">
           <span>Ficha</span>
           <span>Placa</span>
           <span>Vehiculo</span>
           <span>Entrada</span>
-          <span>Tiempo</span>
           <span>Estado</span>
           <span>Total</span>
           <span>Acciones</span>
         </div>
 
-        {% for record in active_records %}
-        <article class="employee-board-row" data-record-search-card data-search-text="{{ (record.display_ticket_number ~ ' ' ~ record.client_name ~ ' ' ~ record.plate_number ~ ' ' ~ record.vehicle_type)|lower }}">
+        {% for record in today_records %}
+        <article class="employee-board-row employee-board-row-simple" data-record-search-card data-search-text="{{ (record.display_ticket_number ~ ' ' ~ record.client_name ~ ' ' ~ record.plate_number ~ ' ' ~ record.vehicle_type)|lower }}">
           <strong>{{ record.display_ticket_number }}</strong>
           <span>{{ record.plate_number }}</span>
           <span>{{ record.vehicle_type }}<small>{{ record.client_name }}</small></span>
           <span>{{ record.entry_at|dt }}</span>
-          <span>
-            {% if record.is_hourly %}
-            <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
-            {% else %}
-            <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 7 }}">
-              Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
-            </strong>
-            {% endif %}
-          </span>
           <span class="employee-status-stack">
-            <mark class="employee-status-tag employee-status-tag-{{ record.status_theme }}">Activo</mark>
+            <mark class="employee-status-tag employee-status-tag-{{ record.status_theme }}">{{ record.status }}</mark>
             <mark class="employee-status-tag employee-status-tag-{{ record.payment_theme }}">{{ record.payment_state_label }}</mark>
           </span>
-          <span>{{ record.live_total_amount|money }}</span>
-          <div class="employee-row-actions">
+          <span>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</span>
+          <div class="employee-row-actions employee-row-actions-wide">
+            {% if not record.exit_at %}
             <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="icon-action-btn icon-action-blue" type="submit" title="{% if record.is_paid %}Pago ya registrado{% else %}Registrar pago{% endif %}" {% if record.is_paid %}disabled{% endif %}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM7 12h.01M10 12h7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-              </button>
+              <button class="btn btn-small" type="submit" {% if record.is_paid %}disabled{% endif %}>{% if record.is_paid %}Pagado{% else %}Marcar pago{% endif %}</button>
             </form>
             {% if not record.is_hourly %}
             <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="icon-action-btn icon-action-sky" type="submit" title="{% if record.is_paid %}Salida semanal{% else %}Paga primero para registrar la salida semanal{% endif %}" {% if not record.is_paid %}disabled{% endif %}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
-              </button>
+              <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
             </form>
             {% endif %}
             <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="icon-action-btn icon-action-green" type="submit" title="{% if record.is_paid %}Registrar salida{% else %}Paga primero para permitir la salida{% endif %}" {% if not record.is_paid %}disabled{% endif %}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7l5 5-5 5M5 12h9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-              </button>
+              <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
             </form>
-            <button class="icon-action-btn icon-action-blue" type="button" data-open-dialog="record-dialog-{{ record.id }}" title="Editar">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/></svg>
-            </button>
-            {% include "record_modal_fragment.html" %}
+            {% else %}
+            <span class="employee-muted-inline">Salida registrada</span>
+            {% endif %}
           </div>
         </article>
         {% else %}
         <article class="empty-state-card">
-          <strong>No hay vehiculos dentro ahora.</strong>
-          <span>Cuando registres una nueva entrada apareceran aqui.</span>
+          <strong>No hay movimientos para este filtro hoy.</strong>
+          <span>Cambia el filtro o registra una nueva entrada.</span>
         </article>
         {% endfor %}
       </div>
-    </section>
+  </section>
 
-    <aside class="employee-console-side">
-      <section class="card side-mini-panel">
-        <div class="employee-panel-header compact">
-          <div>
-            <h3>Listos para salir</h3>
-          </div>
-        </div>
-        <div class="recent-exit-list">
-          {% for record in pending_checkout_records[:4] %}
-          <article class="recent-exit-item">
-            <div>
-              <strong>{{ record.plate_number }}</strong>
-              <span>{{ record.client_name }}</span>
-            </div>
-            <strong>{{ record.total_amount|money }}</strong>
-          </article>
+  <section class="employee-board-panel card">
+    <div class="employee-panel-header">
+      <div>
+        <h3>Vehiculos dentro ahora</h3>
+        <p>Vista rapida de los vehiculos que siguen dentro del estacionamiento.</p>
+      </div>
+      <a class="link-button" href="{{ url_for('main.records_page') }}">Abrir vista operativa</a>
+    </div>
+    <div class="employee-board-table">
+      <div class="employee-board-head employee-board-head-current">
+        <span>Ficha</span>
+        <span>Vehiculo</span>
+        <span>Tiempo</span>
+        <span>Pago</span>
+      </div>
+      {% for record in current_inside_records %}
+      <article class="employee-board-row employee-board-row-current">
+        <strong>{{ record.display_ticket_number }}</strong>
+        <span>{{ record.vehicle_type }}<small>{{ record.plate_number }}</small></span>
+        <span>
+          {% if record.is_hourly %}
+          <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
           {% else %}
-          <article class="recent-exit-item empty-mini">
-            <span>No hay vehiculos pagados en espera.</span>
-          </article>
-          {% endfor %}
-        </div>
-      </section>
-
-      <section class="card side-mini-panel">
-        <div class="employee-panel-header compact">
-          <div>
-            <h3>Acciones rapidas</h3>
-          </div>
-        </div>
-        <div class="quick-action-stack">
-          <a class="quick-action-btn quick-action-blue" href="{{ url_for('main.records_page') }}">Registrar pago</a>
-          <a class="quick-action-btn quick-action-green" href="{{ url_for('main.records_page') }}">Registrar salida</a>
-          <a class="quick-action-btn quick-action-slate" href="{{ url_for('main.records_page') }}">Editar registros</a>
-          <a class="quick-action-btn quick-action-slate" href="{{ url_for('main.tickets_board_page') }}">Imprimir ticket</a>
-        </div>
-      </section>
-    </aside>
+          <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 7 }}">
+            Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+          </strong>
+          {% endif %}
+        </span>
+        <span class="status-pill status-pill-{{ record.payment_theme }}">{{ record.payment_state_label }}</span>
+      </article>
+      {% else %}
+      <article class="empty-state-card">
+        <strong>No hay vehiculos dentro ahora.</strong>
+        <span>Cuando registres una nueva entrada apareceran aqui.</span>
+      </article>
+      {% endfor %}
+    </div>
   </section>
 </main>
 {% endif %}

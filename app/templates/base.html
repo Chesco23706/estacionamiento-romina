@@ -34,9 +34,6 @@
           <button class="employee-nav-btn" type="button" data-theme-toggle title="Cambiar modo de color">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
           </button>
-          <button class="employee-nav-btn" type="button" data-sound-toggle title="Sonidos">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14h3l4 4V6L8 10H5zM16 9a4 4 0 0 1 0 6M18.8 6.5a7.3 7.3 0 0 1 0 11" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></svg>
-          </button>
           <form method="post" action="{{ url_for('main.logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="employee-nav-btn" type="submit" title="Cerrar sesion">
@@ -82,7 +79,6 @@
             </nav>
             <div class="topbar-tools">
               <button class="tool-chip" type="button" data-theme-toggle aria-label="Cambiar modo de color">Modo oscuro</button>
-              <button class="tool-chip" type="button" data-sound-toggle aria-label="Activar o desactivar sonidos">Sonidos apagados</button>
             </div>
             <div class="user-card">
               <strong>{{ current_user.full_name }}</strong>

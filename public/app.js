@@ -228,63 +228,6 @@ function setupThemeToggle() {
   });
 }
 
-function setupSoundToggle() {
-  const toggle = document.querySelector("[data-sound-toggle]");
-  if (!toggle) {
-    return;
-  }
-
-  const isIconOnly = toggle.classList.contains("employee-nav-btn");
-
-  const applyState = (enabled) => {
-    const label = enabled ? "Sonidos encendidos" : "Sonidos apagados";
-    if (isIconOnly) {
-      toggle.setAttribute("title", label);
-      toggle.setAttribute("aria-label", label);
-    } else {
-      toggle.textContent = label;
-    }
-    toggle.dataset.soundEnabled = enabled ? "true" : "false";
-  };
-
-  const storedValue = window.localStorage.getItem("romina-sound") === "on";
-  applyState(storedValue);
-
-  toggle.addEventListener("click", () => {
-    const enabled = toggle.dataset.soundEnabled !== "true";
-    window.localStorage.setItem("romina-sound", enabled ? "on" : "off");
-    applyState(enabled);
-  });
-}
-
-function playSuccessTone() {
-  if (window.localStorage.getItem("romina-sound") !== "on") {
-    return;
-  }
-
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) {
-    return;
-  }
-
-  const context = new AudioContextClass();
-  const oscillator = context.createOscillator();
-  const gainNode = context.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.value = 740;
-  gainNode.gain.value = 0.03;
-  oscillator.connect(gainNode);
-  gainNode.connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.12);
-}
-
-function setupFlashSounds() {
-  if (document.querySelector(".flash-success")) {
-    playSuccessTone();
-  }
-}
-
 function setupLiveClock() {
   const clock = document.querySelector("[data-live-clock]");
   const date = document.querySelector("[data-live-date]");
@@ -362,8 +305,6 @@ window.addEventListener("DOMContentLoaded", () => {
   setupServiceFields();
   setupDialogs();
   setupThemeToggle();
-  setupSoundToggle();
-  setupFlashSounds();
   setupLiveClock();
   setupFriendlyValidation();
   setupLiveSearchCards();

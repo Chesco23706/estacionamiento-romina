@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Fichas | Estacionamiento Romina{% endblock %}
 {% block content %}
-<main class="dashboard-layout">
+<main class="dashboard-layout ticket-board-page">
   <section class="stats-grid">
     <article class="stat-card"><span>Disponibles</span><strong>{{ board_metrics.available }}</strong></article>
     <article class="stat-card"><span>Dentro</span><strong>{{ board_metrics.inside }}</strong></article>
@@ -19,170 +19,22 @@
       <a class="link-button" href="{{ url_for('main.records_page', status='') }}">Ver todos los registros</a>
     </div>
 
-    <div class="ticket-board-legend">
+    <div class="ticket-board-legend compact-legend">
       <span class="legend-chip legend-available">Disponible</span>
-      <span class="legend-chip legend-inside">Dentro</span>
+      <span class="legend-chip legend-inside">Ocupada</span>
       <span class="legend-chip legend-weekly">Semana activa</span>
-      <span class="legend-chip legend-checkout">Pagado listo para salir</span>
-      <span class="legend-chip legend-paid">Pagado</span>
+      <span class="legend-chip legend-checkout">Pendiente de salida</span>
+      <span class="legend-chip legend-paid">Pagada o cerrada</span>
     </div>
 
-    <div class="ticket-slot-grid">
+    <div class="ticket-slot-grid simple-ticket-slot-grid">
       {% for slot in records %}
       {% set record = slot.record %}
-      <article class="ticket-slot ticket-slot-{{ slot.status_theme }}">
+      <article class="ticket-slot ticket-slot-{{ slot.status_theme }} simple-ticket-slot" title="{% if record %}Ficha {{ slot.slot_label }} · {{ record.client_name }} · {{ record.status }}{% else %}Ficha {{ slot.slot_label }} disponible{% endif %}">
         <div class="ticket-slot-number">{{ slot.slot_label }}</div>
-        {% if record %}
-        <div class="ticket-slot-body">
-          <strong>{{ record.client_name }}</strong>
-          <span>{{ record.vehicle_type }}</span>
-          <span>{% if not record.is_hourly %}Semanal{% else %}{{ record.status }}{% endif %}</span>
-        </div>
-        <div class="ticket-slot-actions">
-          {% if not record.exit_at %}
-          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn ticket-slot-btn" type="submit" {% if record.is_paid %}disabled{% endif %}>
-              {% if record.is_paid %}Pago listo{% else %}Pagar{% endif %}
-            </button>
-          </form>
-          {% if not record.is_hourly %}
-          <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary ticket-slot-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
-          </form>
-          {% endif %}
-          <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary ticket-slot-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Salida{% else %}Salida final{% endif %}</button>
-          </form>
-          {% endif %}
-          <button class="btn ticket-slot-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
-        </div>
-        {% else %}
-        <div class="ticket-slot-body">
-          <strong>Libre</strong>
-          <span>Sin vehiculo</span>
-          <span>Disponible</span>
-        </div>
-        {% endif %}
       </article>
       {% endfor %}
     </div>
   </section>
-
-  {% for slot in records if slot.record %}
-  {% set record = slot.record %}
-  <dialog class="record-dialog" id="record-dialog-{{ record.id }}">
-    <article class="record-dialog-card">
-      <div class="section-heading">
-        <h2>Editar ficha {{ slot.slot_label }}</h2>
-        <button class="btn btn-secondary" type="button" data-close-dialog="record-dialog-{{ record.id }}">Cerrar</button>
-      </div>
-      <form method="post" action="{{ url_for('main.update_record_from_modal', record_id=record.id) }}" class="form-grid">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>
-          Ficha
-          <input type="text" name="ticket_number" required value="{{ record.display_ticket_number }}">
-        </label>
-        <label>
-          Cliente
-          <input type="text" name="client_name" required value="{{ record.client_name }}">
-        </label>
-        <label>
-          Tipo de vehiculo
-          <select name="vehicle_type" required>
-            {% for vehicle_type in vehicle_types %}
-            <option value="{{ vehicle_type }}" {% if record.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
-            {% endfor %}
-          </select>
-        </label>
-        <label>
-          Modalidad
-          <select name="stay_mode" required data-record-mode>
-            <option value="hourly" {% if record.stay_mode == 'hourly' %}selected{% endif %}>Por hora</option>
-            <option value="weekly" {% if record.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
-          </select>
-        </label>
-        <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 7 }}" data-contracted-days-input>
-        <label>
-          Placas
-          <input type="text" name="plate_number" required value="{{ record.plate_number }}">
-        </label>
-        <section class="service-panel full-width" data-service-panel>
-          <div class="service-panel-header">
-            <span>Servicios</span>
-            <button class="btn btn-secondary service-toggle-btn" type="button" data-service-panel-toggle aria-expanded="{% if record.service_wash or record.service_oil_change or record.service_oil_price %}true{% else %}false{% endif %}">
-              {% if record.service_wash or record.service_oil_change or record.service_oil_price %}Ocultar servicios{% else %}Agregar servicios{% endif %}
-            </button>
-          </div>
-          <div class="service-panel-body" data-service-panel-body {% if not (record.service_wash or record.service_oil_change or record.service_oil_price) %}hidden{% endif %}>
-            <div class="service-intro">
-              <p>Selecciona los servicios aplicados a esta ficha. El sistema actualiza el total al registrar salida y pago.</p>
-            </div>
-            <article class="service-option-card">
-              <label class="checkbox-row">
-                <input type="checkbox" name="service_wash" {% if record.service_wash %}checked{% endif %} data-service-wash>
-                Lavado de moto $20
-              </label>
-            </article>
-            <article class="service-option-card">
-              <label class="checkbox-row">
-                <input type="checkbox" name="service_oil_change" {% if record.service_oil_change %}checked{% endif %} data-service-oil-change>
-                Cambio de aceite $40
-              </label>
-            </article>
-            <label data-oil-price-field {% if not record.service_oil_change %}hidden{% endif %}>
-              Precio del aceite
-              <input type="number" name="service_oil_price" min="0.01" step="0.01" inputmode="decimal" value="{{ record.service_oil_price or '' }}">
-            </label>
-          </div>
-        </section>
-        <label>
-          Estado
-          <select name="status" required>
-            <option value="Dentro del estacionamiento" {% if record.status == 'Dentro del estacionamiento' %}selected{% endif %}>Dentro del estacionamiento</option>
-            <option value="Salida registrada" {% if record.status == 'Salida registrada' %}selected{% endif %}>Salida registrada</option>
-            <option value="Pendiente de pago" {% if record.status == 'Pendiente de pago' %}selected{% endif %}>Pendiente de pago</option>
-            <option value="Pagado" {% if record.status == 'Pagado' %}selected{% endif %}>Pagado</option>
-          </select>
-        </label>
-        <label class="full-width">
-          Notas
-          <textarea name="notes" rows="3">{{ record.notes or '' }}</textarea>
-        </label>
-        <div class="record-modal-actions full-width">
-          <button class="btn" type="submit">Guardar cambios</button>
-        </div>
-      </form>
-      <div class="record-modal-actions">
-        {% if not record.exit_at %}
-        <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
-            {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
-          </button>
-        </form>
-        {% if not record.is_hourly %}
-        <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
-        </form>
-        {% endif %}
-        <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Marcar salida{% else %}Salida final{% endif %}</button>
-        </form>
-        {% endif %}
-        {% if current_user.is_admin %}
-        <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-danger" type="submit">Eliminar</button>
-        </form>
-        {% endif %}
-      </div>
-    </article>
-  </dialog>
-  {% endfor %}
 </main>
 {% endblock %}
