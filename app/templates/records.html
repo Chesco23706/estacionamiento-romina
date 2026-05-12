@@ -260,6 +260,12 @@
           </div>
         </div>
         <div class="employee-record-actions">
+          {% if not record.is_hourly and record.status != 'Dentro del estacionamiento' and not record.exit_at %}
+          <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn" type="submit">Entrada del dia</button>
+          </form>
+          {% endif %}
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>
         {% include "record_modal_fragment.html" %}
