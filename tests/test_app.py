@@ -340,6 +340,38 @@ def test_employee_paid_filter_only_shows_paid_records():
     assert "Cliente Pendiente" not in body
 
 
+def test_search_uses_visible_ticket_number_instead_of_hidden_internal_code():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "14",
+            "client_name": "Cliente Visible",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "VIS-014",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="14").first()
+        hidden_suffix = record.ticket_number.split("-")[-1]
+
+    response = client.get(f"/records?search={hidden_suffix}")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Visible" not in body
+
+    visible_response = client.get("/records?search=14")
+    visible_body = visible_response.get_data(as_text=True)
+    assert "Cliente Visible" in visible_body
+
+
 def test_weekly_records_default_view_shows_weekly_exit_action():
     app, client = build_client()
     login(client)

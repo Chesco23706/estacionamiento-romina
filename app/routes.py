@@ -93,8 +93,11 @@ def build_records_query(filters):
         like_value = f"%{search}%"
         query = query.filter(
             or_(
-                VehicleRecord.ticket_number.ilike(like_value),
                 VehicleRecord.physical_ticket_number.ilike(like_value),
+                (
+                    VehicleRecord.physical_ticket_number.is_(None)
+                    & VehicleRecord.ticket_number.ilike(like_value)
+                ),
                 VehicleRecord.client_name.ilike(like_value),
                 VehicleRecord.plate_number.ilike(like_value),
                 VehicleRecord.vehicle_type.ilike(like_value),
@@ -189,7 +192,6 @@ def record_matches_filters(record, filters):
     if search:
         haystack = " ".join(
             [
-                record.ticket_number or "",
                 record.display_ticket_number or "",
                 record.client_name or "",
                 record.plate_number or "",
