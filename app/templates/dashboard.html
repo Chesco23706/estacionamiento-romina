@@ -83,7 +83,7 @@
                 data-entry-at="{{ record.entry_at.isoformat() }}"
                 data-contracted-days="{{ record.contracted_days or 1 }}"
               >
-                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
               </span>
               {% elif not record.is_hourly %}
               Semana usada: {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
@@ -201,6 +201,9 @@
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
             {% endif %}
           </div>
+          {% if not record.is_hourly %}
+          <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+          {% endif %}
           {% include "record_modal_fragment.html" %}
         </article>
         {% else %}
@@ -235,8 +238,8 @@
           {% if record.is_hourly %}
           <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
           {% else %}
-          <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 7 }}">
-            Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+          <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
+            Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
           </strong>
           {% endif %}
         </span>

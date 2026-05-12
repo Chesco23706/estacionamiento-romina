@@ -35,6 +35,7 @@
         </button>
       </form>
       {% if not record.is_hourly %}
+      <p class="muted">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-secondary" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>

@@ -30,7 +30,7 @@
           <option value="weekly" {% if record.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
         </select>
       </label>
-      <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 7 }}" data-contracted-days-input>
+      <input type="hidden" name="contracted_days" value="{{ record.contracted_days or 6 }}" data-contracted-days-input>
       <label>
         Placas
         <input type="text" name="plate_number" required value="{{ record.plate_number }}">
@@ -116,6 +116,11 @@
     </div>
     {% if not record.is_hourly and record.weekly_exit_logs %}
     <div class="weekly-log-list">
+      <div class="weekly-summary-row">
+        <span class="status-pill status-pill-weekly">Dias pagados: {{ record.contracted_days or 6 }}</span>
+        <span class="status-pill status-pill-checkout">Salidas del dia: {{ record.weekly_exit_count }}</span>
+        <span class="status-pill status-pill-inside">Entradas del dia: {{ record.weekly_entry_count }}</span>
+      </div>
       <h3>Salidas registradas</h3>
       <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
       <div class="table-wrapper">

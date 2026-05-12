@@ -534,7 +534,7 @@ def _clean_stay_mode(raw_value):
 def _clean_contracted_days(raw_value, stay_mode):
     if stay_mode != "weekly":
         return None
-    return 7
+    return 6
 
 
 def _clean_service_payload(form_data):

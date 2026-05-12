@@ -77,8 +77,8 @@
               {% if record.status == 'Dentro del estacionamiento' and record.is_hourly %}
               <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
               {% elif record.status == 'Dentro del estacionamiento' %}
-              <span class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 7 }}">
-                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+              <span class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
+                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
               </span>
               {% elif not record.is_hourly %}
               Semana usada: {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
@@ -184,8 +184,8 @@
             {% if record.is_hourly %}
             <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
             {% else %}
-            <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 7 }}">
-              Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 7 }} dias
+            <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
+              Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
             </strong>
             {% endif %}
           </div>
@@ -195,6 +195,7 @@
           </div>
         </div>
         {% if not record.is_hourly %}
+        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
         <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
         {% endif %}
         <div class="employee-record-actions">
@@ -265,6 +266,9 @@
             <strong>{{ record.exit_at|dt }}</strong>
           </div>
         </div>
+        {% if not record.is_hourly %}
+        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+        {% endif %}
         <div class="employee-record-actions">
           {% if not record.is_hourly and not record.exit_at %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">

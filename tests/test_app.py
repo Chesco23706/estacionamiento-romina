@@ -31,7 +31,7 @@ def test_admin_login_and_vehicle_flow():
             "client_name": "Cliente QA",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "7",
+            "contracted_days": "6",
             "plate_number": "ABC-123",
             "service_wash": "on",
             "service_oil_change": "on",
@@ -48,7 +48,7 @@ def test_admin_login_and_vehicle_flow():
         assert record is not None
         assert record.ticket_number.startswith("REC-")
         assert record.stay_mode == "weekly"
-        assert record.contracted_days == 7
+        assert record.contracted_days == 6
         assert record.service_wash is True
         assert record.service_oil_change is True
         record_id = record.id
@@ -86,7 +86,7 @@ def test_weekly_record_tracks_partial_exits():
             "client_name": "Cliente Semana",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "7",
+            "contracted_days": "6",
             "plate_number": "SEM-123",
             "notes": "",
         },
@@ -131,7 +131,7 @@ def test_weekly_partial_exit_hides_record_until_daily_entry():
             "client_name": "Cliente Reingreso",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "7",
+            "contracted_days": "6",
             "plate_number": "REE-101",
             "notes": "",
         },
@@ -157,6 +157,8 @@ def test_weekly_partial_exit_hides_record_until_daily_entry():
     with app.app_context():
         updated = db.session.get(VehicleRecord, record_id)
         assert updated.status == "Dentro del estacionamiento"
+        assert updated.weekly_exit_count == 1
+        assert updated.weekly_entry_count == 1
 
 
 def test_employee_can_register_exit_edit_and_pay():
@@ -419,7 +421,7 @@ def test_weekly_records_default_view_shows_weekly_exit_action():
             "client_name": "Cliente Semana Activa",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "7",
+            "contracted_days": "6",
             "plate_number": "SEM-012",
             "notes": "",
         },
@@ -569,7 +571,7 @@ def test_help_page_and_ticket_reprint_route_exist():
             "client_name": "Cliente Ticket",
             "vehicle_type": "Moto",
             "stay_mode": "weekly",
-            "contracted_days": "7",
+            "contracted_days": "6",
             "plate_number": "XYZ-999",
             "notes": "",
         },

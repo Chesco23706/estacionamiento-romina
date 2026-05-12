@@ -206,6 +206,14 @@ class VehicleRecord(TimestampMixin, db.Model):
         return len(self.weekly_exit_logs)
 
     @property
+    def weekly_entry_count(self):
+        if self.is_hourly:
+            return 0
+        if self.weekly_exit_count == 0:
+            return 0
+        return self.weekly_exit_count if self.status == "Dentro del estacionamiento" else max(self.weekly_exit_count - 1, 0)
+
+    @property
     def latest_weekly_exit_at(self):
         if not self.weekly_exit_logs:
             return None
@@ -313,8 +321,8 @@ def seed_defaults():
                 db.session.add(user)
 
     tariffs = [
-        ("Moto", "daily", 10, "day", "Semana completa", 7, 40, "Se cobra $40 por semana completa."),
-        ("Bicicleta", "daily", 10, "day", "Semana completa", 7, 40, "Se cobra $40 por semana completa."),
+        ("Moto", "daily", 10, "day", "Semana completa", 6, 40, "Se cobra $40 por semana completa de 6 dias."),
+        ("Bicicleta", "daily", 10, "day", "Semana completa", 6, 40, "Se cobra $40 por semana completa de 6 dias."),
         (
             "Carrito callejero",
             "daily",
