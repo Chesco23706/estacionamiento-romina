@@ -92,6 +92,12 @@
               <div class="button-column record-actions">
                 <a class="link-button fixed-action-btn" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
                 {% if not record.exit_at %}
+                {% if not record.is_hourly and record.status != 'Dentro del estacionamiento' %}
+                <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn fixed-action-btn" type="submit">Entrada del dia</button>
+                </form>
+                {% endif %}
                 <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn fixed-action-btn" type="submit" {% if record.is_paid %}disabled{% endif %}>
@@ -101,7 +107,7 @@
                 {% if not record.is_hourly %}
                 <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
+                  <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
                 </form>
                 {% endif %}
                 <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
