@@ -175,6 +175,12 @@
           <span>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</span>
           <div class="employee-row-actions employee-row-actions-wide">
             {% if not record.exit_at %}
+            {% if not record.is_hourly and record.status != 'Dentro del estacionamiento' %}
+            <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-small" type="submit">Entrada del dia</button>
+            </form>
+            {% endif %}
             <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-small" type="submit" {% if record.is_paid %}disabled{% endif %}>{% if record.is_paid %}Pagado{% else %}Marcar pago{% endif %}</button>
@@ -182,7 +188,7 @@
             {% if not record.is_hourly %}
             <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
+              <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
             </form>
             {% endif %}
             <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">

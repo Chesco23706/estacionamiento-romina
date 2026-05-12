@@ -99,11 +99,16 @@ def test_weekly_record_tracks_partial_exits():
 
     pay_response = client.post(f"/records/{record_id}/pay", follow_redirects=True)
     first_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+    blocked_second_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+    daily_entry = client.post(f"/records/{record_id}/weekly-entry", follow_redirects=True)
     second_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
     final_close = client.post(f"/records/{record_id}/exit", follow_redirects=True)
 
     assert pay_response.status_code == 200
     assert first_exit.status_code == 200
+    assert blocked_second_exit.status_code == 200
+    assert "Primero registra la entrada del dia" in blocked_second_exit.get_data(as_text=True)
+    assert daily_entry.status_code == 200
     assert second_exit.status_code == 200
     assert final_close.status_code == 200
 
@@ -113,6 +118,45 @@ def test_weekly_record_tracks_partial_exits():
         assert updated.latest_weekly_exit_at is not None
         assert updated.exit_at is not None
         assert updated.status == "Pagado"
+
+
+def test_weekly_partial_exit_hides_record_until_daily_entry():
+    app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SEM-ENTRA",
+            "client_name": "Cliente Reingreso",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "7",
+            "plate_number": "REE-101",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SEM-ENTRA").first()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.status == "Salida registrada"
+
+    hidden_response = client.get("/records")
+    hidden_body = hidden_response.get_data(as_text=True)
+    assert "Entrada del dia" in hidden_body
+
+    client.post(f"/records/{record_id}/weekly-entry", follow_redirects=True)
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.status == "Dentro del estacionamiento"
 
 
 def test_employee_can_register_exit_edit_and_pay():

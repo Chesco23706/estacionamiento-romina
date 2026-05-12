@@ -192,6 +192,12 @@
         <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
         {% endif %}
         <div class="employee-record-actions">
+          {% if not record.is_hourly and record.status != 'Dentro del estacionamiento' and not record.exit_at %}
+          <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn" type="submit">Entrada del dia</button>
+          </form>
+          {% endif %}
           <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
@@ -201,7 +207,7 @@
           {% if not record.is_hourly %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>Salida del dia</button>
+            <button class="btn btn-secondary" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">

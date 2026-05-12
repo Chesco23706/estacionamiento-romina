@@ -212,6 +212,8 @@ def register_weekly_exit(record, user):
         raise ValueError("Solo los registros semanales permiten salidas parciales.")
     if record.exit_at:
         raise ValueError("Este registro semanal ya fue cerrado.")
+    if record.status != "Dentro del estacionamiento":
+        raise ValueError("Primero registra la entrada del dia antes de volver a sacar este vehiculo.")
     if not record.is_paid:
         raise ValueError("Primero registra el pago antes de registrar la salida semanal.")
 
@@ -223,6 +225,7 @@ def register_weekly_exit(record, user):
         created_by=user,
     )
     db.session.add(weekly_exit)
+    record.status = "Salida registrada"
     log_action(
         user,
         "weekly_exit_registered",
@@ -232,6 +235,27 @@ def register_weekly_exit(record, user):
     )
     db.session.commit()
     return weekly_exit
+
+
+def register_weekly_entry(record, user):
+    if record.is_hourly:
+        raise ValueError("Solo los registros semanales permiten entrada del dia.")
+    if record.exit_at:
+        raise ValueError("Este registro semanal ya fue cerrado.")
+    if record.status == "Dentro del estacionamiento":
+        raise ValueError("Este vehiculo ya esta marcado dentro del estacionamiento.")
+    if record.weekly_exit_count == 0:
+        raise ValueError("Primero registra una salida del dia antes de usar esta opcion.")
+
+    record.status = "Dentro del estacionamiento"
+    log_action(
+        user,
+        "weekly_entry_registered",
+        "vehicle_record",
+        record.id,
+    )
+    db.session.commit()
+    return record
 
 
 def delete_vehicle_record(record, user):
