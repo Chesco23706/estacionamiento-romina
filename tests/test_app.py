@@ -372,6 +372,43 @@ def test_search_uses_visible_ticket_number_instead_of_hidden_internal_code():
     assert "Cliente Visible" in visible_body
 
 
+def test_search_ticket_number_is_exact_for_numeric_tickets():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "6",
+            "client_name": "Cliente Seis",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "SEI-006",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "16",
+            "client_name": "Cliente Dieciseis",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "DIE-016",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    response = client.get("/records?search=6")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Seis" in body
+    assert "Cliente Dieciseis" not in body
+
+
 def test_weekly_records_default_view_shows_weekly_exit_action():
     app, client = build_client()
     login(client)

@@ -90,19 +90,30 @@ def build_records_query(filters):
     query = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc())
     search = filters["search"]
     if search:
-        like_value = f"%{search}%"
-        query = query.filter(
-            or_(
-                VehicleRecord.physical_ticket_number == search,
-                (
-                    VehicleRecord.physical_ticket_number.is_(None)
-                    & (VehicleRecord.ticket_number == search)
-                ),
-                VehicleRecord.client_name.ilike(like_value),
-                VehicleRecord.plate_number.ilike(like_value),
-                VehicleRecord.vehicle_type.ilike(like_value),
+        if search.isdigit():
+            query = query.filter(
+                or_(
+                    VehicleRecord.physical_ticket_number == search,
+                    (
+                        VehicleRecord.physical_ticket_number.is_(None)
+                        & (VehicleRecord.ticket_number == search)
+                    ),
+                )
             )
-        )
+        else:
+            like_value = f"%{search}%"
+            query = query.filter(
+                or_(
+                    VehicleRecord.physical_ticket_number == search,
+                    (
+                        VehicleRecord.physical_ticket_number.is_(None)
+                        & (VehicleRecord.ticket_number == search)
+                    ),
+                    VehicleRecord.client_name.ilike(like_value),
+                    VehicleRecord.plate_number.ilike(like_value),
+                    VehicleRecord.vehicle_type.ilike(like_value),
+                )
+            )
     if filters["status"]:
         status = filters["status"]
         if status == "Pagado":
@@ -194,17 +205,21 @@ def record_matches_filters(record, filters):
         display_ticket = (record.display_ticket_number or "").strip()
         normalized_display_ticket = display_ticket.lstrip("0") or "0"
         normalized_search = raw_search.lstrip("0") or "0"
-        textual_haystack = " ".join(
-            [
-                record.client_name or "",
-                record.plate_number or "",
-                record.vehicle_type or "",
-            ]
-        ).lower()
         ticket_match = display_ticket == raw_search or normalized_display_ticket == normalized_search
-        text_match = search in textual_haystack
-        if not ticket_match and not text_match:
-            return False
+        if raw_search.isdigit():
+            if not ticket_match:
+                return False
+        else:
+            textual_haystack = " ".join(
+                [
+                    record.client_name or "",
+                    record.plate_number or "",
+                    record.vehicle_type or "",
+                ]
+            ).lower()
+            text_match = search in textual_haystack
+            if not ticket_match and not text_match:
+                return False
 
     if vehicle_type and record.vehicle_type != vehicle_type:
         return False
