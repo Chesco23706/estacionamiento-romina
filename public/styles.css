@@ -243,6 +243,32 @@ h2 {
   background: #fff;
 }
 
+.ticket-qr-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card-soft);
+}
+
+.ticket-qr-panel h3 {
+  margin: 0 0 8px;
+}
+
+.ticket-qr-image {
+  width: 132px;
+  height: 132px;
+  padding: 10px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 .ticket-printable {
   border: 2px dashed rgba(15, 67, 107, 0.24);
   border-radius: 18px;
@@ -2265,7 +2291,8 @@ body[data-theme="dark"] .mini-stat-item,
 body[data-theme="dark"] .hint-box,
 body[data-theme="dark"] .type-counter,
 body[data-theme="dark"] .service-option-card,
-body[data-theme="dark"] .table-wrapper {
+body[data-theme="dark"] .table-wrapper,
+body[data-theme="dark"] .ticket-qr-panel {
   background: var(--surface);
 }
 
@@ -2380,6 +2407,12 @@ body[data-theme="dark"] .employee-board-row small {
   color: #a2b5ca;
 }
 
+body[data-theme="dark"] .ticket-qr-image,
+body[data-theme="dark"] .ticket-frame {
+  background: #f7f8fb;
+  border-color: rgba(146, 181, 217, 0.22);
+}
+
 body[data-theme="dark"] .stat-card,
 body[data-theme="dark"] .ticket-slot,
 body[data-theme="dark"] .ticket-slot-number,
@@ -2415,6 +2448,7 @@ body[data-theme="dark"] .ticket-slot-body span {
   .topbar-actions,
   .section-heading,
   .button-row,
+  .ticket-qr-panel,
   .ticket-header,
   .hero-copy-inner,
   .brand-block {

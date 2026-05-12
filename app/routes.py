@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from flask import (
     Blueprint,
+    Response,
     current_app,
     flash,
     make_response,
@@ -43,7 +44,7 @@ from .services import (
     update_tariff,
     update_vehicle_record,
 )
-from .tickets import build_ticket_pdf
+from .tickets import build_ticket_pdf, build_ticket_qr_svg
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
@@ -100,7 +101,16 @@ def build_records_query(filters):
             )
         )
     if filters["status"]:
-        query = query.filter(VehicleRecord.status == filters["status"])
+        status = filters["status"]
+        if status == "Pagado":
+            query = query.filter(VehicleRecord.paid_at.isnot(None))
+        elif status == "Pendiente de pago":
+            query = query.filter(
+                VehicleRecord.paid_at.is_(None),
+                VehicleRecord.exit_at.is_(None),
+            )
+        else:
+            query = query.filter(VehicleRecord.status == status)
     if filters["vehicle_type"]:
         query = query.filter(VehicleRecord.vehicle_type == filters["vehicle_type"])
     if filters.get("date"):
@@ -168,6 +178,41 @@ def build_ticket_board():
         "paid": sum(1 for slot in board_records if slot["status_theme"] == "paid"),
     }
     return board_records, metrics
+
+
+def record_matches_filters(record, filters):
+    status = (filters.get("status") or "").strip()
+    search = (filters.get("search") or "").strip().lower()
+    vehicle_type = (filters.get("vehicle_type") or "").strip()
+    record_day = localize_datetime(record.entry_at).date().isoformat() if record.entry_at else ""
+
+    if search:
+        haystack = " ".join(
+            [
+                record.ticket_number or "",
+                record.display_ticket_number or "",
+                record.client_name or "",
+                record.plate_number or "",
+                record.vehicle_type or "",
+            ]
+        ).lower()
+        if search not in haystack:
+            return False
+
+    if vehicle_type and record.vehicle_type != vehicle_type:
+        return False
+
+    if filters.get("date") and filters["date"] != record_day:
+        return False
+
+    if status == "Pagado" and not record.is_paid:
+        return False
+    if status == "Pendiente de pago" and (record.is_paid or record.exit_at):
+        return False
+    if status and status not in {"Pagado", "Pendiente de pago"} and record.status != status:
+        return False
+
+    return True
 
 
 def get_local_timezone():
@@ -436,6 +481,9 @@ def records_page():
             .order_by(VehicleRecord.entry_at.desc())
             .all()
         )
+        current_records = [
+            record for record in current_records if record_matches_filters(record, filters)
+        ]
         for record in current_records:
             enrich_record_display(record)
         return render_template(
@@ -528,7 +576,20 @@ def print_ticket(record_id):
     if not record:
         flash("No se encontró el registro solicitado.", "danger")
         return redirect(url_for("main.records_page"))
-    return render_template("ticket.html", record=record)
+    qr_target = url_for("main.print_ticket", record_id=record.id, _external=True)
+    return render_template("ticket.html", record=record, qr_target=qr_target)
+
+@main_bp.route("/records/<int:record_id>/ticket/qr.svg")
+@login_required
+def ticket_qr_document(record_id):
+    record = db.session.get(VehicleRecord, record_id)
+    if not record:
+        flash("No se encontrÃ³ el registro solicitado.", "danger")
+        return redirect(url_for("main.records_page"))
+
+    qr_target = url_for("main.print_ticket", record_id=record.id, _external=True)
+    qr_svg = build_ticket_qr_svg(qr_target)
+    return Response(qr_svg, mimetype="image/svg+xml")
 
 
 @main_bp.route("/records/<int:record_id>/ticket/document")
@@ -539,7 +600,8 @@ def ticket_document(record_id):
         flash("No se encontró el registro solicitado.", "danger")
         return redirect(url_for("main.records_page"))
 
-    pdf_bytes = build_ticket_pdf(record, format_datetime_for_ticket)
+    qr_target = url_for("main.print_ticket", record_id=record.id, _external=True)
+    pdf_bytes = build_ticket_pdf(record, format_datetime_for_ticket, qr_value=qr_target)
     filename = f"ticket_{record.display_ticket_number}.pdf"
     as_attachment = request.args.get("download") == "1"
     return send_file(

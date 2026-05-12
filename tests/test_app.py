@@ -295,6 +295,51 @@ def test_records_default_view_shows_inside_and_pending_checkout_panel():
     assert "Pago registrado" in body
 
 
+def test_employee_paid_filter_only_shows_paid_records():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "020",
+            "client_name": "Cliente Pagado",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "PAG-020",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "021",
+            "client_name": "Cliente Pendiente",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "PEN-021",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        paid_record = VehicleRecord.query.filter_by(physical_ticket_number="020").first()
+        paid_id = paid_record.id
+
+    client.post(f"/records/{paid_id}/pay", follow_redirects=True)
+    client.post("/logout", follow_redirects=True)
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    response = client.get("/records?status=Pagado")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Pagado" in body
+    assert "Cliente Pendiente" not in body
+
+
 def test_weekly_records_default_view_shows_weekly_exit_action():
     app, client = build_client()
     login(client)
@@ -471,10 +516,16 @@ def test_help_page_and_ticket_reprint_route_exist():
     assert response.status_code == 200
     assert "Descargar PDF" in body
     assert "FICHA-04" in body
+    assert "Codigo QR del ticket" in body
 
     pdf_response = client.get(f"/records/{record_id}/ticket/document")
     assert pdf_response.status_code == 200
     assert pdf_response.mimetype == "application/pdf"
+
+    qr_response = client.get(f"/records/{record_id}/ticket/qr.svg")
+    assert qr_response.status_code == 200
+    assert qr_response.mimetype == "image/svg+xml"
+    assert "<svg" in qr_response.get_data(as_text=True)
 
 
 def test_employee_help_page_is_role_specific():

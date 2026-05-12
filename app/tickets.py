@@ -5,12 +5,15 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
+from reportlab.graphics import renderPDF, renderSVG
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
 from reportlab.pdfgen import canvas
 
 from .pricing import format_duration
 
 
-def build_ticket_pdf(record, datetime_formatter):
+def build_ticket_pdf(record, datetime_formatter, qr_value=None):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -83,6 +86,12 @@ def build_ticket_pdf(record, datetime_formatter):
             text.textLine(line)
         pdf.drawText(text)
 
+    if qr_value:
+        draw_qr_on_canvas(pdf, qr_value, width - 66 * mm, 31 * mm, 30 * mm)
+        pdf.setFillColor(ink)
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawCentredString(width - 51 * mm, 28 * mm, "Escanea para abrir el ticket")
+
     pdf.setFillColor(muted)
     pdf.setFont("Helvetica-Oblique", 9)
     pdf.drawString(26 * mm, 30 * mm, "Presenta este documento para agilizar la salida del vehiculo.")
@@ -109,3 +118,23 @@ def _wrap_text(value, max_length):
             current = word
     lines.append(current)
     return lines
+
+
+def build_ticket_qr_svg(qr_value, size=168):
+    qr_widget = qr.QrCodeWidget(qr_value)
+    bounds = qr_widget.getBounds()
+    width = bounds[2] - bounds[0]
+    height = bounds[3] - bounds[1]
+    drawing = Drawing(size, size, transform=[size / width, 0, 0, size / height, 0, 0])
+    drawing.add(qr_widget)
+    return renderSVG.drawToString(drawing)
+
+
+def draw_qr_on_canvas(pdf, qr_value, x, y, size):
+    qr_widget = qr.QrCodeWidget(qr_value)
+    bounds = qr_widget.getBounds()
+    width = bounds[2] - bounds[0]
+    height = bounds[3] - bounds[1]
+    drawing = Drawing(size, size, transform=[size / width, 0, 0, size / height, 0, 0])
+    drawing.add(qr_widget)
+    renderPDF.draw(drawing, pdf, x, y)

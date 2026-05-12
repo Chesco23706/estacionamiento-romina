@@ -18,6 +18,41 @@
       <a class="link-button" href="{{ url_for('main.dashboard') }}">Volver al panel</a>
     </div>
 
+    <section class="ticket-qr-panel">
+      <div>
+        <h3>Codigo QR del ticket</h3>
+        <p class="muted">Escanea este codigo para abrir este mismo ticket y registrar pago o salida mas rapido.</p>
+      </div>
+      <img class="ticket-qr-image" src="{{ url_for('main.ticket_qr_document', record_id=record.id) }}" alt="Codigo QR del ticket {{ record.display_ticket_number }}">
+    </section>
+
+    {% if not record.exit_at %}
+    <div class="button-row">
+      <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit" {% if record.is_paid %}disabled{% endif %}>
+          {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+        </button>
+      </form>
+      {% if not record.is_hourly %}
+      <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>
+      </form>
+      <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>
+          {% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
     <iframe
       class="ticket-frame"
       src="{{ url_for('main.ticket_document', record_id=record.id) }}"
