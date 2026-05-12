@@ -93,10 +93,10 @@ def build_records_query(filters):
         like_value = f"%{search}%"
         query = query.filter(
             or_(
-                VehicleRecord.physical_ticket_number.ilike(like_value),
+                VehicleRecord.physical_ticket_number == search,
                 (
                     VehicleRecord.physical_ticket_number.is_(None)
-                    & VehicleRecord.ticket_number.ilike(like_value)
+                    & (VehicleRecord.ticket_number == search)
                 ),
                 VehicleRecord.client_name.ilike(like_value),
                 VehicleRecord.plate_number.ilike(like_value),
@@ -186,19 +186,24 @@ def build_ticket_board():
 def record_matches_filters(record, filters):
     status = (filters.get("status") or "").strip()
     search = (filters.get("search") or "").strip().lower()
+    raw_search = (filters.get("search") or "").strip()
     vehicle_type = (filters.get("vehicle_type") or "").strip()
     record_day = localize_datetime(record.entry_at).date().isoformat() if record.entry_at else ""
 
     if search:
-        haystack = " ".join(
+        display_ticket = (record.display_ticket_number or "").strip()
+        normalized_display_ticket = display_ticket.lstrip("0") or "0"
+        normalized_search = raw_search.lstrip("0") or "0"
+        textual_haystack = " ".join(
             [
-                record.display_ticket_number or "",
                 record.client_name or "",
                 record.plate_number or "",
                 record.vehicle_type or "",
             ]
         ).lower()
-        if search not in haystack:
+        ticket_match = display_ticket == raw_search or normalized_display_ticket == normalized_search
+        text_match = search in textual_haystack
+        if not ticket_match and not text_match:
             return False
 
     if vehicle_type and record.vehicle_type != vehicle_type:
