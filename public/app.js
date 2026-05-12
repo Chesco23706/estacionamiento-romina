@@ -34,8 +34,8 @@ function startLiveTimers() {
 function renderDayCounterText(entryAt, contractedDays) {
   const diff = Date.now() - new Date(entryAt).getTime();
   const usedDays = Math.max(1, Math.ceil(diff / 86400000));
-  const remainingDays = Math.max(contractedDays - usedDays, 0);
-  return `Restan ${remainingDays} de ${contractedDays} dias`;
+  const boundedUsedDays = Math.min(usedDays, Math.max(contractedDays, 1));
+  return `${boundedUsedDays}/${contractedDays} dias`;
 }
 
 function startLiveDayCounters() {

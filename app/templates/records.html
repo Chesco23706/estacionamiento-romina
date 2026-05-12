@@ -78,10 +78,10 @@
               <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
               {% elif record.status == 'Dentro del estacionamiento' %}
               <span class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
-                Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
+                {{ record.consumed_day_units() }}/{{ record.contracted_days or 6 }} dias
               </span>
               {% elif not record.is_hourly %}
-              Semana usada: {{ record.consumed_day_units(reference_time=record.exit_at) }} dia(s)
+              {{ record.consumed_day_units(reference_time=record.exit_at) }}/{{ record.contracted_days or 6 }} dias
               {% else %}
               {{ format_duration(record.duration_seconds) }}
               {% endif %}
@@ -185,7 +185,7 @@
             <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
             {% else %}
             <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
-              Restan {{ record.remaining_day_units() }} de {{ record.contracted_days or 6 }} dias
+              {{ record.consumed_day_units() }}/{{ record.contracted_days or 6 }} dias
             </strong>
             {% endif %}
           </div>
