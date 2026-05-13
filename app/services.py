@@ -375,8 +375,14 @@ def update_tariff(tariff, form_data, user):
 
 def generate_cash_cut(cut_type, user):
     start, end = get_period_bounds("daily" if cut_type == "daily" else "weekly")
-    records = VehicleRecord.query.filter(
+    paid_records = VehicleRecord.query.filter(
+        VehicleRecord.paid_at.isnot(None),
+        VehicleRecord.paid_at >= start,
+        VehicleRecord.paid_at < end,
+    ).all()
+    pending_records = VehicleRecord.query.filter(
         VehicleRecord.exit_at.isnot(None),
+        VehicleRecord.paid_at.is_(None),
         VehicleRecord.exit_at >= start,
         VehicleRecord.exit_at < end,
     ).all()
@@ -386,14 +392,14 @@ def generate_cash_cut(cut_type, user):
     vehicle_types = get_vehicle_types(include_inactive=True)
     by_type = {vehicle_type: {"count": 0, "income": 0.0} for vehicle_type in vehicle_types}
 
-    for record in records:
+    for record in paid_records:
         by_type.setdefault(record.vehicle_type, {"count": 0, "income": 0.0})
         by_type[record.vehicle_type]["count"] += 1
-        if record.is_paid:
-            total_income += Decimal(record.total_amount)
-            by_type[record.vehicle_type]["income"] += float(record.total_amount)
-        else:
-            total_pending += Decimal(record.total_amount)
+        total_income += Decimal(record.total_amount)
+        by_type[record.vehicle_type]["income"] += float(record.total_amount)
+
+    for record in pending_records:
+        total_pending += Decimal(record.total_amount)
 
     cut = CashCut(
         cut_type=cut_type,
@@ -402,8 +408,8 @@ def generate_cash_cut(cut_type, user):
         generated_by=user,
         total_income=total_income,
         total_pending=total_pending,
-        vehicles_served=len(records),
-        vehicles_paid=sum(1 for record in records if record.is_paid),
+        vehicles_served=len(paid_records) + len(pending_records),
+        vehicles_paid=len(paid_records),
         breakdown_json=json.dumps(by_type),
     )
     db.session.add(cut)
@@ -426,16 +432,16 @@ def dashboard_metrics():
         float(record.total_amount)
         for record in records
         if record.is_paid
-        and record.exit_at
-        and ensure_utc(record.exit_at).date() == utc_now().date()
+        and record.paid_at
+        and ensure_utc(record.paid_at).date() == utc_now().date()
     )
     week_start, week_end = get_period_bounds("weekly")
     total_week = sum(
         float(record.total_amount)
         for record in records
         if record.is_paid
-        and record.exit_at
-        and week_start <= ensure_utc(record.exit_at) < week_end
+        and record.paid_at
+        and week_start <= ensure_utc(record.paid_at) < week_end
     )
     pending = sum(
         float(record.total_amount)

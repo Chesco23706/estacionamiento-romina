@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from app import create_app
 from app.extensions import db
 from app.models import CashCut, User, VehicleRecord
@@ -73,6 +75,44 @@ def test_admin_login_and_vehicle_flow():
         assert updated.status == "Pagado"
         assert float(updated.total_amount) >= 115.5
         assert CashCut.query.count() == 1
+
+
+def test_daily_cut_uses_payment_day_not_entry_day():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-CORTE-01",
+            "client_name": "Cliente Corte",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "COR-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-CORTE-01").first()
+        yesterday = utc_now() - timedelta(days=1)
+        record.entry_at = yesterday
+        db.session.commit()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    cut_response = client.post(
+        "/cuts/generate", data={"cut_type": "daily"}, follow_redirects=True
+    )
+
+    assert cut_response.status_code == 200
+
+    with app.app_context():
+        cut = CashCut.query.order_by(CashCut.id.desc()).first()
+        assert cut is not None
+        assert float(cut.total_income) > 0
+        assert cut.vehicles_paid >= 1
 
 
 def test_weekly_record_tracks_partial_exits():
