@@ -410,6 +410,57 @@ def test_bootstrap_normalizes_open_weekly_records_to_six_days():
         assert "Semana completa" in (record.applied_rate_label or "")
 
 
+def test_bootstrap_normalizes_legacy_weekly_vehicle_type_alias():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        legacy_tariff = Tariff(
+            vehicle_type="moto por semana",
+            billing_scheme="daily",
+            rate_amount=10,
+            period_unit="day",
+            min_charge_units=1,
+            offer_label="Semana vieja",
+            offer_trigger_units=7,
+            offer_price=70,
+            notes="Tarifa anterior",
+            active=True,
+        )
+        db.session.add(legacy_tariff)
+        db.session.flush()
+
+        record = VehicleRecord(
+            ticket_number="SEM-ALIAS",
+            physical_ticket_number="SEM-ALIAS",
+            client_name="Semana Alias",
+            vehicle_type="moto por semana",
+            plate_number="ALI-006",
+            stay_mode="weekly",
+            contracted_days=7,
+            entry_at=utc_now() - timedelta(days=5),
+            paid_at=utc_now(),
+            total_amount=70,
+            status="Dentro del estacionamiento",
+            entry_user=user,
+            payment_user=user,
+        )
+        db.session.add(record)
+        db.session.commit()
+
+        from app.models import seed_defaults
+
+        seed_defaults()
+        db.session.refresh(record)
+        db.session.refresh(legacy_tariff)
+
+        assert record.vehicle_type == "Moto"
+        assert record.contracted_days == 6
+        assert float(record.total_amount) == 40.0
+        assert legacy_tariff.active is False
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)
