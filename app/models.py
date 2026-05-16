@@ -500,8 +500,8 @@ def normalize_weekly_six_day_pricing():
             if canonical_tariff:
                 legacy_tariff.active = False
 
-    active_weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly", exit_at=None).all()
-    for record in active_weekly_records:
+    weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly").all()
+    for record in weekly_records:
         normalized_vehicle_type = legacy_vehicle_aliases.get((record.vehicle_type or "").strip().lower())
         if normalized_vehicle_type:
             record.vehicle_type = normalized_vehicle_type
@@ -512,7 +512,7 @@ def normalize_weekly_six_day_pricing():
         pricing = calculate_charge(
             record.vehicle_type,
             record.entry_at,
-            record.paid_at or utc_now(),
+            record.exit_at or record.paid_at or utc_now(),
             stay_mode=record.stay_mode,
             contracted_days=record.contracted_days,
         )

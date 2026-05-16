@@ -534,6 +534,43 @@ def test_runtime_migration_normalizes_paid_weekly_records_to_six_days():
         assert "Semana completa" in (record.applied_rate_label or "")
 
 
+def test_runtime_migration_normalizes_closed_paid_weekly_records_to_six_days():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        record = VehicleRecord(
+            ticket_number="SEM-CERRADO",
+            physical_ticket_number="SEM-CERRADO",
+            client_name="Semana Cerrada",
+            vehicle_type="Moto",
+            plate_number="CER-006",
+            stay_mode="weekly",
+            contracted_days=7,
+            entry_at=utc_now() - timedelta(days=2),
+            exit_at=utc_now() - timedelta(days=1),
+            paid_at=utc_now() - timedelta(days=1),
+            duration_seconds=86400,
+            total_amount=70,
+            status="Pagado",
+            entry_user=user,
+            exit_user=user,
+            payment_user=user,
+        )
+        db.session.add(record)
+        db.session.commit()
+
+        from app.models import apply_runtime_migrations
+
+        apply_runtime_migrations()
+        db.session.refresh(record)
+
+        assert record.contracted_days == 6
+        assert float(record.total_amount) == 40.0
+        assert "Semana completa" in (record.applied_rate_label or "")
+
+
 def test_weekly_charge_stays_at_six_day_package_after_seven_calendar_days():
     app, client = build_client()
     login(client)
@@ -1323,6 +1360,11 @@ def test_ticket_board_page_exists_and_shows_records():
     assert "100" in body
     assert "Pendiente de salida" in body
     assert "Pagada o cerrada" in body
+    assert 'data-open-dialog="ticket-slot-dialog-1"' in body
+    assert "Cliente Tablero" in body
+    assert "TAB-001" in body
+    assert "Abrir en bitacora" in body
+    assert "Ficha disponible" in body
 
 
 def test_datetime_filter_uses_mexico_city_timezone():

@@ -831,6 +831,18 @@ dialog::backdrop {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.ticket-slot-button {
+  width: 100%;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ticket-slot-button:focus-visible {
+  outline: 3px solid rgba(15, 67, 107, 0.35);
+  outline-offset: 2px;
+}
+
 .simple-ticket-slot {
   min-height: 64px;
   padding: 8px;
@@ -1150,6 +1162,38 @@ thead {
 
 .record-modal-actions form {
   margin: 0;
+}
+
+.ticket-detail-dialog {
+  display: grid;
+  gap: 18px;
+}
+
+.ticket-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.ticket-detail-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+}
+
+.ticket-detail-grid span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ticket-detail-grid strong {
+  color: var(--text);
+  font-size: 0.96rem;
+  overflow-wrap: anywhere;
 }
 
 .help-grid {

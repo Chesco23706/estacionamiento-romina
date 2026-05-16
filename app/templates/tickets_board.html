@@ -30,9 +30,52 @@
     <div class="ticket-slot-grid simple-ticket-slot-grid">
       {% for slot in records %}
       {% set record = slot.record %}
-      <article class="ticket-slot ticket-slot-{{ slot.status_theme }} simple-ticket-slot" title="{% if record %}Ficha {{ slot.slot_label }} · {{ record.client_name }} · {{ record.status }}{% else %}Ficha {{ slot.slot_label }} disponible{% endif %}">
+      <button class="ticket-slot ticket-slot-{{ slot.status_theme }} simple-ticket-slot ticket-slot-button" type="button" data-open-dialog="ticket-slot-dialog-{{ slot.slot_number }}" title="{% if record %}Ficha {{ slot.slot_label }} - {{ record.client_name }} - {{ record.status }}{% else %}Ficha {{ slot.slot_label }} disponible{% endif %}">
         <div class="ticket-slot-number">{{ slot.slot_label }}</div>
-      </article>
+      </button>
+
+      <dialog class="record-dialog" id="ticket-slot-dialog-{{ slot.slot_number }}">
+        <article class="record-dialog-card ticket-detail-dialog">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Ficha {{ slot.slot_label }}</p>
+              <h2>{% if record %}{{ record.client_name }}{% else %}Ficha disponible{% endif %}</h2>
+            </div>
+            <button class="btn btn-secondary" type="button" data-close-dialog="ticket-slot-dialog-{{ slot.slot_number }}">Cerrar</button>
+          </div>
+
+          {% if record %}
+          <div class="ticket-detail-grid">
+            <div><span>Estado</span><strong>{{ record.status }}</strong></div>
+            <div><span>Pago</span><strong>{{ record.payment_state_label }}</strong></div>
+            <div><span>Vehiculo</span><strong>{{ record.vehicle_type }}</strong></div>
+            <div><span>Placas</span><strong>{{ record.plate_number }}</strong></div>
+            <div><span>Modalidad</span><strong>{{ record.mode_label }}</strong></div>
+            <div><span>Entrada</span><strong>{{ record.entry_at|dt }}</strong></div>
+            <div><span>Salida</span><strong>{{ record.exit_at|dt }}</strong></div>
+            <div><span>Total</span><strong>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</strong></div>
+            {% if not record.is_hourly %}
+            <div><span>Dias pagados</span><strong>{{ record.contracted_days or 6 }}</strong></div>
+            <div><span>Salidas del dia</span><strong>{{ record.weekly_exit_count }}</strong></div>
+            <div><span>Entradas del dia</span><strong>{{ record.weekly_entry_count }}</strong></div>
+            <div><span>Ultima salida semanal</span><strong>{{ record.latest_weekly_exit_at|dt }}</strong></div>
+            {% endif %}
+            <div><span>Tarifa aplicada</span><strong>{{ record.applied_rate_label or record.live_rate_label or '-' }}</strong></div>
+            <div><span>Notas</span><strong>{{ record.notes or '-' }}</strong></div>
+          </div>
+
+          <div class="record-modal-actions">
+            <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
+            <a class="link-button" href="{{ url_for('main.records_page', search=record.display_ticket_number) }}">Abrir en bitacora</a>
+          </div>
+          {% else %}
+          <p class="section-note">Esta ficha no tiene un vehiculo activo asignado.</p>
+          <div class="record-modal-actions">
+            <a class="link-button" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
+          </div>
+          {% endif %}
+        </article>
+      </dialog>
       {% endfor %}
     </div>
   </section>

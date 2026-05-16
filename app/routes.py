@@ -605,6 +605,9 @@ def records_page():
 @login_required
 def tickets_board_page():
     board_records, board_metrics = build_ticket_board()
+    for slot in board_records:
+        if slot["record"]:
+            enrich_record_display(slot["record"])
     return render_template(
         "tickets_board.html",
         records=board_records,
