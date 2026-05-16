@@ -361,6 +361,14 @@ def seed_defaults():
             tariff.offer_trigger_units = offer_trigger_units
         if not tariff.offer_price:
             tariff.offer_price = offer_price
+        if vehicle_type in {"Moto", "Bicicleta"}:
+            tariff.billing_scheme = "daily"
+            tariff.period_unit = "day"
+            tariff.rate_amount = amount
+            tariff.offer_label = offer_label
+            tariff.offer_trigger_units = 6
+            tariff.offer_price = 40
+            tariff.notes = "Se cobra $40 por semana completa de 6 dias."
 
     db.session.commit()
 

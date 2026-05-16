@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from app import create_app
 from app.extensions import db
-from app.models import CashCut, User, VehicleRecord
+from app.models import CashCut, Tariff, User, VehicleRecord
 from app.pricing import utc_now
 from app.services import dashboard_metrics
 from config import TestingConfig
@@ -286,6 +286,27 @@ def test_admin_record_modal_shows_audit_history():
     assert "Generada por" in body
     assert "Pago registrado por" in body
     assert "Salida registrada por" in body
+
+
+def test_bootstrap_updates_weekly_motorcycle_tariff_to_six_days():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        tarifa = Tariff.query.filter_by(vehicle_type="Moto").first()
+        tarifa.offer_trigger_units = 7
+        tarifa.offer_price = 70
+        tarifa.notes = "Valor viejo"
+        db.session.commit()
+
+        from app.models import seed_defaults
+
+        seed_defaults()
+        db.session.refresh(tarifa)
+
+        assert tarifa.offer_trigger_units == 6
+        assert float(tarifa.offer_price) == 40.0
+        assert "6 dias" in tarifa.notes
 
 
 def test_weekly_record_tracks_partial_exits():
