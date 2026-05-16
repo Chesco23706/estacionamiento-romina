@@ -499,7 +499,7 @@ def records_page():
         enrich_record_display(record)
     if not current_user.is_admin:
         current_records = (
-            VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+            VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
             .order_by(VehicleRecord.entry_at.desc())
             .all()
         )

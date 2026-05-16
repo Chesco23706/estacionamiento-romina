@@ -201,6 +201,42 @@ def test_weekly_partial_exit_hides_record_until_daily_entry():
         assert updated.weekly_entry_count == 1
 
 
+def test_employee_search_finds_weekly_partial_exit_from_previous_day():
+    app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SEM-BUSCA",
+            "client_name": "Cliente Semana Busqueda",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "6",
+            "plate_number": "BUS-101",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SEM-BUSCA").first()
+        record.entry_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+
+    response = client.get("/records?search=FICHA-SEM-BUSCA")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Semana Busqueda" in body
+    assert "Salida registrada" in body
+    assert "Entrada del dia" in body
+
+
 def test_employee_can_register_exit_edit_and_pay():
     app, client = build_client()
     login(client)
