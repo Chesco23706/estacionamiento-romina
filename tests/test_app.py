@@ -321,6 +321,40 @@ def test_bootstrap_updates_weekly_motorcycle_tariff_to_six_days():
         assert "6 dias" in tarifa.notes
 
 
+def test_bootstrap_normalizes_open_weekly_records_to_six_days():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        record = VehicleRecord(
+            ticket_number="SEM-LEGADO",
+            physical_ticket_number="SEM-LEGADO",
+            client_name="Semana Legacy",
+            vehicle_type="Moto",
+            plate_number="LEG-006",
+            stay_mode="weekly",
+            contracted_days=7,
+            entry_at=utc_now() - timedelta(days=5),
+            paid_at=utc_now(),
+            total_amount=60,
+            status="Dentro del estacionamiento",
+            entry_user=user,
+            payment_user=user,
+        )
+        db.session.add(record)
+        db.session.commit()
+
+        from app.models import seed_defaults
+
+        seed_defaults()
+        db.session.refresh(record)
+
+        assert record.contracted_days == 6
+        assert float(record.total_amount) == 40.0
+        assert "Semana completa" in (record.applied_rate_label or "")
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)

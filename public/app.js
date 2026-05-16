@@ -109,7 +109,7 @@ function setupRecordModeFields() {
     }
 
     const syncField = () => {
-      contractedInput.value = modeSelect.value === "weekly" ? "7" : "";
+      contractedInput.value = modeSelect.value === "weekly" ? "6" : "";
     };
 
     modeSelect.addEventListener("change", syncField);

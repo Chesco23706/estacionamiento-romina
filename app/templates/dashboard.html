@@ -81,7 +81,7 @@
               <span
                 class="live-day-counter"
                 data-entry-at="{{ record.entry_at.isoformat() }}"
-                data-contracted-days="{{ record.contracted_days or 1 }}"
+                data-contracted-days="{{ record.contracted_days or 6 }}"
               >
                 {{ record.consumed_day_units() }}/{{ record.contracted_days or 6 }} dias
               </span>

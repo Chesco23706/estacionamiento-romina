@@ -330,9 +330,9 @@ def seed_defaults():
             10,
             "day",
             "Semana completa",
-            7,
+            6,
             40,
-            "Se cobra $40 por semana completa.",
+            "Se cobra $40 por semana completa de 6 dias.",
         ),
         ("Automóvil", "hourly", 20, "hour", None, None, None, "Se cobra por hora o fracción."),
     ]
@@ -361,7 +361,7 @@ def seed_defaults():
             tariff.offer_trigger_units = offer_trigger_units
         if not tariff.offer_price:
             tariff.offer_price = offer_price
-        if vehicle_type in {"Moto", "Bicicleta"}:
+        if vehicle_type in {"Moto", "Bicicleta", "Carrito callejero"}:
             tariff.billing_scheme = "daily"
             tariff.period_unit = "day"
             tariff.rate_amount = amount
@@ -369,6 +369,24 @@ def seed_defaults():
             tariff.offer_trigger_units = 6
             tariff.offer_price = 40
             tariff.notes = "Se cobra $40 por semana completa de 6 dias."
+
+    active_weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly", exit_at=None).all()
+    for record in active_weekly_records:
+        if record.contracted_days not in {None, 6, 7}:
+            continue
+        record.contracted_days = 6
+        pricing = calculate_charge(
+            record.vehicle_type,
+            record.entry_at,
+            record.paid_at or utc_now(),
+            stay_mode=record.stay_mode,
+            contracted_days=record.contracted_days,
+        )
+        record.duration_seconds = pricing["duration_seconds"]
+        record.applied_rate_label = pricing["rate_label"]
+        record.total_amount = pricing["total"] + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
+        if record.services_total_amount:
+            record.applied_rate_label = f"{record.applied_rate_label} | {record.services_label}"
 
     db.session.commit()
 
