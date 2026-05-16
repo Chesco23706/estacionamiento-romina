@@ -15,6 +15,9 @@
       <a class="section-chip" href="{{ url_for('main.records_page', status='Dentro del estacionamiento') }}">Vehiculos dentro</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='Pagado') }}">Pagados</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='Salida registrada') }}">Salidas registradas</a>
+      <a class="section-chip {% if filters.status == 'Pagado' and filters.date == today_filter_value and (filters.date_field or 'payment') == 'payment' %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Pagado', date=today_filter_value, date_field='payment') }}">Pagos de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='') }}">Todos</a>
       <a class="section-chip" href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
     </div>
@@ -24,6 +27,7 @@
     <div class="section-heading">
       <div>
         <h2>Historial de registros</h2>
+        <p class="muted">Para validar el corte del dia usa <strong>Pagos de hoy</strong>. Ese filtro toma la fecha real del pago.</p>
       </div>
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ficha, nombre, placas o tipo">
@@ -47,6 +51,7 @@
           {% endfor %}
         </select>
         <button class="btn btn-secondary" type="submit">Buscar</button>
+        <a class="link-button" href="{{ url_for('main.records_page') }}">Limpiar filtros</a>
       </form>
     </div>
 

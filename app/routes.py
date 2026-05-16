@@ -545,6 +545,7 @@ def records_page():
             vehicle_types=get_vehicle_types(),
             status_options=STATUS_OPTIONS,
             format_duration=format_duration,
+            today_filter_value=localize_datetime(utc_now()).date().isoformat(),
         )
     return render_template(
         "records.html",
@@ -554,6 +555,7 @@ def records_page():
         vehicle_types=get_vehicle_types(),
         status_options=STATUS_OPTIONS,
         format_duration=format_duration,
+        today_filter_value=localize_datetime(utc_now()).date().isoformat(),
     )
 
 

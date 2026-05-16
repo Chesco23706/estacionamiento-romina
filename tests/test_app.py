@@ -288,6 +288,18 @@ def test_admin_record_modal_shows_audit_history():
     assert "Salida registrada por" in body
 
 
+def test_admin_records_page_shows_today_payment_shortcut():
+    _app, client = build_client()
+    login(client)
+
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Pagos de hoy" in body
+    assert "Para validar el corte del dia usa" in body
+
+
 def test_bootstrap_updates_weekly_motorcycle_tariff_to_six_days():
     app, client = build_client()
     login(client)
