@@ -3,17 +3,6 @@
 {% block content %}
 {% if current_user.is_admin %}
 <main class="dashboard-layout">
-  <section class="hero-panel card feature-card">
-    <div class="hero-copy-inner">
-      <div>
-        <p class="eyebrow">Panel administrativo</p>
-        <h2>Todo el control del estacionamiento en una sola vista</h2>
-        <p>Consulta actividad reciente, revisa cobros, abre fichas y administra empleados sin perder de vista la operacion diaria.</p>
-      </div>
-      <img class="hero-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Romina">
-    </div>
-  </section>
-
   <section class="stats-grid">
     <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
     <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>

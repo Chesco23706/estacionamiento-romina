@@ -300,6 +300,61 @@ def test_admin_records_page_shows_today_payment_shortcut():
     assert "Para validar el corte del dia usa" in body
 
 
+def test_employee_records_page_shows_today_payment_shortcut():
+    _app, client = build_client()
+    login(client, username="empleado1", password="EmpleadoUno2026!")
+
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Pagos de hoy" in body
+    assert "Ese filtro toma la fecha real del pago" in body
+
+
+def test_paid_records_are_ordered_by_payment_time_desc():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        older_paid = VehicleRecord(
+            ticket_number="PAGO-OLD",
+            physical_ticket_number="81",
+            client_name="Pago Viejo",
+            vehicle_type="Moto",
+            plate_number="OLD-001",
+            entry_at=utc_now() - timedelta(hours=5),
+            paid_at=utc_now() - timedelta(hours=2),
+            total_amount=10,
+            status="Pagado",
+            entry_user=user,
+            payment_user=user,
+        )
+        newer_paid = VehicleRecord(
+            ticket_number="PAGO-NEW",
+            physical_ticket_number="82",
+            client_name="Pago Nuevo",
+            vehicle_type="Moto",
+            plate_number="NEW-001",
+            entry_at=utc_now() - timedelta(hours=4),
+            paid_at=utc_now() - timedelta(minutes=30),
+            total_amount=20,
+            status="Pagado",
+            entry_user=user,
+            payment_user=user,
+        )
+        db.session.add_all([older_paid, newer_paid])
+        db.session.commit()
+
+    today = utc_now().astimezone(ZoneInfo("America/Mexico_City")).date().isoformat()
+    response = client.get(f"/records?status=Pagado&date={today}&date_field=payment")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert body.index("Pago Nuevo") < body.index("Pago Viejo")
+
+
 def test_bootstrap_updates_weekly_motorcycle_tariff_to_six_days():
     app, client = build_client()
     login(client)
