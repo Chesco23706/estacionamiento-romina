@@ -731,6 +731,31 @@ def test_employee_dashboard_shows_simple_core_actions():
     assert "No pagados" in body
 
 
+def test_employee_dashboard_can_reopen_ticket_after_entry():
+    _app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-EMP-TICKET",
+            "client_name": "Cliente Ticket Empleado",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "TIC-101",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    response = client.get("/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Ticket Empleado" in body
+    assert "Ticket PDF" in body
+
+
 def test_operations_page_uses_touch_friendly_copy():
     _app, client = build_client()
     login(client, "empleado1", "EmpleadoUno2026!")

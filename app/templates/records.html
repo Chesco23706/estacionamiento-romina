@@ -199,6 +199,7 @@
         <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
         {% endif %}
         <div class="employee-record-actions">
+          <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
           {% if not record.is_hourly and not record.exit_at %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -270,6 +271,7 @@
         <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
         {% endif %}
         <div class="employee-record-actions">
+          <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
           {% if not record.is_hourly and not record.exit_at %}
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
