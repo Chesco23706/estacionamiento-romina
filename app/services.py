@@ -45,12 +45,29 @@ PERIOD_UNITS = (
     ("day", "Dia"),
 )
 
+LEGACY_VEHICLE_TYPE_ALIASES = {
+    "moto por semana": "Moto",
+    "motocicleta por semana": "Moto",
+    "bicicleta por semana": "Bicicleta",
+    "carrito por semana": "Carrito callejero",
+}
+
+
+def normalize_vehicle_type(raw_value):
+    normalized = clean_text(raw_value, 50, "tipo de vehiculo")
+    return LEGACY_VEHICLE_TYPE_ALIASES.get(normalized.lower(), normalized)
+
 
 def get_vehicle_types(include_inactive=False):
     query = Tariff.query.order_by(Tariff.vehicle_type.asc())
     if not include_inactive:
         query = query.filter(Tariff.active.is_(True))
-    return [tariff.vehicle_type for tariff in query.all()]
+    visible_vehicle_types = []
+    for tariff in query.all():
+        normalized_type = LEGACY_VEHICLE_TYPE_ALIASES.get(tariff.vehicle_type.lower(), tariff.vehicle_type)
+        if normalized_type not in visible_vehicle_types:
+            visible_vehicle_types.append(normalized_type)
+    return visible_vehicle_types
 
 
 def get_tariffs(include_inactive=True):
@@ -63,7 +80,7 @@ def get_tariffs(include_inactive=True):
 def create_vehicle_record(form_data, user):
     physical_ticket_number = clean_ticket(form_data.get("ticket_number"))
     client_name = clean_text(form_data.get("client_name"), 120, "cliente")
-    vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
+    vehicle_type = normalize_vehicle_type(form_data.get("vehicle_type"))
     plate_number = clean_plate(form_data.get("plate_number"))
     stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
     contracted_days = _clean_contracted_days(form_data.get("contracted_days"), stay_mode)
@@ -119,7 +136,7 @@ def create_vehicle_record(form_data, user):
 def update_vehicle_record(record, form_data, user):
     record.physical_ticket_number = clean_ticket(form_data.get("ticket_number"))
     record.client_name = clean_text(form_data.get("client_name"), 120, "cliente")
-    record.vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
+    record.vehicle_type = normalize_vehicle_type(form_data.get("vehicle_type"))
     record.plate_number = clean_plate(form_data.get("plate_number"))
     record.stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
     record.contracted_days = _clean_contracted_days(
@@ -464,7 +481,7 @@ def dashboard_metrics():
 
 
 def _clean_tariff_payload(form_data):
-    vehicle_type = clean_text(form_data.get("vehicle_type"), 50, "tipo de vehiculo")
+    vehicle_type = normalize_vehicle_type(form_data.get("vehicle_type"))
     billing_scheme = clean_text(form_data.get("billing_scheme"), 30, "esquema de cobro").lower()
     if billing_scheme not in {scheme for scheme, _label in BILLING_SCHEMES}:
         raise ValueError("El esquema de cobro no es valido.")

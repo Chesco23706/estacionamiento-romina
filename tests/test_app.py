@@ -604,6 +604,49 @@ def test_bootstrap_normalizes_legacy_weekly_vehicle_type_alias():
         assert legacy_tariff.active is False
 
 
+def test_create_vehicle_record_normalizes_legacy_vehicle_alias():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        if not Tariff.query.filter_by(vehicle_type="moto por semana").first():
+            db.session.add(
+                Tariff(
+                    vehicle_type="moto por semana",
+                    billing_scheme="daily",
+                    rate_amount=10,
+                    period_unit="day",
+                    min_charge_units=1,
+                    offer_label="Semana vieja",
+                    offer_trigger_units=7,
+                    offer_price=70,
+                    notes="Tarifa anterior",
+                    active=True,
+                )
+            )
+            db.session.commit()
+
+    response = client.post(
+        "/records/new",
+        data={
+            "ticket_number": "ALIAS-NEW",
+            "client_name": "Alias Nuevo",
+            "vehicle_type": "moto por semana",
+            "stay_mode": "weekly",
+            "contracted_days": "6",
+            "plate_number": "ALI-777",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="ALIAS-NEW").first()
+        assert record.vehicle_type == "Moto"
+        assert record.contracted_days == 6
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)
