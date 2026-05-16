@@ -428,12 +428,13 @@ def dashboard_metrics():
         for record in records
         if record.exit_at
     ]
+    day_start, day_end = get_period_bounds("daily")
     total_day = sum(
         float(record.total_amount)
         for record in records
         if record.is_paid
         and record.paid_at
-        and ensure_utc(record.paid_at).date() == utc_now().date()
+        and day_start <= ensure_utc(record.paid_at) < day_end
     )
     week_start, week_end = get_period_bounds("weekly")
     total_week = sum(

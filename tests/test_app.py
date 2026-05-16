@@ -1,9 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from app import create_app
 from app.extensions import db
 from app.models import CashCut, User, VehicleRecord
 from app.pricing import utc_now
+from app.services import dashboard_metrics
 from config import TestingConfig
 
 
@@ -181,6 +183,43 @@ def test_employee_paid_view_shows_records_paid_today_even_if_entered_yesterday()
 
     assert response.status_code == 200
     assert "Cliente Pago Visible" in body
+
+
+def test_admin_dashboard_uses_local_payment_day_for_totals():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-ZONA",
+            "client_name": "Cliente Zona",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "ZON-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-ZONA").first()
+        tz = ZoneInfo("America/Mexico_City")
+        now_local = utc_now().astimezone(tz)
+        yesterday_local_late = datetime(
+            now_local.year,
+            now_local.month,
+            now_local.day,
+            23,
+            30,
+            tzinfo=tz,
+        ) - timedelta(days=1)
+        record.total_amount = 10
+        record.paid_at = yesterday_local_late.astimezone(timezone.utc)
+        db.session.commit()
+
+        metrics = dashboard_metrics()
+        assert float(metrics["total_day"]) == 0.0
 
 
 def test_weekly_record_tracks_partial_exits():

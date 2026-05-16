@@ -2,6 +2,7 @@ import json
 import math
 import uuid
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from flask import current_app
 from flask_login import UserMixin
@@ -467,15 +468,23 @@ def generate_internal_ticket_code():
 
 
 def get_period_bounds(cut_type):
-    now = utc_now()
+    timezone_name = current_app.config.get("APP_TIMEZONE", "America/Mexico_City")
+    try:
+        local_timezone = ZoneInfo(timezone_name)
+    except Exception:
+        local_timezone = ZoneInfo("America/Mexico_City")
+
+    now = utc_now().astimezone(local_timezone)
     if cut_type == "daily":
-        start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+        local_start = datetime(now.year, now.month, now.day, tzinfo=local_timezone)
+        start = local_start.astimezone(timezone.utc)
         end = start + timedelta(days=1)
         return start, end
 
     weekday = now.weekday()
-    start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc) - timedelta(
+    local_start = datetime(now.year, now.month, now.day, tzinfo=local_timezone) - timedelta(
         days=weekday
     )
+    start = local_start.astimezone(timezone.utc)
     end = start + timedelta(days=7)
     return start, end
