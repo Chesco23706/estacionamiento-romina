@@ -78,11 +78,13 @@ SPANISH_MONTHS = (
 def parse_record_filters():
     requested_status = request.args.get("status")
     requested_date = request.args.get("date", "").strip()
+    requested_date_field = request.args.get("date_field", "").strip().lower()
     return {
         "search": request.args.get("search", "").strip(),
         "status": requested_status.strip() if requested_status is not None else "",
         "vehicle_type": request.args.get("vehicle_type", "").strip(),
         "date": requested_date,
+        "date_field": requested_date_field if requested_date_field in {"entry", "exit", "payment"} else "",
     }
 
 
@@ -131,9 +133,16 @@ def build_records_query(filters):
         try:
             requested_day = datetime.fromisoformat(filters["date"]).date()
             day_start, day_end = get_local_day_bounds(requested_day)
+            date_field = filters.get("date_field") or ("payment" if filters.get("status") == "Pagado" else "entry")
+            target_column = VehicleRecord.entry_at
+            if date_field == "exit":
+                target_column = VehicleRecord.exit_at
+            elif date_field == "payment":
+                target_column = VehicleRecord.paid_at
             query = query.filter(
-                VehicleRecord.entry_at >= day_start,
-                VehicleRecord.entry_at < day_end,
+                target_column.isnot(None),
+                target_column >= day_start,
+                target_column < day_end,
             )
         except ValueError:
             pass
@@ -224,8 +233,17 @@ def record_matches_filters(record, filters, *, include_date=True):
     if vehicle_type and record.vehicle_type != vehicle_type:
         return False
 
-    if include_date and filters.get("date") and filters["date"] != record_day:
-        return False
+    if include_date and filters.get("date"):
+        date_field = filters.get("date_field") or ("payment" if status == "Pagado" else "entry")
+        target_moment = record.entry_at
+        if date_field == "exit":
+            target_moment = record.exit_at
+        elif date_field == "payment":
+            target_moment = record.paid_at
+
+        target_day = localize_datetime(target_moment).date().isoformat() if target_moment else ""
+        if filters["date"] != target_day:
+            return False
 
     if status == "Pagado" and not record.is_paid:
         return False

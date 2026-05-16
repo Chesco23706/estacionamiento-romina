@@ -222,6 +222,72 @@ def test_admin_dashboard_uses_local_payment_day_for_totals():
         assert float(metrics["total_day"]) == 0.0
 
 
+def test_admin_paid_filter_can_use_payment_date():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-PAGO-FILTRO",
+            "client_name": "Cliente Pago Filtro",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "FIL-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-PAGO-FILTRO").first()
+        record.entry_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+
+    today = utc_now().astimezone(ZoneInfo("America/Mexico_City")).date().isoformat()
+    response = client.get(f"/records?status=Pagado&date={today}&date_field=payment")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Pago Filtro" in body
+
+
+def test_admin_record_modal_shows_audit_history():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-HISTORIAL",
+            "client_name": "Cliente Historial",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "HIS-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-HISTORIAL").first()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    client.post(f"/records/{record_id}/exit", follow_redirects=True)
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Historial de la ficha" in body
+    assert "Generada por" in body
+    assert "Pago registrado por" in body
+    assert "Salida registrada por" in body
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)

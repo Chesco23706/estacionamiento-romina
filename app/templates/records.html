@@ -28,6 +28,12 @@
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ficha, nombre, placas o tipo">
         <input type="date" name="date" value="{{ filters.date }}">
+        <select name="date_field">
+          <option value="" {% if not filters.date_field %}selected{% endif %}>Fecha automatica</option>
+          <option value="entry" {% if filters.date_field == 'entry' %}selected{% endif %}>Fecha de entrada</option>
+          <option value="exit" {% if filters.date_field == 'exit' %}selected{% endif %}>Fecha de salida</option>
+          <option value="payment" {% if filters.date_field == 'payment' %}selected{% endif %}>Fecha de pago</option>
+        </select>
         <select name="status">
           <option value="">Todos los estados</option>
           {% for status in status_options %}
@@ -153,7 +159,19 @@
           {% endfor %}
         </select>
       </label>
-      <input type="hidden" name="date" value="{{ filters.date }}">
+      <label class="search-field">
+        <span>Fecha</span>
+        <input type="date" name="date" value="{{ filters.date }}">
+      </label>
+      <label class="search-field compact-select">
+        <span>Buscar por fecha</span>
+        <select name="date_field">
+          <option value="" {% if not filters.date_field %}selected{% endif %}>Automatica</option>
+          <option value="entry" {% if filters.date_field == 'entry' %}selected{% endif %}>Entrada</option>
+          <option value="exit" {% if filters.date_field == 'exit' %}selected{% endif %}>Salida</option>
+          <option value="payment" {% if filters.date_field == 'payment' %}selected{% endif %}>Pago</option>
+        </select>
+      </label>
       <button class="btn" type="submit">Buscar</button>
     </form>
   </section>

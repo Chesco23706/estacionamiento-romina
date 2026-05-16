@@ -114,6 +114,35 @@
       </form>
       {% endif %}
     </div>
+    {% if current_user.is_admin %}
+    <div class="weekly-log-list">
+      <h3>Historial de la ficha</h3>
+      <div class="table-wrapper">
+        <table>
+          <tbody>
+            <tr>
+              <th>Generada por</th>
+              <td>{{ record.entry_user.full_name }}</td>
+              <th>Hora de entrada</th>
+              <td>{{ record.entry_at|dt }}</td>
+            </tr>
+            <tr>
+              <th>Pago registrado por</th>
+              <td>{{ record.payment_user.full_name if record.payment_user else '-' }}</td>
+              <th>Hora de pago</th>
+              <td>{{ record.paid_at|dt }}</td>
+            </tr>
+            <tr>
+              <th>Salida registrada por</th>
+              <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
+              <th>Hora de salida</th>
+              <td>{{ record.exit_at|dt }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
     {% if not record.is_hourly and record.weekly_exit_logs %}
     <div class="weekly-log-list">
       <div class="weekly-summary-row">
