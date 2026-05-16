@@ -382,6 +382,38 @@ def test_employee_paid_filter_only_shows_paid_records():
     assert "Cliente Pendiente" not in body
 
 
+def test_employee_search_finds_active_ticket_even_if_entry_was_previous_day():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "80",
+            "client_name": "Cliente Ochenta",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "OCH-080",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="80").first()
+        record.entry_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+
+    client.post("/logout", follow_redirects=True)
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    response = client.get("/records?search=80")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Ochenta" in body
+
+
 def test_search_uses_visible_ticket_number_instead_of_hidden_internal_code():
     app, client = build_client()
     login(client)

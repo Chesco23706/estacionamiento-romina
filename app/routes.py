@@ -194,7 +194,7 @@ def build_ticket_board():
     return board_records, metrics
 
 
-def record_matches_filters(record, filters):
+def record_matches_filters(record, filters, *, include_date=True):
     status = (filters.get("status") or "").strip()
     search = (filters.get("search") or "").strip().lower()
     raw_search = (filters.get("search") or "").strip()
@@ -224,7 +224,7 @@ def record_matches_filters(record, filters):
     if vehicle_type and record.vehicle_type != vehicle_type:
         return False
 
-    if filters.get("date") and filters["date"] != record_day:
+    if include_date and filters.get("date") and filters["date"] != record_day:
         return False
 
     if status == "Pagado" and not record.is_paid:
@@ -504,7 +504,9 @@ def records_page():
             .all()
         )
         current_records = [
-            record for record in current_records if record_matches_filters(record, filters)
+            record
+            for record in current_records
+            if record_matches_filters(record, filters, include_date=False)
         ]
         for record in current_records:
             enrich_record_display(record)
