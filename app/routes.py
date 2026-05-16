@@ -429,8 +429,17 @@ def dashboard():
         .limit(8)
         .all()
     )
+    paid_today_records = (
+        VehicleRecord.query.filter(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= day_start,
+            VehicleRecord.paid_at < day_end,
+        )
+        .order_by(VehicleRecord.paid_at.desc())
+        .all()
+    )
     if today_view == "pagados":
-        filtered_today_records = [record for record in today_records if record.is_paid]
+        filtered_today_records = paid_today_records
     elif today_view == "no_pagados":
         filtered_today_records = [record for record in today_records if not record.is_paid]
     elif today_view == "salidos":
@@ -444,14 +453,6 @@ def dashboard():
         enrich_record_display(record)
     for record in current_inside_records:
         enrich_record_display(record)
-
-    paid_today_records = (
-        VehicleRecord.query.filter(
-            VehicleRecord.paid_at.isnot(None),
-            VehicleRecord.paid_at >= day_start,
-            VehicleRecord.paid_at < day_end,
-        ).all()
-    )
 
     employee_metrics = {
         "today_count": len(today_records),

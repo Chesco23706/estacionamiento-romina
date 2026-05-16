@@ -149,6 +149,40 @@ def test_employee_dashboard_counts_income_by_payment_day():
     assert "$10.00" in body
 
 
+def test_employee_paid_view_shows_records_paid_today_even_if_entered_yesterday():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-PAGADA-HOY",
+            "client_name": "Cliente Pago Visible",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "PAG-888",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-PAGADA-HOY").first()
+        record.entry_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    client.post("/logout", follow_redirects=True)
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    response = client.get("/?view=pagados")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Cliente Pago Visible" in body
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)
