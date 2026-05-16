@@ -44,7 +44,7 @@ from .services import (
     update_tariff,
     update_vehicle_record,
 )
-from .tickets import build_ticket_pdf, build_ticket_qr_svg
+from .tickets import build_current_cut_pdf, build_ticket_pdf, build_ticket_qr_svg
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
@@ -366,6 +366,25 @@ def format_datetime_for_ticket(value):
     if not value:
         return "-"
     return localize_datetime(value).strftime("%d/%m/%Y %H:%M")
+
+
+def current_cut_records():
+    day_start, day_end = get_local_day_bounds()
+    active_records = (
+        VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
+        .order_by(VehicleRecord.entry_at.desc())
+        .all()
+    )
+    paid_today_records = (
+        VehicleRecord.query.filter(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= day_start,
+            VehicleRecord.paid_at < day_end,
+        )
+        .order_by(VehicleRecord.paid_at.desc(), VehicleRecord.entry_at.desc())
+        .all()
+    )
+    return active_records, paid_today_records
 
 
 @main_bp.app_context_processor
@@ -705,6 +724,32 @@ def ticket_document(record_id):
         BytesIO(pdf_bytes),
         mimetype="application/pdf",
         as_attachment=as_attachment,
+        download_name=filename,
+    )
+
+
+@main_bp.route("/reports/current-cut/document")
+@login_required
+def current_cut_document():
+    active_records, paid_today_records = current_cut_records()
+    for record in active_records:
+        enrich_record_display(record)
+    for record in paid_today_records:
+        enrich_record_display(record)
+
+    generated_at = utc_now()
+    pdf_bytes = build_current_cut_pdf(
+        active_records,
+        paid_today_records,
+        current_user,
+        generated_at,
+        format_datetime_for_ticket,
+    )
+    filename = f"corte_actual_{localize_datetime(generated_at).strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=request.args.get("download") == "1",
         download_name=filename,
     )
 

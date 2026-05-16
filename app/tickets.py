@@ -2,6 +2,7 @@ from io import BytesIO
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.graphics import renderPDF, renderSVG
@@ -123,6 +124,164 @@ def build_ticket_pdf(record, datetime_formatter, qr_value=None):
     pdf.save()
     buffer.seek(0)
     return buffer.getvalue()
+
+
+def build_current_cut_pdf(active_records, paid_today_records, generated_by, generated_at, datetime_formatter):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    margin = 15 * mm
+    y = height - margin
+
+    blue = HexColor("#0f436b")
+    gold = HexColor("#bf8a28")
+    ink = HexColor("#2f2416")
+    muted = HexColor("#7b6950")
+    line_color = HexColor("#e1d2bc")
+
+    def new_page():
+        pdf.showPage()
+        return height - margin
+
+    def ensure_space(current_y, required):
+        if current_y - required < margin:
+            return new_page()
+        return current_y
+
+    def draw_text(text, x, text_y, font="Helvetica", size=9, color=ink):
+        pdf.setFillColor(color)
+        pdf.setFont(font, size)
+        pdf.drawString(x, text_y, str(text))
+
+    pdf.setTitle("Corte actual de vehiculos")
+    draw_text("Estacionamiento Romina", margin, y, "Helvetica-Bold", 16, blue)
+    draw_text("Corte actual de vehiculos", margin, y - 7 * mm, "Helvetica-Bold", 12, gold)
+    draw_text(f"Generado: {datetime_formatter(generated_at)}", margin, y - 14 * mm, "Helvetica", 9, muted)
+    draw_text(f"Generado por: {generated_by.full_name}", margin, y - 20 * mm, "Helvetica", 9, muted)
+    y -= 31 * mm
+
+    paid_total = sum(float(record.total_amount or 0) for record in paid_today_records)
+    summary_items = [
+        ("Fichas activas", len(active_records)),
+        ("Pagos de hoy", len(paid_today_records)),
+        ("Total cobrado hoy", f"${paid_total:,.2f}"),
+    ]
+    box_width = (width - (margin * 2) - (6 * mm)) / 3
+    for index, (label, value) in enumerate(summary_items):
+        x = margin + index * (box_width + 3 * mm)
+        pdf.setStrokeColor(line_color)
+        pdf.setFillColor(HexColor("#fffaf2"))
+        pdf.roundRect(x, y - 20 * mm, box_width, 18 * mm, 3 * mm, stroke=1, fill=1)
+        draw_text(label, x + 4 * mm, y - 8 * mm, "Helvetica", 8, muted)
+        draw_text(value, x + 4 * mm, y - 15 * mm, "Helvetica-Bold", 12, ink)
+    y -= 31 * mm
+
+    y = _draw_cut_section(
+        pdf,
+        "Fichas activas",
+        active_records,
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+        datetime_formatter,
+        include_total=True,
+    )
+    y -= 6 * mm
+    y = _draw_cut_section(
+        pdf,
+        "Pagos registrados hoy",
+        paid_today_records,
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+        datetime_formatter,
+        include_total=True,
+    )
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def _draw_cut_section(
+    pdf,
+    title,
+    records,
+    y,
+    margin,
+    width,
+    height,
+    ensure_space,
+    draw_text,
+    datetime_formatter,
+    include_total=False,
+):
+    ink = HexColor("#2f2416")
+    muted = HexColor("#7b6950")
+    line_color = HexColor("#e1d2bc")
+    y = ensure_space(y, 18 * mm)
+    draw_text(title, margin, y, "Helvetica-Bold", 12, HexColor("#0f436b"))
+    y -= 8 * mm
+
+    if not records:
+        draw_text("Sin registros.", margin, y, "Helvetica", 9, muted)
+        return y - 8 * mm
+
+    headers = ["Ficha", "Cliente", "Vehiculo", "Placas", "Entrada", "Estado"]
+    if include_total:
+        headers.append("Total")
+    col_widths = [20 * mm, 35 * mm, 24 * mm, 22 * mm, 31 * mm, 27 * mm]
+    if include_total:
+        col_widths.append(width - (margin * 2) - sum(col_widths))
+
+    x = margin
+    for index, header in enumerate(headers):
+        draw_text(header, x, y, "Helvetica-Bold", 7, muted)
+        x += col_widths[index]
+    y -= 5 * mm
+
+    for record in records:
+        y = ensure_space(y, 15 * mm)
+        row_values = [
+            record.display_ticket_number,
+            record.client_name,
+            record.vehicle_type,
+            record.plate_number,
+            datetime_formatter(record.entry_at),
+            record.status,
+        ]
+        if include_total:
+            row_values.append(f"${float(record.total_amount or 0):,.2f}")
+
+        x = margin
+        max_lines = 1
+        wrapped_columns = []
+        for index, value in enumerate(row_values):
+            max_chars = max(8, int(col_widths[index] / (2.2 * mm)))
+            lines = _wrap_text(str(value or "-"), max_chars)
+            wrapped_columns.append(lines)
+            max_lines = max(max_lines, len(lines))
+
+        row_height = max_lines * 4 * mm + 3 * mm
+        y = ensure_space(y, row_height + 2 * mm)
+        for index, lines in enumerate(wrapped_columns):
+            line_y = y
+            for line in lines:
+                draw_text(line, x, line_y, "Helvetica", 7, ink)
+                line_y -= 4 * mm
+            x += col_widths[index]
+        y -= row_height
+        pdf.setStrokeColor(line_color)
+        pdf.line(margin, y + 1.5 * mm, width - margin, y + 1.5 * mm)
+
+    return y
 
 
 def _wrap_text(value, max_length):

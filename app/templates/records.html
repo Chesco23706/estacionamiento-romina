@@ -18,6 +18,7 @@
       <a class="section-chip {% if filters.status == 'Pagado' and filters.date == today_filter_value and (filters.date_field or 'payment') == 'payment' %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Pagado', date=today_filter_value, date_field='payment') }}">Pagos de hoy</a>
       <a class="section-chip {% if filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
       <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
+      <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='') }}">Todos</a>
       <a class="section-chip" href="{{ url_for('main.operations_page') }}">Nueva entrada</a>
     </div>
@@ -180,6 +181,7 @@
       <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
       <a class="section-chip {% if filters.status == 'Dentro del estacionamiento' and not filters.date %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Dentro del estacionamiento', date='') }}">Vehiculos dentro</a>
       <a class="section-chip {% if not filters.status and not filters.search and filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry', status='') }}">Todos los de hoy</a>
+      <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
     </div>
     <p class="muted">Para validar el corte usa <strong>Pagos de hoy</strong>. Ese filtro toma la fecha real del pago y ordena de la hora mas reciente a la mas antigua.</p>
     <form method="get" class="employee-toolbar-form">

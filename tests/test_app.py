@@ -298,6 +298,7 @@ def test_admin_records_page_shows_today_payment_shortcut():
     assert response.status_code == 200
     assert "Pagos de hoy" in body
     assert "Para validar el corte del dia usa" in body
+    assert "Corte actual PDF" in body
 
 
 def test_employee_records_page_shows_today_payment_shortcut():
@@ -310,6 +311,28 @@ def test_employee_records_page_shows_today_payment_shortcut():
     assert response.status_code == 200
     assert "Pagos de hoy" in body
     assert "Ese filtro toma la fecha real del pago" in body
+    assert "Corte actual PDF" in body
+
+
+def test_admin_can_download_current_cut_pdf():
+    _app, client = build_client()
+    login(client)
+
+    response = client.get("/reports/current-cut/document")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
+    assert response.headers["Content-Disposition"].startswith("inline")
+
+
+def test_employee_can_download_current_cut_pdf():
+    _app, client = build_client()
+    login(client, username="empleado1", password="EmpleadoUno2026!")
+
+    response = client.get("/reports/current-cut/document")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
 
 
 def test_paid_records_are_ordered_by_payment_time_desc():

@@ -29,6 +29,7 @@
       <div class="quick-links">
         <a class="section-chip" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
         <a class="section-chip" href="{{ url_for('main.records_page') }}">Ver registros</a>
+        <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
         <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
         <a class="section-chip" href="{{ url_for('main.employees_page') }}">Gestionar empleados</a>
         <a class="section-chip" href="{{ url_for('main.tariffs_page') }}">Gestionar tarifas</a>
@@ -137,6 +138,7 @@
           <a class="section-chip {% if today_view == 'pagados' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='pagados') }}">Ya pagaron</a>
           <a class="section-chip {% if today_view == 'no_pagados' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='no_pagados') }}">No pagados</a>
           <a class="section-chip {% if today_view == 'salidos' %}is-active{% endif %}" href="{{ url_for('main.dashboard', view='salidos') }}">Ya salieron</a>
+          <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
         </div>
       </div>
 
