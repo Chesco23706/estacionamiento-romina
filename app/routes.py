@@ -445,6 +445,14 @@ def dashboard():
     for record in current_inside_records:
         enrich_record_display(record)
 
+    paid_today_records = (
+        VehicleRecord.query.filter(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= day_start,
+            VehicleRecord.paid_at < day_end,
+        ).all()
+    )
+
     employee_metrics = {
         "today_count": len(today_records),
         "inside_count": VehicleRecord.query.filter(
@@ -452,10 +460,9 @@ def dashboard():
         ).count(),
         "total_day": sum(
             float(record.total_amount)
-            for record in today_records
-            if record.paid_at and day_start <= ensure_utc(record.paid_at) < day_end
+            for record in paid_today_records
         ),
-        "paid_today_count": sum(1 for record in today_records if record.is_paid),
+        "paid_today_count": len(paid_today_records),
         "unpaid_today_count": sum(1 for record in today_records if not record.is_paid),
         "exited_today_count": sum(1 for record in today_records if record.exit_at),
     }

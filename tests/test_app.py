@@ -115,6 +115,40 @@ def test_daily_cut_uses_payment_day_not_entry_day():
         assert cut.vehicles_paid >= 1
 
 
+def test_employee_dashboard_counts_income_by_payment_day():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-PAGO-HOY",
+            "client_name": "Cliente Pago Hoy",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "PAG-777",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-PAGO-HOY").first()
+        record.entry_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+        record_id = record.id
+
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    client.post("/logout", follow_redirects=True)
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    response = client.get("/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "$10.00" in body
+
+
 def test_weekly_record_tracks_partial_exits():
     app, client = build_client()
     login(client)
