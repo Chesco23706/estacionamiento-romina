@@ -336,13 +336,6 @@ def seed_defaults():
         ),
         ("Automóvil", "hourly", 20, "hour", None, None, None, "Se cobra por hora o fracción."),
     ]
-    legacy_vehicle_aliases = {
-        "moto por semana": "Moto",
-        "motocicleta por semana": "Moto",
-        "bicicleta por semana": "Bicicleta",
-        "carrito por semana": "Carrito callejero",
-    }
-
     for vehicle_type, scheme, amount, unit, offer_label, offer_trigger_units, offer_price, notes in tariffs:
         tariff = Tariff.query.filter_by(vehicle_type=vehicle_type).first()
         if not tariff:
@@ -368,44 +361,8 @@ def seed_defaults():
             tariff.offer_trigger_units = offer_trigger_units
         if not tariff.offer_price:
             tariff.offer_price = offer_price
-        if vehicle_type in {"Moto", "Bicicleta", "Carrito callejero"}:
-            tariff.billing_scheme = "daily"
-            tariff.period_unit = "day"
-            tariff.rate_amount = amount
-            tariff.offer_label = offer_label
-            tariff.offer_trigger_units = 6
-            tariff.offer_price = 40
-            tariff.notes = "Se cobra $40 por semana completa de 6 dias."
 
-    active_weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly", exit_at=None).all()
-    for record in active_weekly_records:
-        normalized_vehicle_type = legacy_vehicle_aliases.get((record.vehicle_type or "").strip().lower())
-        if normalized_vehicle_type:
-            record.vehicle_type = normalized_vehicle_type
-        if record.contracted_days not in {None, 6, 7}:
-            continue
-        record.contracted_days = 6
-        pricing = calculate_charge(
-            record.vehicle_type,
-            record.entry_at,
-            record.paid_at or utc_now(),
-            stay_mode=record.stay_mode,
-            contracted_days=record.contracted_days,
-        )
-        record.duration_seconds = pricing["duration_seconds"]
-        record.applied_rate_label = pricing["rate_label"]
-        record.total_amount = pricing["total"] + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
-        if record.services_total_amount:
-            record.applied_rate_label = f"{record.applied_rate_label} | {record.services_label}"
-
-    for legacy_name, canonical_name in legacy_vehicle_aliases.items():
-        legacy_tariff = Tariff.query.filter(
-            db.func.lower(Tariff.vehicle_type) == legacy_name
-        ).first()
-        if legacy_tariff:
-            canonical_tariff = Tariff.query.filter_by(vehicle_type=canonical_name).first()
-            if canonical_tariff:
-                legacy_tariff.active = False
+    normalize_weekly_six_day_pricing()
 
     db.session.commit()
 
@@ -505,7 +462,65 @@ def apply_runtime_migrations():
             )
     if "weekly_exit_logs" not in table_names:
         WeeklyExitLog.__table__.create(bind=db.engine, checkfirst=True)
+    normalize_weekly_six_day_pricing()
     db.session.commit()
+
+
+def normalize_weekly_six_day_pricing():
+    legacy_vehicle_aliases = {
+        "moto por semana": "Moto",
+        "motocicleta por semana": "Moto",
+        "bicicleta por semana": "Bicicleta",
+        "carrito por semana": "Carrito callejero",
+    }
+    weekly_vehicle_types = {
+        "Moto": (10, "Semana completa", 40),
+        "Bicicleta": (10, "Semana completa", 40),
+        "Carrito callejero": (10, "Semana completa", 40),
+    }
+
+    for vehicle_type, (rate_amount, offer_label, offer_price) in weekly_vehicle_types.items():
+        tariff = Tariff.query.filter_by(vehicle_type=vehicle_type).first()
+        if not tariff:
+            continue
+        tariff.billing_scheme = "daily"
+        tariff.period_unit = "day"
+        tariff.rate_amount = rate_amount
+        tariff.offer_label = offer_label
+        tariff.offer_trigger_units = 6
+        tariff.offer_price = offer_price
+        tariff.notes = "Se cobra $40 por semana completa de 6 dias."
+
+    for legacy_name, canonical_name in legacy_vehicle_aliases.items():
+        legacy_tariff = Tariff.query.filter(
+            db.func.lower(Tariff.vehicle_type) == legacy_name
+        ).first()
+        if legacy_tariff:
+            canonical_tariff = Tariff.query.filter_by(vehicle_type=canonical_name).first()
+            if canonical_tariff:
+                legacy_tariff.active = False
+
+    active_weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly", exit_at=None).all()
+    for record in active_weekly_records:
+        normalized_vehicle_type = legacy_vehicle_aliases.get((record.vehicle_type or "").strip().lower())
+        if normalized_vehicle_type:
+            record.vehicle_type = normalized_vehicle_type
+        if record.vehicle_type not in weekly_vehicle_types:
+            continue
+
+        record.contracted_days = 6
+        pricing = calculate_charge(
+            record.vehicle_type,
+            record.entry_at,
+            record.paid_at or utc_now(),
+            stay_mode=record.stay_mode,
+            contracted_days=record.contracted_days,
+        )
+        record.duration_seconds = pricing["duration_seconds"]
+        record.applied_rate_label = pricing["rate_label"]
+        record.total_amount = pricing["total"] + record.service_oil_price + (20 if record.service_wash else 0) + (40 if record.service_oil_change else 0)
+        if record.services_total_amount:
+            record.applied_rate_label = f"{record.applied_rate_label} | {record.services_label}"
 
 
 def generate_internal_ticket_code():

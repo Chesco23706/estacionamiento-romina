@@ -54,7 +54,10 @@ def calculate_charge(vehicle_type, entry_at, exit_at=None, stay_mode="hourly", c
     minimum_units = int(tariff.min_charge_units or 1)
     if use_day_units and contracted_days:
         minimum_units = max(minimum_units, int(contracted_days))
-    billable_units = max(minimum_units, raw_units, 1)
+    if use_day_units and contracted_days:
+        billable_units = max(minimum_units, 1)
+    else:
+        billable_units = max(minimum_units, raw_units, 1)
 
     total = tariff.rate_amount * billable_units
     rate_parts = [
