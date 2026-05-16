@@ -32,6 +32,8 @@
       <form method="get" class="search-grid">
         <input type="text" name="search" value="{{ filters.search }}" placeholder="Buscar por ficha, nombre, placas o tipo">
         <input type="date" name="date" value="{{ filters.date }}">
+        <input type="hidden" name="sort_by" value="{{ filters.sort_by }}">
+        <input type="hidden" name="sort_dir" value="{{ filters.sort_dir }}">
         <select name="date_field">
           <option value="" {% if not filters.date_field %}selected{% endif %}>Fecha automatica</option>
           <option value="entry" {% if filters.date_field == 'entry' %}selected{% endif %}>Fecha de entrada</option>
@@ -64,8 +66,30 @@
             <th>Cliente</th>
             <th>Tipo</th>
             <th>Placas</th>
-            <th>Entrada</th>
-            <th>Salida</th>
+            <th>
+              <a class="table-sort-link {% if filters.sort_by == 'entry' %}is-active{% endif %}" href="{{ url_for('main.records_page', **sort_links.entry) }}">
+                Entrada
+                <span class="table-sort-indicator">
+                  {% if filters.sort_by == 'entry' %}
+                    {% if filters.sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}
+                    ↓
+                  {% endif %}
+                </span>
+              </a>
+            </th>
+            <th>
+              <a class="table-sort-link {% if filters.sort_by == 'exit' %}is-active{% endif %}" href="{{ url_for('main.records_page', **sort_links.exit) }}">
+                Salida
+                <span class="table-sort-indicator">
+                  {% if filters.sort_by == 'exit' %}
+                    {% if filters.sort_dir == 'asc' %}↑{% else %}↓{% endif %}
+                  {% else %}
+                    ↓
+                  {% endif %}
+                </span>
+              </a>
+            </th>
             <th>Modalidad</th>
             <th>Tiempo</th>
             <th>Total</th>
@@ -150,6 +174,14 @@
   </section>
 
   <section class="employee-records-toolbar card" id="busqueda">
+    <div class="quick-links">
+      <a class="section-chip {% if filters.status == 'Pagado' and filters.date == today_filter_value and (filters.date_field or 'payment') == 'payment' %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Pagado', date=today_filter_value, date_field='payment') }}">Pagos de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
+      <a class="section-chip {% if filters.status == 'Dentro del estacionamiento' and not filters.date %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Dentro del estacionamiento', date='') }}">Vehiculos dentro</a>
+      <a class="section-chip {% if not filters.status and not filters.search and filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry', status='') }}">Todos los de hoy</a>
+    </div>
+    <p class="muted">Para validar el corte usa <strong>Pagos de hoy</strong>. Ese filtro toma la fecha real del pago y ordena de la hora mas reciente a la mas antigua.</p>
     <form method="get" class="employee-toolbar-form">
       <label class="search-field">
         <span>Buscar vehiculo</span>
@@ -178,6 +210,7 @@
         </select>
       </label>
       <button class="btn" type="submit">Buscar</button>
+      <a class="link-button" href="{{ url_for('main.records_page') }}">Limpiar</a>
     </form>
   </section>
 

@@ -972,6 +972,25 @@ dialog::backdrop {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.table-sort-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.table-sort-link:hover,
+.table-sort-link.is-active {
+  color: var(--primary);
+}
+
+.table-sort-indicator {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

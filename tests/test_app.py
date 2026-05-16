@@ -355,6 +355,90 @@ def test_paid_records_are_ordered_by_payment_time_desc():
     assert body.index("Pago Nuevo") < body.index("Pago Viejo")
 
 
+def test_records_can_sort_by_entry_ascending():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        older_entry = VehicleRecord(
+            ticket_number="ENTRY-OLD",
+            physical_ticket_number="91",
+            client_name="Entrada Vieja",
+            vehicle_type="Moto",
+            plate_number="ENT-001",
+            entry_at=utc_now() - timedelta(hours=5),
+            status="Dentro del estacionamiento",
+            entry_user=user,
+        )
+        newer_entry = VehicleRecord(
+            ticket_number="ENTRY-NEW",
+            physical_ticket_number="92",
+            client_name="Entrada Nueva",
+            vehicle_type="Moto",
+            plate_number="ENT-002",
+            entry_at=utc_now() - timedelta(hours=1),
+            status="Dentro del estacionamiento",
+            entry_user=user,
+        )
+        db.session.add_all([older_entry, newer_entry])
+        db.session.commit()
+
+    response = client.get("/records?sort_by=entry&sort_dir=asc")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert body.index("Entrada Vieja") < body.index("Entrada Nueva")
+
+
+def test_records_can_sort_by_exit_descending():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        older_exit = VehicleRecord(
+            ticket_number="EXIT-OLD",
+            physical_ticket_number="93",
+            client_name="Salida Vieja",
+            vehicle_type="Moto",
+            plate_number="SAL-001",
+            entry_at=utc_now() - timedelta(hours=6),
+            exit_at=utc_now() - timedelta(hours=3),
+            duration_seconds=10800,
+            total_amount=10,
+            status="Pagado",
+            entry_user=user,
+            exit_user=user,
+            payment_user=user,
+            paid_at=utc_now() - timedelta(hours=4),
+        )
+        newer_exit = VehicleRecord(
+            ticket_number="EXIT-NEW",
+            physical_ticket_number="94",
+            client_name="Salida Nueva",
+            vehicle_type="Moto",
+            plate_number="SAL-002",
+            entry_at=utc_now() - timedelta(hours=4),
+            exit_at=utc_now() - timedelta(hours=1),
+            duration_seconds=10800,
+            total_amount=10,
+            status="Pagado",
+            entry_user=user,
+            exit_user=user,
+            payment_user=user,
+            paid_at=utc_now() - timedelta(hours=2),
+        )
+        db.session.add_all([older_exit, newer_exit])
+        db.session.commit()
+
+    response = client.get("/records?sort_by=exit&sort_dir=desc")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert body.index("Salida Nueva") < body.index("Salida Vieja")
+
+
 def test_bootstrap_updates_weekly_motorcycle_tariff_to_six_days():
     app, client = build_client()
     login(client)
@@ -408,6 +492,65 @@ def test_bootstrap_normalizes_open_weekly_records_to_six_days():
         assert record.contracted_days == 6
         assert float(record.total_amount) == 40.0
         assert "Semana completa" in (record.applied_rate_label or "")
+
+
+def test_runtime_migration_normalizes_paid_weekly_records_to_six_days():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        user = User.query.filter_by(username="admin").first()
+        tarifa = Tariff.query.filter_by(vehicle_type="Moto").first()
+        tarifa.offer_trigger_units = 7
+        tarifa.offer_price = 70
+        record = VehicleRecord(
+            ticket_number="SEM-MIGRACION",
+            physical_ticket_number="SEM-MIGRACION",
+            client_name="Semana Migracion",
+            vehicle_type="Moto",
+            plate_number="MIG-006",
+            stay_mode="weekly",
+            contracted_days=7,
+            entry_at=utc_now() - timedelta(days=5),
+            paid_at=utc_now(),
+            total_amount=70,
+            status="Salida registrada",
+            entry_user=user,
+            payment_user=user,
+        )
+        db.session.add(record)
+        db.session.commit()
+
+        from app.models import apply_runtime_migrations
+
+        apply_runtime_migrations()
+        db.session.refresh(record)
+        db.session.refresh(tarifa)
+
+        assert tarifa.offer_trigger_units == 6
+        assert float(tarifa.offer_price) == 40.0
+        assert record.contracted_days == 6
+        assert float(record.total_amount) == 40.0
+        assert "Semana completa" in (record.applied_rate_label or "")
+
+
+def test_weekly_charge_stays_at_six_day_package_after_seven_calendar_days():
+    app, client = build_client()
+    login(client)
+
+    with app.app_context():
+        from app.pricing import calculate_charge
+
+        pricing = calculate_charge(
+            "Moto",
+            utc_now() - timedelta(days=7),
+            utc_now(),
+            stay_mode="weekly",
+            contracted_days=6,
+        )
+
+        assert pricing["billing_units"] == 6
+        assert float(pricing["total"]) == 40.0
 
 
 def test_bootstrap_normalizes_legacy_weekly_vehicle_type_alias():

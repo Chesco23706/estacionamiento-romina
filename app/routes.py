@@ -79,17 +79,21 @@ def parse_record_filters():
     requested_status = request.args.get("status")
     requested_date = request.args.get("date", "").strip()
     requested_date_field = request.args.get("date_field", "").strip().lower()
+    requested_sort_by = request.args.get("sort_by", "").strip().lower()
+    requested_sort_dir = request.args.get("sort_dir", "").strip().lower()
     return {
         "search": request.args.get("search", "").strip(),
         "status": requested_status.strip() if requested_status is not None else "",
         "vehicle_type": request.args.get("vehicle_type", "").strip(),
         "date": requested_date,
         "date_field": requested_date_field if requested_date_field in {"entry", "exit", "payment"} else "",
+        "sort_by": requested_sort_by if requested_sort_by in {"entry", "exit"} else "",
+        "sort_dir": requested_sort_dir if requested_sort_dir in {"asc", "desc"} else "",
     }
 
 
 def build_records_query(filters):
-    query = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc())
+    query = VehicleRecord.query
     search = filters["search"]
     if search:
         if search.isdigit():
@@ -146,7 +150,39 @@ def build_records_query(filters):
             )
         except ValueError:
             pass
-    return query
+
+    if filters.get("sort_by") == "entry":
+        entry_order = VehicleRecord.entry_at.asc() if filters.get("sort_dir") == "asc" else VehicleRecord.entry_at.desc()
+        return query.order_by(entry_order)
+    if filters.get("sort_by") == "exit":
+        exit_order = VehicleRecord.exit_at.asc() if filters.get("sort_dir") == "asc" else VehicleRecord.exit_at.desc()
+        return query.order_by(VehicleRecord.exit_at.is_(None), exit_order, VehicleRecord.entry_at.desc())
+
+    order_field = filters.get("date_field") or ("payment" if filters.get("status") == "Pagado" else "")
+    if order_field == "payment":
+        return query.order_by(VehicleRecord.paid_at.desc(), VehicleRecord.entry_at.desc())
+    if order_field == "exit":
+        return query.order_by(VehicleRecord.exit_at.desc(), VehicleRecord.entry_at.desc())
+    if filters.get("status") == "Pagado":
+        return query.order_by(VehicleRecord.paid_at.desc(), VehicleRecord.entry_at.desc())
+    if filters.get("status") == "Salida registrada":
+        return query.order_by(VehicleRecord.exit_at.desc(), VehicleRecord.entry_at.desc())
+    return query.order_by(VehicleRecord.entry_at.desc())
+
+
+def build_sort_link_args(filters, sort_by):
+    current_sort_by = filters.get("sort_by") or ""
+    current_sort_dir = filters.get("sort_dir") or ""
+    next_sort_dir = "asc" if current_sort_by == sort_by and current_sort_dir == "desc" else "desc"
+    return {
+        "search": filters.get("search", ""),
+        "status": filters.get("status", ""),
+        "vehicle_type": filters.get("vehicle_type", ""),
+        "date": filters.get("date", ""),
+        "date_field": filters.get("date_field", ""),
+        "sort_by": sort_by,
+        "sort_dir": next_sort_dir,
+    }
 
 
 def natural_ticket_sort_key(ticket_number):
@@ -507,6 +543,10 @@ def records_page():
     if not current_user.is_admin and not filters["date"]:
         filters["date"] = localize_datetime(utc_now()).date().isoformat()
     records = build_records_query(filters).all()
+    sort_links = {
+        "entry": build_sort_link_args(filters, "entry"),
+        "exit": build_sort_link_args(filters, "exit"),
+    }
     pending_checkout_records = []
     if filters["status"] == "Dentro del estacionamiento":
         pending_checkout_records = (
@@ -542,6 +582,7 @@ def records_page():
             current_records=current_records,
             pending_checkout_records=pending_checkout_records,
             filters=filters,
+            sort_links=sort_links,
             vehicle_types=get_vehicle_types(),
             status_options=STATUS_OPTIONS,
             format_duration=format_duration,
@@ -552,6 +593,7 @@ def records_page():
         records=records,
         pending_checkout_records=pending_checkout_records,
         filters=filters,
+        sort_links=sort_links,
         vehicle_types=get_vehicle_types(),
         status_options=STATUS_OPTIONS,
         format_duration=format_duration,
