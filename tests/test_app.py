@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 from app import create_app
 from app.extensions import db
 from app.models import CashCut, Tariff, User, VehicleRecord
 from app.pricing import utc_now
+from app.routes import build_record_history_events
 from app.services import dashboard_metrics
 from config import TestingConfig
 
@@ -288,6 +290,31 @@ def test_admin_record_history_dialog_shows_ticket_events():
     assert "Pago recibido" in body
     assert "Salida final" in body
     assert "Fecha y hora" in body
+
+
+def test_record_history_sorts_mixed_timezone_datetimes():
+    record = SimpleNamespace(
+        entry_at=datetime(2026, 1, 1, 8, tzinfo=timezone.utc),
+        paid_at=None,
+        exit_at=None,
+        status="Dentro del estacionamiento",
+        entry_user=SimpleNamespace(full_name="Admin"),
+        payment_user=None,
+        exit_user=None,
+        weekly_exit_logs=[],
+    )
+    audit_log = SimpleNamespace(
+        action="vehicle_record_updated",
+        created_at=datetime(2026, 1, 1, 9),
+        user=SimpleNamespace(full_name="Admin"),
+    )
+
+    events = build_record_history_events(record, [audit_log])
+
+    assert [event["event"] for event in events] == [
+        "Registro de entrada",
+        "Edicion de registro",
+    ]
 
 
 def test_admin_records_page_shows_today_payment_shortcut():

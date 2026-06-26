@@ -193,7 +193,11 @@ def build_record_history_events(record, audit_logs):
             }
         )
 
-    return sorted(events, key=lambda event: event["moment"] or datetime.min)
+    return sorted(events, key=record_history_sort_key)
+
+
+def record_history_sort_key(event):
+    return ensure_utc(event["moment"]) or utc_now()
 
 
 def build_records_query(filters):
