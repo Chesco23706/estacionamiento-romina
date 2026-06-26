@@ -317,6 +317,50 @@ def test_record_history_sorts_mixed_timezone_datetimes():
     ]
 
 
+def test_record_note_action_uses_note_or_add_icon():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-NOTA",
+            "client_name": "Cliente Con Nota",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "NOT-001",
+            "notes": "Dejo casco negro.",
+        },
+        follow_redirects=True,
+    )
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SIN-NOTA",
+            "client_name": "Cliente Sin Nota",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "SIN-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        with_note = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-NOTA").first()
+        without_note = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SIN-NOTA").first()
+
+    response = client.get("/records")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert f'data-open-dialog="record-note-dialog-{with_note.id}"' in body
+    assert f'id="record-note-dialog-{with_note.id}"' in body
+    assert "Dejo casco negro." in body
+    assert f'aria-label="Agregar nota a la ficha {without_note.display_ticket_number}"' in body
+    assert f'data-open-dialog="record-dialog-{without_note.id}"' in body
+
+
 def test_admin_records_page_shows_today_payment_shortcut():
     _app, client = build_client()
     login(client)

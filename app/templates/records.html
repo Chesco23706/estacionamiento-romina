@@ -151,6 +151,7 @@
                   <button class="btn btn-secondary fixed-action-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Marcar salida{% else %}Salida final{% endif %}</button>
                 </form>
                 {% endif %}
+                {% include "record_note_action.html" %}
                 <button class="btn btn-secondary fixed-action-btn" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
                 <button class="btn fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
               </div>
@@ -281,6 +282,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
           </form>
+          {% include "record_note_action.html" %}
           <button class="btn btn-secondary" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>
@@ -338,6 +340,7 @@
             <button class="btn" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>
           </form>
           {% endif %}
+          {% include "record_note_action.html" %}
           <button class="btn btn-secondary" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
           <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
         </div>

@@ -187,10 +187,12 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
             </form>
+            {% include "record_note_action.html" %}
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
             {% else %}
             <span class="employee-muted-inline">Salida registrada</span>
+            {% include "record_note_action.html" %}
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
             {% endif %}

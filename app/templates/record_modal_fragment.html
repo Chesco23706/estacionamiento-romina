@@ -117,6 +117,24 @@
   </article>
 </dialog>
 
+{% set note_text = (record.notes or '')|trim %}
+{% if note_text %}
+<dialog class="record-dialog" id="record-note-dialog-{{ record.id }}">
+  <article class="record-dialog-card note-dialog-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Ficha {{ record.display_ticket_number }}</p>
+        <h2>Nota</h2>
+      </div>
+      <button class="btn btn-secondary" type="button" data-close-dialog="record-note-dialog-{{ record.id }}">Cerrar</button>
+    </div>
+    <div class="note-dialog-body">
+      <p>{{ note_text }}</p>
+    </div>
+  </article>
+</dialog>
+{% endif %}
+
 <dialog class="record-dialog" id="record-history-dialog-{{ record.id }}">
   <article class="record-dialog-card">
     <div class="section-heading">
