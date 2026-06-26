@@ -2,8 +2,7 @@
 {% block title %}Empleados | Estacionamiento Romina{% endblock %}
 {% block content %}
 <main class="dashboard-layout">
-  <section class="workspace-grid admin-workspace">
-    <article class="card feature-card form-card">
+  <section class="card feature-card form-card">
       <p class="eyebrow">Empleados</p>
       <h2>Crear nuevo empleado</h2>
       <form method="post" action="{{ url_for('main.create_user') }}" class="form-grid compact-form">
@@ -28,58 +27,6 @@
           <button class="btn fixed-action-btn" type="submit">Crear empleado</button>
         </div>
       </form>
-    </article>
-
-    <article class="card feature-card">
-      <p class="eyebrow">Cortes</p>
-      <h2>Caja</h2>
-      <div class="button-row action-row">
-        <form method="post" action="{{ url_for('main.generate_cut') }}" class="inline-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="cut_type" value="daily">
-          <label>
-            Fecha del corte
-            <input type="date" name="cut_date" required>
-          </label>
-          <button class="btn fixed-action-btn" type="submit">Corte por fecha</button>
-        </form>
-        <form method="post" action="{{ url_for('main.generate_cut') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="cut_type" value="weekly">
-          <button class="btn btn-secondary fixed-action-btn" type="submit">Corte semanal</button>
-        </form>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tipo</th>
-              <th>Fecha</th>
-              <th>Periodo</th>
-              <th>Ingresos</th>
-              <th>Pendiente</th>
-              <th>Accion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cut in cuts %}
-            <tr>
-              <td>{{ cut.id }}</td>
-              <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
-              <td>{{ cut.generated_at|dt }}</td>
-              <td>{{ cut.period_start|dt }} a {{ cut.period_end|dt }}</td>
-              <td>{{ cut.total_income|money }}</td>
-              <td>{{ cut.total_pending|money }}</td>
-              <td><a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="7">Todavia no hay cortes generados.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </article>
   </section>
 
   <section class="card feature-card records-card">

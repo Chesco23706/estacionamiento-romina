@@ -440,6 +440,10 @@ def dashboard_metrics():
     day_start, day_end = get_period_bounds("daily")
     week_start, week_end = get_period_bounds("weekly")
 
+    entries_today = VehicleRecord.query.filter(
+        VehicleRecord.entry_at >= day_start,
+        VehicleRecord.entry_at < day_end,
+    ).count()
     inside_count = VehicleRecord.query.filter_by(status="Dentro del estacionamiento").count()
     exited_count = VehicleRecord.query.filter(VehicleRecord.exit_at.isnot(None)).count()
     total_day = db.session.scalar(
@@ -458,7 +462,6 @@ def dashboard_metrics():
     )
     pending = db.session.scalar(
         db.select(func.coalesce(func.sum(VehicleRecord.total_amount), 0)).where(
-            VehicleRecord.exit_at.isnot(None),
             VehicleRecord.paid_at.is_(None),
             VehicleRecord.status != "Pagado",
         )
@@ -474,6 +477,7 @@ def dashboard_metrics():
         vehicle_count[vehicle_type] = count
 
     return {
+        "entries_today": entries_today,
         "inside_count": inside_count,
         "exited_count": exited_count,
         "total_day": float(total_day or 0),

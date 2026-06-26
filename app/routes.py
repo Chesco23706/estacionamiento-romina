@@ -606,34 +606,9 @@ def logout():
 def dashboard():
     now_local = localize_datetime(utc_now())
     if current_user.is_admin:
-        records = vehicle_record_display_query().order_by(VehicleRecord.entry_at.desc()).limit(8).all()
-        active_records = (
-            vehicle_record_display_query()
-            .filter(VehicleRecord.status == "Dentro del estacionamiento")
-            .order_by(VehicleRecord.entry_at.desc())
-            .limit(8)
-            .all()
-        )
-        pending_checkout_records = (
-            vehicle_record_display_query()
-            .filter(
-                VehicleRecord.status == "Dentro del estacionamiento",
-                VehicleRecord.paid_at.isnot(None),
-                VehicleRecord.exit_at.is_(None),
-            )
-            .order_by(VehicleRecord.paid_at.desc())
-            .limit(6)
-            .all()
-        )
-        enrich_records(records)
-        enrich_records(active_records)
-        enrich_records(pending_checkout_records)
         metrics = dashboard_metrics()
         return render_template(
             "dashboard.html",
-            records=records,
-            active_records=active_records,
-            pending_checkout_records=pending_checkout_records,
             metrics=metrics,
             format_duration=format_duration,
             now_local=now_local,
@@ -818,8 +793,15 @@ def tariffs_page():
 @role_required("admin")
 def employees_page():
     users = User.query.order_by(User.full_name.asc()).all()
-    cuts = CashCut.query.order_by(CashCut.generated_at.desc()).limit(10).all()
-    return render_template("employees.html", users=users, cuts=cuts)
+    return render_template("employees.html", users=users)
+
+
+@main_bp.route("/cuts")
+@login_required
+@role_required("admin")
+def cuts_page():
+    cuts = CashCut.query.order_by(CashCut.generated_at.desc()).limit(20).all()
+    return render_template("cuts.html", cuts=cuts)
 
 
 @main_bp.route("/help")
@@ -1166,7 +1148,7 @@ def generate_cut():
         return redirect(url_for("main.cash_cut_detail", cut_id=cut.id))
     except ValueError as exc:
         flash(str(exc), "danger")
-        return redirect(url_for("main.employees_page"))
+        return redirect(url_for("main.cuts_page"))
 
 
 @main_bp.route("/cuts/<int:cut_id>")

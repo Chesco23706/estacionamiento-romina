@@ -427,6 +427,30 @@ def test_admin_records_page_shows_today_payment_shortcut():
     assert "Corte actual PDF" in body
 
 
+def test_admin_home_is_simplified_and_cuts_have_own_page():
+    _app, client = build_client()
+    login(client)
+
+    home_response = client.get("/")
+    home_body = home_response.get_data(as_text=True)
+
+    assert home_response.status_code == 200
+    assert "Cortes" in home_body
+    assert "Vehiculos que entraron hoy" in home_body
+    assert "Total cobrado hoy" in home_body
+    assert "Total pendiente" in home_body
+    assert "Vehiculos por tipo" not in home_body
+    assert "Ultimos registros" not in home_body
+
+    cuts_response = client.get("/cuts")
+    cuts_body = cuts_response.get_data(as_text=True)
+
+    assert cuts_response.status_code == 200
+    assert "Fecha del corte" in cuts_body
+    assert "Corte por fecha" in cuts_body
+    assert "Cortes generados" in cuts_body
+
+
 def test_employee_records_page_shows_today_payment_shortcut():
     _app, client = build_client()
     login(client, username="empleado1", password="EmpleadoUno2026!")

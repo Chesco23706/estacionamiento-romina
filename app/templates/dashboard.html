@@ -4,91 +4,9 @@
 {% if current_user.is_admin %}
 <main class="dashboard-layout">
   <section class="stats-grid">
-    <article class="stat-card"><span>Vehiculos dentro</span><strong>{{ metrics.inside_count }}</strong></article>
-    <article class="stat-card"><span>Salidas registradas</span><strong>{{ metrics.exited_count }}</strong></article>
+    <article class="stat-card"><span>Vehiculos que entraron hoy</span><strong>{{ metrics.entries_today }}</strong></article>
     <article class="stat-card"><span>Total cobrado hoy</span><strong>{{ metrics.total_day|money }}</strong></article>
-    <article class="stat-card"><span>Total semana</span><strong>{{ metrics.total_week|money }}</strong></article>
-    <article class="stat-card"><span>Pendiente</span><strong>{{ metrics.pending_total|money }}</strong></article>
-  </section>
-
-  <section class="workspace-grid overview-grid">
-    <article class="card feature-card">
-      <h2>Vehiculos por tipo</h2>
-      <div class="type-counter-grid">
-        {% for vehicle_type, count in metrics.vehicle_count.items() %}
-        <div class="type-counter">
-          <span>{{ vehicle_type }}</span>
-          <strong>{{ count }}</strong>
-        </div>
-        {% endfor %}
-      </div>
-    </article>
-
-    <article class="card feature-card">
-      <h2>Secciones principales</h2>
-      <div class="quick-links">
-        <a class="section-chip" href="{{ url_for('main.tickets_board_page') }}">Ver fichas</a>
-        <a class="section-chip" href="{{ url_for('main.records_page') }}">Ver registros</a>
-        <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
-        <a class="section-chip" href="{{ url_for('main.operations_page') }}">Registrar entrada</a>
-        <a class="section-chip" href="{{ url_for('main.employees_page') }}">Gestionar empleados</a>
-        <a class="section-chip" href="{{ url_for('main.tariffs_page') }}">Gestionar tarifas</a>
-      </div>
-    </article>
-  </section>
-
-  <section class="card feature-card records-card">
-    <div class="section-heading">
-      <div>
-        <h2>Ultimos registros</h2>
-      </div>
-      <a class="link-button" href="{{ url_for('main.records_page') }}">Abrir bitacora completa</a>
-    </div>
-
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Ficha</th>
-            <th>Cliente</th>
-            <th>Tipo</th>
-            <th>Entrada</th>
-            <th>Tiempo</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for record in records %}
-          <tr>
-            <td>{{ record.display_ticket_number }}</td>
-            <td>{{ record.client_name }}</td>
-            <td>{{ record.vehicle_type }}</td>
-            <td>{{ record.entry_at|dt }}</td>
-            <td>
-              {% if record.status == 'Dentro del estacionamiento' and record.is_hourly %}
-              <span class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</span>
-              {% elif record.status == 'Dentro del estacionamiento' %}
-              <span
-                class="live-day-counter"
-                data-entry-at="{{ record.entry_at.isoformat() }}"
-                data-contracted-days="{{ record.contracted_days or 6 }}"
-              >
-                {{ record.consumed_day_units() }}/{{ record.contracted_days or 6 }} dias
-              </span>
-              {% elif not record.is_hourly %}
-              {{ record.consumed_day_units(reference_time=record.exit_at) }}/{{ record.contracted_days or 6 }} dias
-              {% else %}
-              {{ format_duration(record.duration_seconds) }}
-              {% endif %}
-            </td>
-            <td><span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="6">Todavia no hay registros.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <article class="stat-card"><span>Total pendiente</span><strong>{{ metrics.pending_total|money }}</strong></article>
   </section>
 </main>
 {% else %}
