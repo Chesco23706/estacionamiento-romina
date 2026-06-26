@@ -180,16 +180,18 @@
             {% if not record.is_hourly %}
             <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+              <button class="btn btn-secondary btn-small" type="submit" {% if record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
             </form>
             {% endif %}
             <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-secondary btn-small" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
             </form>
+            <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
             {% else %}
             <span class="employee-muted-inline">Salida registrada</span>
+            <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
             <button class="btn btn-secondary btn-small" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
             {% endif %}
           </div>

@@ -1,5 +1,6 @@
 from io import BytesIO
 from datetime import datetime, timedelta
+from collections import defaultdict
 from zoneinfo import ZoneInfo
 
 from flask import (
@@ -16,10 +17,11 @@ from flask import (
 )
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload, selectinload
 
 from .decorators import role_required
 from .extensions import db
-from .models import CashCut, Role, Tariff, User, VehicleRecord, log_action
+from .models import AuditLog, CashCut, Role, Tariff, User, VehicleRecord, WeeklyExitLog, log_action
 from .pricing import calculate_charge, ensure_utc, format_duration, utc_now
 from .services import (
     BILLING_SCHEMES,
@@ -48,6 +50,13 @@ from .tickets import build_current_cut_pdf, build_ticket_pdf, build_ticket_qr_sv
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
+
+RECORD_DISPLAY_OPTIONS = (
+    joinedload(VehicleRecord.entry_user),
+    joinedload(VehicleRecord.exit_user),
+    joinedload(VehicleRecord.payment_user),
+    selectinload(VehicleRecord.weekly_exit_logs).joinedload(WeeklyExitLog.created_by),
+)
 
 SPANISH_WEEKDAYS = (
     "lunes",
@@ -92,8 +101,103 @@ def parse_record_filters():
     }
 
 
+def vehicle_record_display_query():
+    return VehicleRecord.query.options(*RECORD_DISPLAY_OPTIONS)
+
+
+def enrich_records(records, reference_time=None):
+    records = list(records)
+    for record in records:
+        enrich_record_display(record, reference_time=reference_time)
+    attach_record_history(records)
+    return records
+
+
+def attach_record_history(records):
+    record_ids = [record.id for record in records if record and record.id]
+    if not record_ids:
+        return
+
+    audit_logs_by_record = defaultdict(list)
+    audit_logs = (
+        AuditLog.query.options(joinedload(AuditLog.user))
+        .filter(
+            AuditLog.entity_type == "vehicle_record",
+            AuditLog.entity_id.in_(record_ids),
+        )
+        .order_by(AuditLog.created_at.asc())
+        .all()
+    )
+    for audit_log in audit_logs:
+        audit_logs_by_record[audit_log.entity_id].append(audit_log)
+
+    for record in records:
+        record.history_events = build_record_history_events(
+            record,
+            audit_logs_by_record.get(record.id, []),
+        )
+
+
+def build_record_history_events(record, audit_logs):
+    events = [
+        {
+            "moment": record.entry_at,
+            "event": "Registro de entrada",
+            "status": "Dentro del estacionamiento",
+            "user": record.entry_user.full_name if record.entry_user else "-",
+        }
+    ]
+    if record.paid_at:
+        events.append(
+            {
+                "moment": record.paid_at,
+                "event": "Pago recibido",
+                "status": "Pagado",
+                "user": record.payment_user.full_name if record.payment_user else "-",
+            }
+        )
+    for exit_log in record.weekly_exit_logs:
+        events.append(
+            {
+                "moment": exit_log.exited_at,
+                "event": f"Salida del dia {exit_log.day_number}",
+                "status": "Salida registrada",
+                "user": exit_log.created_by.full_name if exit_log.created_by else "-",
+            }
+        )
+    if record.exit_at:
+        events.append(
+            {
+                "moment": record.exit_at,
+                "event": "Salida final",
+                "status": record.status,
+                "user": record.exit_user.full_name if record.exit_user else "-",
+            }
+        )
+
+    audit_event_labels = {
+        "weekly_entry_registered": ("Entrada del dia", "Dentro del estacionamiento"),
+        "vehicle_record_updated": ("Edicion de registro", "Registro actualizado"),
+    }
+    for audit_log in audit_logs:
+        event_info = audit_event_labels.get(audit_log.action)
+        if not event_info:
+            continue
+        event, status = event_info
+        events.append(
+            {
+                "moment": audit_log.created_at,
+                "event": event,
+                "status": status,
+                "user": audit_log.user.full_name if audit_log.user else "-",
+            }
+        )
+
+    return sorted(events, key=lambda event: event["moment"] or datetime.min)
+
+
 def build_records_query(filters):
-    query = VehicleRecord.query
+    query = vehicle_record_display_query()
     search = filters["search"]
     if search:
         if search.isdigit():
@@ -209,7 +313,8 @@ def parse_ticket_slot_number(ticket_number):
 def build_ticket_board():
     latest_by_ticket = {}
     for record in (
-        VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
+        vehicle_record_display_query()
+        .filter(VehicleRecord.exit_at.is_(None))
         .order_by(VehicleRecord.entry_at.desc())
         .all()
     ):
@@ -371,12 +476,14 @@ def format_datetime_for_ticket(value):
 def current_cut_records():
     day_start, day_end = get_local_day_bounds()
     active_records = (
-        VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
+        vehicle_record_display_query()
+        .filter(VehicleRecord.exit_at.is_(None))
         .order_by(VehicleRecord.entry_at.desc())
         .all()
     )
     paid_today_records = (
-        VehicleRecord.query.filter(
+        vehicle_record_display_query()
+        .filter(
             VehicleRecord.paid_at.isnot(None),
             VehicleRecord.paid_at >= day_start,
             VehicleRecord.paid_at < day_end,
@@ -448,15 +555,17 @@ def logout():
 def dashboard():
     now_local = localize_datetime(utc_now())
     if current_user.is_admin:
-        records = VehicleRecord.query.order_by(VehicleRecord.entry_at.desc()).limit(8).all()
+        records = vehicle_record_display_query().order_by(VehicleRecord.entry_at.desc()).limit(8).all()
         active_records = (
-            VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+            vehicle_record_display_query()
+            .filter(VehicleRecord.status == "Dentro del estacionamiento")
             .order_by(VehicleRecord.entry_at.desc())
             .limit(8)
             .all()
         )
         pending_checkout_records = (
-            VehicleRecord.query.filter(
+            vehicle_record_display_query()
+            .filter(
                 VehicleRecord.status == "Dentro del estacionamiento",
                 VehicleRecord.paid_at.isnot(None),
                 VehicleRecord.exit_at.is_(None),
@@ -465,12 +574,9 @@ def dashboard():
             .limit(6)
             .all()
         )
-        for record in records:
-            enrich_record_display(record)
-        for record in active_records:
-            enrich_record_display(record)
-        for record in pending_checkout_records:
-            enrich_record_display(record)
+        enrich_records(records)
+        enrich_records(active_records)
+        enrich_records(pending_checkout_records)
         metrics = dashboard_metrics()
         return render_template(
             "dashboard.html",
@@ -489,7 +595,8 @@ def dashboard():
     today_view = request.args.get("view", "dentro").strip().lower() or "dentro"
     day_start, day_end = get_local_day_bounds()
     today_records = (
-        VehicleRecord.query.filter(
+        vehicle_record_display_query()
+        .filter(
             VehicleRecord.entry_at >= day_start,
             VehicleRecord.entry_at < day_end,
         )
@@ -497,13 +604,15 @@ def dashboard():
         .all()
     )
     current_inside_records = (
-        VehicleRecord.query.filter(VehicleRecord.status == "Dentro del estacionamiento")
+        vehicle_record_display_query()
+        .filter(VehicleRecord.status == "Dentro del estacionamiento")
         .order_by(VehicleRecord.entry_at.desc())
         .limit(8)
         .all()
     )
     paid_today_records = (
-        VehicleRecord.query.filter(
+        vehicle_record_display_query()
+        .filter(
             VehicleRecord.paid_at.isnot(None),
             VehicleRecord.paid_at >= day_start,
             VehicleRecord.paid_at < day_end,
@@ -522,10 +631,8 @@ def dashboard():
             record for record in today_records if record.status == "Dentro del estacionamiento"
         ]
 
-    for record in filtered_today_records:
-        enrich_record_display(record)
-    for record in current_inside_records:
-        enrich_record_display(record)
+    enrich_records(filtered_today_records)
+    enrich_records(current_inside_records)
 
     employee_metrics = {
         "today_count": len(today_records),
@@ -569,7 +676,8 @@ def records_page():
     pending_checkout_records = []
     if filters["status"] == "Dentro del estacionamiento":
         pending_checkout_records = (
-            VehicleRecord.query.filter(
+            vehicle_record_display_query()
+            .filter(
                 VehicleRecord.status == "Dentro del estacionamiento",
                 VehicleRecord.paid_at.isnot(None),
                 VehicleRecord.exit_at.is_(None),
@@ -578,13 +686,12 @@ def records_page():
             .limit(8)
             .all()
         )
-    for record in records:
-        enrich_record_display(record)
-    for record in pending_checkout_records:
-        enrich_record_display(record)
+    enrich_records(records)
+    enrich_records(pending_checkout_records)
     if not current_user.is_admin:
         current_records = (
-            VehicleRecord.query.filter(VehicleRecord.exit_at.is_(None))
+            vehicle_record_display_query()
+            .filter(VehicleRecord.exit_at.is_(None))
             .order_by(VehicleRecord.entry_at.desc())
             .all()
         )
@@ -593,8 +700,7 @@ def records_page():
             for record in current_records
             if record_matches_filters(record, filters, include_date=False)
         ]
-        for record in current_records:
-            enrich_record_display(record)
+        enrich_records(current_records)
         return render_template(
             "records.html",
             records=records,
@@ -624,9 +730,7 @@ def records_page():
 @login_required
 def tickets_board_page():
     board_records, board_metrics = build_ticket_board()
-    for slot in board_records:
-        if slot["record"]:
-            enrich_record_display(slot["record"])
+    enrich_records([slot["record"] for slot in board_records if slot["record"]])
     return render_template(
         "tickets_board.html",
         records=board_records,
@@ -688,7 +792,7 @@ def create_record():
 @main_bp.route("/records/<int:record_id>/ticket")
 @login_required
 def print_ticket(record_id):
-    record = db.session.get(VehicleRecord, record_id)
+    record = vehicle_record_display_query().filter_by(id=record_id).first()
     if not record:
         flash("No se encontró el registro solicitado.", "danger")
         return redirect(url_for("main.records_page"))
@@ -698,7 +802,7 @@ def print_ticket(record_id):
 @main_bp.route("/records/<int:record_id>/ticket/qr.svg")
 @login_required
 def ticket_qr_document(record_id):
-    record = db.session.get(VehicleRecord, record_id)
+    record = vehicle_record_display_query().filter_by(id=record_id).first()
     if not record:
         flash("No se encontrÃ³ el registro solicitado.", "danger")
         return redirect(url_for("main.records_page"))
@@ -711,7 +815,7 @@ def ticket_qr_document(record_id):
 @main_bp.route("/records/<int:record_id>/ticket/document")
 @login_required
 def ticket_document(record_id):
-    record = db.session.get(VehicleRecord, record_id)
+    record = vehicle_record_display_query().filter_by(id=record_id).first()
     if not record:
         flash("No se encontró el registro solicitado.", "danger")
         return redirect(url_for("main.records_page"))
@@ -732,10 +836,8 @@ def ticket_document(record_id):
 @login_required
 def current_cut_document():
     active_records, paid_today_records = current_cut_records()
-    for record in active_records:
-        enrich_record_display(record)
-    for record in paid_today_records:
-        enrich_record_display(record)
+    enrich_records(active_records)
+    enrich_records(paid_today_records)
 
     generated_at = utc_now()
     pdf_bytes = build_current_cut_pdf(

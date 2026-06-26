@@ -89,6 +89,14 @@ class Tariff(TimestampMixin, db.Model):
 
 class VehicleRecord(TimestampMixin, db.Model):
     __tablename__ = "vehicle_records"
+    __table_args__ = (
+        db.Index("ix_vehicle_records_status", "status"),
+        db.Index("ix_vehicle_records_entry_at", "entry_at"),
+        db.Index("ix_vehicle_records_exit_at", "exit_at"),
+        db.Index("ix_vehicle_records_paid_at", "paid_at"),
+        db.Index("ix_vehicle_records_physical_ticket_number", "physical_ticket_number"),
+        db.Index("ix_vehicle_records_status_entry_at", "status", "entry_at"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     ticket_number = db.Column(db.String(30), unique=True, nullable=False)
@@ -235,6 +243,9 @@ class VehicleRecord(TimestampMixin, db.Model):
 
 class WeeklyExitLog(TimestampMixin, db.Model):
     __tablename__ = "weekly_exit_logs"
+    __table_args__ = (
+        db.Index("ix_weekly_exit_logs_record_id_exited_at", "record_id", "exited_at"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     record_id = db.Column(db.Integer, db.ForeignKey("vehicle_records.id"), nullable=False)
@@ -462,8 +473,16 @@ def apply_runtime_migrations():
             )
     if "weekly_exit_logs" not in table_names:
         WeeklyExitLog.__table__.create(bind=db.engine, checkfirst=True)
+    _ensure_runtime_indexes()
     normalize_weekly_six_day_pricing()
     db.session.commit()
+
+
+def _ensure_runtime_indexes():
+    for index in VehicleRecord.__table__.indexes:
+        index.create(bind=db.engine, checkfirst=True)
+    for index in WeeklyExitLog.__table__.indexes:
+        index.create(bind=db.engine, checkfirst=True)
 
 
 def normalize_weekly_six_day_pricing():

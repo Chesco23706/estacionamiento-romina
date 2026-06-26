@@ -99,7 +99,7 @@
       {% if not record.is_hourly %}
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+        <button class="btn btn-secondary" type="submit" {% if record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
       </form>
       {% endif %}
       <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
@@ -114,68 +114,56 @@
       </form>
       {% endif %}
     </div>
-    {% if current_user.is_admin %}
-    <div class="weekly-log-list">
-      <h3>Historial de la ficha</h3>
-      <div class="table-wrapper">
-        <table>
-          <tbody>
-            <tr>
-              <th>Generada por</th>
-              <td>{{ record.entry_user.full_name }}</td>
-              <th>Hora de entrada</th>
-              <td>{{ record.entry_at|dt }}</td>
-            </tr>
-            <tr>
-              <th>Pago registrado por</th>
-              <td>{{ record.payment_user.full_name if record.payment_user else '-' }}</td>
-              <th>Hora de pago</th>
-              <td>{{ record.paid_at|dt }}</td>
-            </tr>
-            <tr>
-              <th>Salida registrada por</th>
-              <td>{{ record.exit_user.full_name if record.exit_user else '-' }}</td>
-              <th>Hora de salida</th>
-              <td>{{ record.exit_at|dt }}</td>
-            </tr>
-          </tbody>
-        </table>
+  </article>
+</dialog>
+
+<dialog class="record-dialog" id="record-history-dialog-{{ record.id }}">
+  <article class="record-dialog-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Ficha {{ record.display_ticket_number }}</p>
+        <h2>Historial</h2>
       </div>
+      <button class="btn btn-secondary" type="button" data-close-dialog="record-history-dialog-{{ record.id }}">Cerrar</button>
     </div>
-    {% endif %}
-    {% if not record.is_hourly and record.weekly_exit_logs %}
+
+    <div class="weekly-summary-row">
+      <span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span>
+      <span class="status-pill status-pill-{{ record.payment_theme }}">{{ record.payment_state_label }}</span>
+      {% if not record.is_hourly %}
+      <span class="status-pill status-pill-weekly">Salidas: {{ record.weekly_exit_count }}</span>
+      <span class="status-pill status-pill-inside">Entradas: {{ record.weekly_entry_count }}</span>
+      {% endif %}
+    </div>
+
     <div class="weekly-log-list">
-      <div class="weekly-summary-row">
-        <span class="status-pill status-pill-weekly">Dias pagados: {{ record.contracted_days or 6 }}</span>
-        <span class="status-pill status-pill-checkout">Salidas del dia: {{ record.weekly_exit_count }}</span>
-        <span class="status-pill status-pill-inside">Entradas del dia: {{ record.weekly_entry_count }}</span>
-      </div>
-      <h3>Salidas registradas</h3>
-      <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>Hora de salida del dia</th>
-              <th>Registrado en sistema</th>
-              <th>Dia transcurrido</th>
-              <th>Registrado por</th>
+              <th>Fecha y hora</th>
+              <th>Movimiento</th>
+              <th>Estatus</th>
+              <th>Usuario</th>
             </tr>
           </thead>
           <tbody>
-            {% for exit_log in record.weekly_exit_logs %}
+            {% for event in record.history_events %}
             <tr>
-              <td>{{ exit_log.exited_at|dt }}</td>
-              <td>{{ exit_log.created_at|dt }}</td>
-              <td>Dia {{ exit_log.day_number }}</td>
-              <td>{{ exit_log.created_by.full_name }}</td>
+              <td>{{ event.moment|dt }}</td>
+              <td>{{ event.event }}</td>
+              <td>{{ event.status }}</td>
+              <td>{{ event.user }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4">No hay historial disponible para esta ficha.</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
-    {% endif %}
   </article>
 </dialog>
 {% endif %}

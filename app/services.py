@@ -16,7 +16,7 @@ from .models import (
     get_period_bounds,
     log_action,
 )
-from .pricing import calculate_charge, ensure_utc, utc_now
+from .pricing import calculate_charge, utc_now
 from .validators import (
     clean_optional_text,
     clean_plate,
@@ -231,8 +231,6 @@ def register_weekly_exit(record, user):
         raise ValueError("Este registro semanal ya fue cerrado.")
     if record.status != "Dentro del estacionamiento":
         raise ValueError("Primero registra la entrada del dia antes de volver a sacar este vehiculo.")
-    if not record.is_paid:
-        raise ValueError("Primero registra el pago antes de registrar la salida semanal.")
 
     day_number = record.consumed_day_units()
     weekly_exit = WeeklyExitLog(
@@ -436,46 +434,48 @@ def generate_cash_cut(cut_type, user):
 
 
 def dashboard_metrics():
-    records = VehicleRecord.query.all()
-    active_records = [
-        record for record in records if record.status == "Dentro del estacionamiento"
-    ]
-    exited_records = [
-        record
-        for record in records
-        if record.exit_at
-    ]
     day_start, day_end = get_period_bounds("daily")
-    total_day = sum(
-        float(record.total_amount)
-        for record in records
-        if record.is_paid
-        and record.paid_at
-        and day_start <= ensure_utc(record.paid_at) < day_end
-    )
     week_start, week_end = get_period_bounds("weekly")
-    total_week = sum(
-        float(record.total_amount)
-        for record in records
-        if record.is_paid
-        and record.paid_at
-        and week_start <= ensure_utc(record.paid_at) < week_end
+
+    inside_count = VehicleRecord.query.filter_by(status="Dentro del estacionamiento").count()
+    exited_count = VehicleRecord.query.filter(VehicleRecord.exit_at.isnot(None)).count()
+    total_day = db.session.scalar(
+        db.select(func.coalesce(func.sum(VehicleRecord.total_amount), 0)).where(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= day_start,
+            VehicleRecord.paid_at < day_end,
+        )
     )
-    pending = sum(
-        float(record.total_amount)
-        for record in records
-        if record.exit_at and not record.is_paid
+    total_week = db.session.scalar(
+        db.select(func.coalesce(func.sum(VehicleRecord.total_amount), 0)).where(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= week_start,
+            VehicleRecord.paid_at < week_end,
+        )
+    )
+    pending = db.session.scalar(
+        db.select(func.coalesce(func.sum(VehicleRecord.total_amount), 0)).where(
+            VehicleRecord.exit_at.isnot(None),
+            VehicleRecord.paid_at.is_(None),
+            VehicleRecord.status != "Pagado",
+        )
     )
     vehicle_count = {vehicle_type: 0 for vehicle_type in get_vehicle_types(include_inactive=True)}
-    for record in active_records:
-        vehicle_count[record.vehicle_type] = vehicle_count.get(record.vehicle_type, 0) + 1
+    active_counts = (
+        db.session.query(VehicleRecord.vehicle_type, func.count(VehicleRecord.id))
+        .filter_by(status="Dentro del estacionamiento")
+        .group_by(VehicleRecord.vehicle_type)
+        .all()
+    )
+    for vehicle_type, count in active_counts:
+        vehicle_count[vehicle_type] = count
 
     return {
-        "inside_count": len(active_records),
-        "exited_count": len(exited_records),
-        "total_day": total_day,
-        "total_week": total_week,
-        "pending_total": pending,
+        "inside_count": inside_count,
+        "exited_count": exited_count,
+        "total_day": float(total_day or 0),
+        "total_week": float(total_week or 0),
+        "pending_total": float(pending or 0),
         "vehicle_count": vehicle_count,
     }
 

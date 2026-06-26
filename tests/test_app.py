@@ -255,7 +255,7 @@ def test_admin_paid_filter_can_use_payment_date():
     assert "Cliente Pago Filtro" in body
 
 
-def test_admin_record_modal_shows_audit_history():
+def test_admin_record_history_dialog_shows_ticket_events():
     app, client = build_client()
     login(client)
 
@@ -282,10 +282,12 @@ def test_admin_record_modal_shows_audit_history():
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Historial de la ficha" in body
-    assert "Generada por" in body
-    assert "Pago registrado por" in body
-    assert "Salida registrada por" in body
+    assert f'data-open-dialog="record-history-dialog-{record_id}"' in body
+    assert f'id="record-history-dialog-{record_id}"' in body
+    assert "Registro de entrada" in body
+    assert "Pago recibido" in body
+    assert "Salida final" in body
+    assert "Fecha y hora" in body
 
 
 def test_admin_records_page_shows_today_payment_shortcut():
@@ -750,6 +752,56 @@ def test_weekly_record_tracks_partial_exits():
         assert updated.latest_weekly_exit_at is not None
         assert updated.exit_at is not None
         assert updated.status == "Pagado"
+
+
+def test_weekly_partial_exit_does_not_require_payment_but_final_exit_does():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SEM-SIN-PAGO",
+            "client_name": "Cliente Semana Sin Pago",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "6",
+            "plate_number": "SNP-123",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-SEM-SIN-PAGO").first()
+        record_id = record.id
+
+    partial_exit = client.post(f"/records/{record_id}/weekly-exit", follow_redirects=True)
+    blocked_final_exit = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+
+    assert partial_exit.status_code == 200
+    assert "Salida semanal registrada correctamente." in partial_exit.get_data(as_text=True)
+    assert blocked_final_exit.status_code == 200
+    assert "Primero registra el pago antes de marcar la salida." in blocked_final_exit.get_data(as_text=True)
+
+    with app.app_context():
+        updated = db.session.get(VehicleRecord, record_id)
+        assert updated.is_paid is False
+        assert updated.exit_at is None
+        assert updated.status == "Salida registrada"
+        assert updated.weekly_exit_count == 1
+
+    client.post(f"/records/{record_id}/weekly-entry", follow_redirects=True)
+    client.post(f"/records/{record_id}/pay", follow_redirects=True)
+    final_exit = client.post(f"/records/{record_id}/exit", follow_redirects=True)
+
+    assert final_exit.status_code == 200
+
+    with app.app_context():
+        closed = db.session.get(VehicleRecord, record_id)
+        assert closed.is_paid is True
+        assert closed.exit_at is not None
+        assert closed.status == "Pagado"
 
 
 def test_weekly_partial_exit_hides_record_until_daily_entry():

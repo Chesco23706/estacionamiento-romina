@@ -42,7 +42,7 @@
       </form>
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-secondary" type="submit" {% if not record.is_paid or record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+        <button class="btn btn-secondary" type="submit" {% if record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
       </form>
       {% endif %}
       <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
