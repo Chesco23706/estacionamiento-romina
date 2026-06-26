@@ -1,5 +1,5 @@
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from collections import defaultdict
 from zoneinfo import ZoneInfo
 
@@ -46,7 +46,7 @@ from .services import (
     update_tariff,
     update_vehicle_record,
 )
-from .tickets import build_current_cut_pdf, build_ticket_pdf, build_ticket_qr_svg
+from .tickets import build_cash_cut_pdf, build_current_cut_pdf, build_ticket_pdf, build_ticket_qr_svg
 from .validators import clean_text
 
 main_bp = Blueprint("main", __name__)
@@ -496,6 +496,53 @@ def current_cut_records():
         .all()
     )
     return active_records, paid_today_records
+
+
+def parse_cut_date(raw_value):
+    value = (raw_value or "").strip()
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("Selecciona una fecha valida para el corte.") from exc
+
+
+def cut_records_for_period(cut):
+    paid_records = (
+        vehicle_record_display_query()
+        .filter(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= cut.period_start,
+            VehicleRecord.paid_at < cut.period_end,
+        )
+        .order_by(VehicleRecord.paid_at.asc(), VehicleRecord.entry_at.asc())
+        .all()
+    )
+    entry_records = (
+        vehicle_record_display_query()
+        .filter(
+            VehicleRecord.entry_at >= cut.period_start,
+            VehicleRecord.entry_at < cut.period_end,
+        )
+        .order_by(VehicleRecord.entry_at.asc())
+        .all()
+    )
+    pending_records = (
+        vehicle_record_display_query()
+        .filter(
+            VehicleRecord.exit_at.isnot(None),
+            VehicleRecord.paid_at.is_(None),
+            VehicleRecord.exit_at >= cut.period_start,
+            VehicleRecord.exit_at < cut.period_end,
+        )
+        .order_by(VehicleRecord.exit_at.asc())
+        .all()
+    )
+    enrich_records(paid_records)
+    enrich_records(entry_records)
+    enrich_records(pending_records)
+    return paid_records, entry_records, pending_records
 
 
 @main_bp.app_context_processor
@@ -1113,9 +1160,10 @@ def generate_cut():
         cut_type = clean_text(request.form.get("cut_type"), 20, "tipo de corte")
         if cut_type not in {"daily", "weekly"}:
             raise ValueError("Tipo de corte inválido.")
-        cut = generate_cash_cut(cut_type, current_user)
+        target_date = parse_cut_date(request.form.get("cut_date")) if cut_type == "daily" else None
+        cut = generate_cash_cut(cut_type, current_user, target_date=target_date)
         flash("Corte generado correctamente.", "success")
-        return redirect(url_for("main.employees_page"))
+        return redirect(url_for("main.cash_cut_detail", cut_id=cut.id))
     except ValueError as exc:
         flash(str(exc), "danger")
         return redirect(url_for("main.employees_page"))
@@ -1129,7 +1177,41 @@ def cash_cut_detail(cut_id):
     if not cut:
         flash("No se encontró el corte solicitado.", "danger")
         return redirect(url_for("main.employees_page"))
-    return render_template("cut_detail.html", cut=cut)
+    paid_records, entry_records, pending_records = cut_records_for_period(cut)
+    return render_template(
+        "cut_detail.html",
+        cut=cut,
+        paid_records=paid_records,
+        entry_records=entry_records,
+        pending_records=pending_records,
+        format_duration=format_duration,
+    )
+
+
+@main_bp.route("/cuts/<int:cut_id>/document")
+@login_required
+@role_required("admin")
+def cash_cut_document(cut_id):
+    cut = db.session.get(CashCut, cut_id)
+    if not cut:
+        flash("No se encontrÃ³ el corte solicitado.", "danger")
+        return redirect(url_for("main.employees_page"))
+
+    paid_records, entry_records, pending_records = cut_records_for_period(cut)
+    pdf_bytes = build_cash_cut_pdf(
+        cut,
+        paid_records,
+        entry_records,
+        pending_records,
+        format_datetime_for_ticket,
+    )
+    filename = f"corte_{cut.id}_{localize_datetime(cut.period_start).strftime('%Y%m%d')}.pdf"
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=filename,
+    )
 
 
 @main_bp.route("/cuts/<int:cut_id>/export")

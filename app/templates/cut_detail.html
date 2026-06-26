@@ -9,6 +9,7 @@
         <h2>Corte {{ 'diario' if cut.cut_type == 'daily' else 'semanal' }} #{{ cut.id }}</h2>
       </div>
       <div class="button-row">
+        <a class="link-button" href="{{ url_for('main.cash_cut_document', cut_id=cut.id) }}" target="_blank" rel="noopener">Informe PDF</a>
         <a class="link-button" href="{{ url_for('main.export_cut', cut_id=cut.id) }}">Exportar CSV</a>
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
       </div>
@@ -38,6 +39,121 @@
         <span>Vehículos pagados</span>
         <strong>{{ cut.vehicles_paid }}</strong>
       </article>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Detalle</p>
+        <h2>Vehiculos cobrados</h2>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ficha</th>
+            <th>Cliente</th>
+            <th>Vehiculo</th>
+            <th>Placas</th>
+            <th>Entrada</th>
+            <th>Pago</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in paid_records %}
+          <tr>
+            <td>{{ record.display_ticket_number }}</td>
+            <td>{{ record.client_name }}</td>
+            <td>{{ record.vehicle_type }}</td>
+            <td>{{ record.plate_number }}</td>
+            <td>{{ record.entry_at|dt }}</td>
+            <td>{{ record.paid_at|dt }}</td>
+            <td>{{ record.total_amount|money }}</td>
+            <td>{{ record.status }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8">No hubo vehiculos cobrados en este periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Actividad del dia</p>
+        <h2>Vehiculos registrados</h2>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ficha</th>
+            <th>Cliente</th>
+            <th>Vehiculo</th>
+            <th>Placas</th>
+            <th>Entrada</th>
+            <th>Tiempo</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in entry_records %}
+          <tr>
+            <td>{{ record.display_ticket_number }}</td>
+            <td>{{ record.client_name }}</td>
+            <td>{{ record.vehicle_type }}</td>
+            <td>{{ record.plate_number }}</td>
+            <td>{{ record.entry_at|dt }}</td>
+            <td>{{ format_duration(record.duration_seconds) if record.exit_at else '-' }}</td>
+            <td>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</td>
+            <td>{{ record.status }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8">No hubo vehiculos registrados en este periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Pendientes</p>
+        <h2>Salidas sin cobro</h2>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ficha</th>
+            <th>Cliente</th>
+            <th>Vehiculo</th>
+            <th>Placas</th>
+            <th>Salida</th>
+            <th>Total pendiente</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in pending_records %}
+          <tr>
+            <td>{{ record.display_ticket_number }}</td>
+            <td>{{ record.client_name }}</td>
+            <td>{{ record.vehicle_type }}</td>
+            <td>{{ record.plate_number }}</td>
+            <td>{{ record.exit_at|dt }}</td>
+            <td>{{ record.total_amount|money }}</td>
+            <td>{{ record.status }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7">No hubo salidas pendientes de cobro.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <div class="table-wrapper">

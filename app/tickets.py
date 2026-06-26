@@ -210,6 +210,105 @@ def build_current_cut_pdf(active_records, paid_today_records, generated_by, gene
     return buffer.getvalue()
 
 
+def build_cash_cut_pdf(cut, paid_records, entry_records, pending_records, datetime_formatter):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    margin = 15 * mm
+    y = height - margin
+
+    blue = HexColor("#0f436b")
+    gold = HexColor("#bf8a28")
+    ink = HexColor("#2f2416")
+    muted = HexColor("#7b6950")
+    line_color = HexColor("#e1d2bc")
+
+    def new_page():
+        pdf.showPage()
+        return height - margin
+
+    def ensure_space(current_y, required):
+        if current_y - required < margin:
+            return new_page()
+        return current_y
+
+    def draw_text(text, x, text_y, font="Helvetica", size=9, color=ink):
+        pdf.setFillColor(color)
+        pdf.setFont(font, size)
+        pdf.drawString(x, text_y, str(text))
+
+    cut_label = "diario" if cut.cut_type == "daily" else "semanal"
+    pdf.setTitle(f"Informe de corte {cut_label} #{cut.id}")
+    draw_text("Estacionamiento Romina", margin, y, "Helvetica-Bold", 16, blue)
+    draw_text(f"Informe de corte {cut_label} #{cut.id}", margin, y - 7 * mm, "Helvetica-Bold", 12, gold)
+    draw_text(f"Periodo: {datetime_formatter(cut.period_start)} a {datetime_formatter(cut.period_end)}", margin, y - 14 * mm, "Helvetica", 9, muted)
+    draw_text(f"Generado por: {cut.generated_by.full_name}", margin, y - 20 * mm, "Helvetica", 9, muted)
+    y -= 31 * mm
+
+    summary_items = [
+        ("Total cobrado", f"${float(cut.total_income or 0):,.2f}"),
+        ("Vehiculos cobrados", cut.vehicles_paid),
+        ("Entradas del dia", len(entry_records)),
+        ("Pendiente", f"${float(cut.total_pending or 0):,.2f}"),
+    ]
+    box_width = (width - (margin * 2) - (9 * mm)) / 4
+    for index, (label, value) in enumerate(summary_items):
+        x = margin + index * (box_width + 3 * mm)
+        pdf.setStrokeColor(line_color)
+        pdf.setFillColor(HexColor("#fffaf2"))
+        pdf.roundRect(x, y - 20 * mm, box_width, 18 * mm, 3 * mm, stroke=1, fill=1)
+        draw_text(label, x + 3 * mm, y - 8 * mm, "Helvetica", 7, muted)
+        draw_text(value, x + 3 * mm, y - 15 * mm, "Helvetica-Bold", 10, ink)
+    y -= 31 * mm
+
+    y = _draw_cut_section(
+        pdf,
+        "Vehiculos cobrados",
+        paid_records,
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+        datetime_formatter,
+        include_total=True,
+    )
+    y -= 6 * mm
+    y = _draw_cut_section(
+        pdf,
+        "Vehiculos registrados ese dia",
+        entry_records,
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+        datetime_formatter,
+        include_total=True,
+    )
+    y -= 6 * mm
+    y = _draw_cut_section(
+        pdf,
+        "Salidas pendientes de cobro",
+        pending_records,
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+        datetime_formatter,
+        include_total=True,
+    )
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
 def _draw_cut_section(
     pdf,
     title,

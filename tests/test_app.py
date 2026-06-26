@@ -119,6 +119,59 @@ def test_daily_cut_uses_payment_day_not_entry_day():
         assert cut.vehicles_paid >= 1
 
 
+def test_admin_can_generate_dated_cut_and_download_report_pdf():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-CORTE-FECHA",
+            "client_name": "Cliente Corte Fecha",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "FEC-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(physical_ticket_number="FICHA-CORTE-FECHA").first()
+        target_local_date = datetime(2026, 1, 15, tzinfo=ZoneInfo("America/Mexico_City"))
+        paid_at = target_local_date.replace(hour=14).astimezone(timezone.utc)
+        record.entry_at = target_local_date.replace(hour=9).astimezone(timezone.utc)
+        record.paid_at = paid_at
+        record.total_amount = 75
+        record.status = "Dentro del estacionamiento"
+        db.session.commit()
+
+    cut_response = client.post(
+        "/cuts/generate",
+        data={"cut_type": "daily", "cut_date": "2026-01-15"},
+        follow_redirects=True,
+    )
+    body = cut_response.get_data(as_text=True)
+
+    assert cut_response.status_code == 200
+    assert "Cliente Corte Fecha" in body
+    assert "Vehiculos cobrados" in body
+    assert "Informe PDF" in body
+    assert "$75.00" in body
+
+    with app.app_context():
+        cut = CashCut.query.order_by(CashCut.id.desc()).first()
+        assert cut is not None
+        assert cut.vehicles_paid == 1
+        assert float(cut.total_income) == 75
+
+    pdf_response = client.get(f"/cuts/{cut.id}/document")
+
+    assert pdf_response.status_code == 200
+    assert pdf_response.mimetype == "application/pdf"
+    assert pdf_response.data.startswith(b"%PDF")
+
+
 def test_employee_dashboard_counts_income_by_payment_day():
     app, client = build_client()
     login(client)

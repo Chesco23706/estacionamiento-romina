@@ -388,8 +388,11 @@ def update_tariff(tariff, form_data, user):
     return tariff
 
 
-def generate_cash_cut(cut_type, user):
-    start, end = get_period_bounds("daily" if cut_type == "daily" else "weekly")
+def generate_cash_cut(cut_type, user, target_date=None):
+    start, end = get_period_bounds(
+        "daily" if cut_type == "daily" else "weekly",
+        reference_date=target_date if cut_type == "daily" else None,
+    )
     paid_records = VehicleRecord.query.filter(
         VehicleRecord.paid_at.isnot(None),
         VehicleRecord.paid_at >= start,

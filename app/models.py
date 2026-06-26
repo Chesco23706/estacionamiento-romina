@@ -546,7 +546,7 @@ def generate_internal_ticket_code():
     return f"REC-{uuid.uuid4().hex[:12].upper()}"
 
 
-def get_period_bounds(cut_type):
+def get_period_bounds(cut_type, reference_date=None):
     timezone_name = current_app.config.get("APP_TIMEZONE", "America/Mexico_City")
     try:
         local_timezone = ZoneInfo(timezone_name)
@@ -554,6 +554,13 @@ def get_period_bounds(cut_type):
         local_timezone = ZoneInfo("America/Mexico_City")
 
     now = utc_now().astimezone(local_timezone)
+    if reference_date:
+        now = datetime(
+            reference_date.year,
+            reference_date.month,
+            reference_date.day,
+            tzinfo=local_timezone,
+        )
     if cut_type == "daily":
         local_start = datetime(now.year, now.month, now.day, tzinfo=local_timezone)
         start = local_start.astimezone(timezone.utc)
