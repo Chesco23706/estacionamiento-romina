@@ -398,15 +398,8 @@ def generate_cash_cut(cut_type, user, target_date=None):
         VehicleRecord.paid_at >= start,
         VehicleRecord.paid_at < end,
     ).all()
-    pending_records = VehicleRecord.query.filter(
-        VehicleRecord.exit_at.isnot(None),
-        VehicleRecord.paid_at.is_(None),
-        VehicleRecord.exit_at >= start,
-        VehicleRecord.exit_at < end,
-    ).all()
 
     total_income = Decimal("0.00")
-    total_pending = Decimal("0.00")
     vehicle_types = get_vehicle_types(include_inactive=True)
     by_type = {vehicle_type: {"count": 0, "income": 0.0} for vehicle_type in vehicle_types}
 
@@ -416,17 +409,14 @@ def generate_cash_cut(cut_type, user, target_date=None):
         total_income += Decimal(record.total_amount)
         by_type[record.vehicle_type]["income"] += float(record.total_amount)
 
-    for record in pending_records:
-        total_pending += Decimal(record.total_amount)
-
     cut = CashCut(
         cut_type=cut_type,
         period_start=start,
         period_end=end,
         generated_by=user,
         total_income=total_income,
-        total_pending=total_pending,
-        vehicles_served=len(paid_records) + len(pending_records),
+        total_pending=Decimal("0.00"),
+        vehicles_served=len(paid_records),
         vehicles_paid=len(paid_records),
         breakdown_json=json.dumps(by_type),
     )

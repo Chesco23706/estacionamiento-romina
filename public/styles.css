@@ -66,10 +66,15 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  min-width: 0;
   min-height: 40px;
   padding: 0 14px;
   border-radius: 999px;
   text-decoration: none;
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
   background: rgba(15, 67, 107, 0.08);
   border: 1px solid rgba(15, 67, 107, 0.12);
   color: var(--secondary);
@@ -334,14 +339,19 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  min-width: 0;
   min-height: 42px;
-  padding: 0 18px;
+  padding: 8px 18px;
   border-radius: 999px;
   background: rgba(255, 250, 239, 0.92);
   border: 1px solid rgba(15, 67, 107, 0.12);
   color: var(--secondary);
   text-decoration: none;
+  text-align: center;
   font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
   box-shadow: var(--shadow-soft);
 }
 
@@ -402,6 +412,7 @@ h2 {
   color: #6d5a42;
   display: block;
   margin-bottom: 8px;
+  overflow-wrap: anywhere;
 }
 
 .stat-card strong,
@@ -409,6 +420,9 @@ h2 {
 .type-counter strong {
   font-size: 1.55rem;
   color: #2f2416;
+  display: block;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-chart-panel {
@@ -688,6 +702,8 @@ label:focus-within,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  min-width: 0;
   min-height: 44px;
   padding: 0 16px;
   background: var(--primary);
@@ -695,7 +711,10 @@ label:focus-within,
   border: none;
   border-radius: 14px;
   text-decoration: none;
+  text-align: center;
   font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(191, 138, 40, 0.22);
   transition:
@@ -1153,6 +1172,7 @@ dialog::backdrop {
 
 .table-wrapper {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid rgba(15, 67, 107, 0.08);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
@@ -1189,6 +1209,7 @@ td {
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 thead {
@@ -1197,9 +1218,14 @@ thead {
 
 .status-pill {
   display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
   padding: 8px 10px;
   border-radius: 999px;
   background: rgba(191, 138, 40, 0.18);
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .status-pill-inside {

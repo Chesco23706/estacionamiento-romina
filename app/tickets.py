@@ -210,7 +210,7 @@ def build_current_cut_pdf(active_records, paid_today_records, generated_by, gene
     return buffer.getvalue()
 
 
-def build_cash_cut_pdf(cut, paid_records, entry_records, pending_records, datetime_formatter):
+def build_cash_cut_pdf(cut, paid_records, datetime_formatter):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -248,10 +248,8 @@ def build_cash_cut_pdf(cut, paid_records, entry_records, pending_records, dateti
     summary_items = [
         ("Total cobrado", f"${float(cut.total_income or 0):,.2f}"),
         ("Vehiculos cobrados", cut.vehicles_paid),
-        ("Entradas del dia", len(entry_records)),
-        ("Pendiente", f"${float(cut.total_pending or 0):,.2f}"),
     ]
-    box_width = (width - (margin * 2) - (9 * mm)) / 4
+    box_width = (width - (margin * 2) - (3 * mm)) / 2
     for index, (label, value) in enumerate(summary_items):
         x = margin + index * (box_width + 3 * mm)
         pdf.setStrokeColor(line_color)
@@ -265,34 +263,6 @@ def build_cash_cut_pdf(cut, paid_records, entry_records, pending_records, dateti
         pdf,
         "Vehiculos cobrados",
         paid_records,
-        y,
-        margin,
-        width,
-        height,
-        ensure_space,
-        draw_text,
-        datetime_formatter,
-        include_total=True,
-    )
-    y -= 6 * mm
-    y = _draw_cut_section(
-        pdf,
-        "Vehiculos registrados ese dia",
-        entry_records,
-        y,
-        margin,
-        width,
-        height,
-        ensure_space,
-        draw_text,
-        datetime_formatter,
-        include_total=True,
-    )
-    y -= 6 * mm
-    y = _draw_cut_section(
-        pdf,
-        "Salidas pendientes de cobro",
-        pending_records,
         y,
         margin,
         width,

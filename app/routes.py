@@ -601,30 +601,8 @@ def cut_records_for_period(cut):
         .order_by(VehicleRecord.paid_at.asc(), VehicleRecord.entry_at.asc())
         .all()
     )
-    entry_records = (
-        vehicle_record_display_query()
-        .filter(
-            VehicleRecord.entry_at >= cut.period_start,
-            VehicleRecord.entry_at < cut.period_end,
-        )
-        .order_by(VehicleRecord.entry_at.asc())
-        .all()
-    )
-    pending_records = (
-        vehicle_record_display_query()
-        .filter(
-            VehicleRecord.exit_at.isnot(None),
-            VehicleRecord.paid_at.is_(None),
-            VehicleRecord.exit_at >= cut.period_start,
-            VehicleRecord.exit_at < cut.period_end,
-        )
-        .order_by(VehicleRecord.exit_at.asc())
-        .all()
-    )
     enrich_records(paid_records)
-    enrich_records(entry_records)
-    enrich_records(pending_records)
-    return paid_records, entry_records, pending_records
+    return paid_records
 
 
 @main_bp.app_context_processor
@@ -1245,13 +1223,11 @@ def cash_cut_detail(cut_id):
     if not cut:
         flash("No se encontró el corte solicitado.", "danger")
         return redirect(url_for("main.employees_page"))
-    paid_records, entry_records, pending_records = cut_records_for_period(cut)
+    paid_records = cut_records_for_period(cut)
     return render_template(
         "cut_detail.html",
         cut=cut,
         paid_records=paid_records,
-        entry_records=entry_records,
-        pending_records=pending_records,
         format_duration=format_duration,
     )
 
@@ -1265,12 +1241,10 @@ def cash_cut_document(cut_id):
         flash("No se encontrÃ³ el corte solicitado.", "danger")
         return redirect(url_for("main.employees_page"))
 
-    paid_records, entry_records, pending_records = cut_records_for_period(cut)
+    paid_records = cut_records_for_period(cut)
     pdf_bytes = build_cash_cut_pdf(
         cut,
         paid_records,
-        entry_records,
-        pending_records,
         format_datetime_for_ticket,
     )
     filename = f"corte_{cut.id}_{localize_datetime(cut.period_start).strftime('%Y%m%d')}.pdf"
@@ -1292,8 +1266,8 @@ def export_cut(cut_id):
         return redirect(url_for("main.employees_page"))
 
     lines = [
-        "tipo_corte,periodo_inicio,periodo_fin,total_ingresos,total_pendiente,vehiculos_atendidos,vehiculos_pagados",
-        f"{cut.cut_type},{cut.period_start.isoformat()},{cut.period_end.isoformat()},{cut.total_income},{cut.total_pending},{cut.vehicles_served},{cut.vehicles_paid}",
+        "tipo_corte,periodo_inicio,periodo_fin,total_cobrado,vehiculos_cobrados",
+        f"{cut.cut_type},{cut.period_start.isoformat()},{cut.period_end.isoformat()},{cut.total_income},{cut.vehicles_paid}",
         "",
         "tipo_vehiculo,cantidad,ingresos",
     ]

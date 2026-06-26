@@ -40,7 +40,6 @@
             <th>Fecha</th>
             <th>Periodo</th>
             <th>Ingresos</th>
-            <th>Pendiente</th>
             <th>Accion</th>
           </tr>
         </thead>
@@ -52,11 +51,10 @@
             <td>{{ cut.generated_at|dt }}</td>
             <td>{{ cut.period_start|dt }} a {{ cut.period_end|dt }}</td>
             <td>{{ cut.total_income|money }}</td>
-            <td>{{ cut.total_pending|money }}</td>
             <td><a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
           </tr>
           {% else %}
-          <tr><td colspan="7">Todavia no hay cortes generados.</td></tr>
+          <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
           {% endfor %}
         </tbody>
       </table>

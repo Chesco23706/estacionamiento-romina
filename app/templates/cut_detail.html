@@ -14,6 +14,7 @@
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
       </div>
     </div>
+
     <div class="report-grid">
       <article class="report-card">
         <span>Periodo</span>
@@ -24,19 +25,11 @@
         <strong>{{ cut.generated_by.full_name }}</strong>
       </article>
       <article class="report-card">
-        <span>Total ingresos</span>
+        <span>Total cobrado</span>
         <strong>{{ cut.total_income|money }}</strong>
       </article>
       <article class="report-card">
-        <span>Total pendiente</span>
-        <strong>{{ cut.total_pending|money }}</strong>
-      </article>
-      <article class="report-card">
-        <span>Vehículos atendidos</span>
-        <strong>{{ cut.vehicles_served }}</strong>
-      </article>
-      <article class="report-card">
-        <span>Vehículos pagados</span>
+        <span>Vehiculos cobrados</span>
         <strong>{{ cut.vehicles_paid }}</strong>
       </article>
     </div>
@@ -82,86 +75,16 @@
 
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Actividad del dia</p>
-        <h2>Vehiculos registrados</h2>
+        <p class="eyebrow">Resumen</p>
+        <h2>Cobros por tipo de vehiculo</h2>
       </div>
     </div>
     <div class="table-wrapper">
       <table>
         <thead>
           <tr>
-            <th>Ficha</th>
-            <th>Cliente</th>
-            <th>Vehiculo</th>
-            <th>Placas</th>
-            <th>Entrada</th>
-            <th>Tiempo</th>
-            <th>Total</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for record in entry_records %}
-          <tr>
-            <td>{{ record.display_ticket_number }}</td>
-            <td>{{ record.client_name }}</td>
-            <td>{{ record.vehicle_type }}</td>
-            <td>{{ record.plate_number }}</td>
-            <td>{{ record.entry_at|dt }}</td>
-            <td>{{ format_duration(record.duration_seconds) if record.exit_at else '-' }}</td>
-            <td>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</td>
-            <td>{{ record.status }}</td>
-          </tr>
-          {% else %}
-          <tr><td colspan="8">No hubo vehiculos registrados en este periodo.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">Pendientes</p>
-        <h2>Salidas sin cobro</h2>
-      </div>
-    </div>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Ficha</th>
-            <th>Cliente</th>
-            <th>Vehiculo</th>
-            <th>Placas</th>
-            <th>Salida</th>
-            <th>Total pendiente</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for record in pending_records %}
-          <tr>
-            <td>{{ record.display_ticket_number }}</td>
-            <td>{{ record.client_name }}</td>
-            <td>{{ record.vehicle_type }}</td>
-            <td>{{ record.plate_number }}</td>
-            <td>{{ record.exit_at|dt }}</td>
-            <td>{{ record.total_amount|money }}</td>
-            <td>{{ record.status }}</td>
-          </tr>
-          {% else %}
-          <tr><td colspan="7">No hubo salidas pendientes de cobro.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Tipo de vehículo</th>
-            <th>Cantidad</th>
+            <th>Tipo de vehiculo</th>
+            <th>Cantidad cobrada</th>
             <th>Ingresos</th>
           </tr>
         </thead>

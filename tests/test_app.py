@@ -172,6 +172,66 @@ def test_admin_can_generate_dated_cut_and_download_report_pdf():
     assert pdf_response.data.startswith(b"%PDF")
 
 
+def test_daily_and_weekly_cuts_exclude_unpaid_weekly_records():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "FICHA-SEMANAL-SIN-PAGO",
+            "client_name": "Cliente Semanal Sin Pago",
+            "vehicle_type": "Moto",
+            "stay_mode": "weekly",
+            "contracted_days": "6",
+            "plate_number": "SSP-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        record = VehicleRecord.query.filter_by(client_name="Cliente Semanal Sin Pago").first()
+        record.entry_at = utc_now()
+        record.total_amount = 320
+        record.paid_at = None
+        db.session.commit()
+
+    daily_response = client.post(
+        "/cuts/generate",
+        data={"cut_type": "daily", "cut_date": utc_now().date().isoformat()},
+        follow_redirects=True,
+    )
+    daily_body = daily_response.get_data(as_text=True)
+
+    assert daily_response.status_code == 200
+    assert "Cliente Semanal Sin Pago" not in daily_body
+    assert "$320.00" not in daily_body
+
+    with app.app_context():
+        daily_cut = CashCut.query.order_by(CashCut.id.desc()).first()
+        assert float(daily_cut.total_income) == 0
+        assert daily_cut.vehicles_paid == 0
+        assert daily_cut.vehicles_served == 0
+
+    weekly_response = client.post(
+        "/cuts/generate",
+        data={"cut_type": "weekly"},
+        follow_redirects=True,
+    )
+    weekly_body = weekly_response.get_data(as_text=True)
+
+    assert weekly_response.status_code == 200
+    assert "Cliente Semanal Sin Pago" not in weekly_body
+    assert "$320.00" not in weekly_body
+
+    with app.app_context():
+        weekly_cut = CashCut.query.order_by(CashCut.id.desc()).first()
+        assert float(weekly_cut.total_income) == 0
+        assert weekly_cut.vehicles_paid == 0
+        assert weekly_cut.vehicles_served == 0
+
+
 def test_weekly_cut_period_runs_monday_to_sunday():
     app, _client = build_client()
     with app.app_context():
