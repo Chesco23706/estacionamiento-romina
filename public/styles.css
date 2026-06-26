@@ -11,6 +11,10 @@
   --danger: #8e3328;
   --success: #436a45;
   --border: rgba(62, 41, 16, 0.14);
+  --editable-bg: #fff6c8;
+  --editable-border: #0b5fc7;
+  --editable-border-soft: rgba(11, 95, 199, 0.48);
+  --editable-focus: rgba(11, 95, 199, 0.22);
   --shadow: 0 22px 48px rgba(74, 46, 15, 0.14);
   --shadow-soft: 0 12px 28px rgba(15, 67, 107, 0.08);
 }
@@ -575,10 +579,34 @@ select,
 textarea {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid rgba(15, 67, 107, 0.16);
+  border: 2px solid var(--editable-border-soft);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  background: linear-gradient(180deg, #fffbea 0%, var(--editable-bg) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72), 0 6px 16px rgba(11, 95, 199, 0.06);
+  color: #1f2f45;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+
+input[readonly],
+textarea[readonly],
+select:disabled,
+input:disabled,
+textarea:disabled {
+  background: rgba(235, 229, 216, 0.72);
+  border-color: rgba(62, 41, 16, 0.14);
+  box-shadow: none;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--editable-border);
+  box-shadow: none;
+}
+
+label:focus-within,
+.search-field:focus-within,
+.touch-field:focus-within {
+  color: var(--editable-border);
 }
 
 .btn,
@@ -662,8 +690,10 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: rgba(15, 67, 107, 0.42);
-  box-shadow: 0 0 0 4px rgba(15, 67, 107, 0.12);
+  border-color: var(--editable-border);
+  background: #fffbe8;
+  box-shadow: 0 0 0 5px var(--editable-focus), 0 12px 24px rgba(11, 95, 199, 0.12);
+  transform: translateY(-1px);
 }
 
 dialog[open] {
@@ -2145,6 +2175,21 @@ thead {
   font-size: 0.98rem;
 }
 
+.search-grid input,
+.search-grid select,
+.search-field input,
+.search-field select,
+.employee-search-form input,
+.employee-toolbar-form input,
+.employee-toolbar-form select,
+.touch-field input,
+.touch-field textarea,
+.touch-field select {
+  border-color: var(--editable-border);
+  background: linear-gradient(180deg, #fff9d9 0%, #ffef9f 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.78), 0 8px 18px rgba(11, 95, 199, 0.1);
+}
+
 .touch-field textarea {
   min-height: 120px;
 }
@@ -2373,6 +2418,22 @@ body[data-theme="dark"] .section-chip,
 body[data-theme="dark"] .topbar-nav a {
   background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
+}
+
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea {
+  background: linear-gradient(180deg, rgba(255, 224, 112, 0.16), rgba(20, 46, 76, 0.92));
+  border-color: rgba(85, 161, 255, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 6px 16px rgba(61, 137, 239, 0.12);
+}
+
+body[data-theme="dark"] input:focus,
+body[data-theme="dark"] select:focus,
+body[data-theme="dark"] textarea:focus {
+  background: rgba(22, 50, 82, 0.96);
+  border-color: #7bb6ff;
+  box-shadow: 0 0 0 5px rgba(61, 137, 239, 0.24), 0 12px 24px rgba(61, 137, 239, 0.18);
 }
 
 body[data-theme="dark"] .employee-app-shell {
