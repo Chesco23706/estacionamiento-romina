@@ -8,6 +8,65 @@
     <article class="stat-card"><span>Total cobrado hoy</span><strong>{{ metrics.total_day|money }}</strong></article>
     <article class="stat-card"><span>Total pendiente</span><strong>{{ metrics.pending_total|money }}</strong></article>
   </section>
+
+  <section class="card feature-card dashboard-chart-panel">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Analisis</p>
+        <h2>Entradas y ganancias por tipo de vehiculo</h2>
+        <p class="section-note">Periodo: {{ chart_filters.label }}</p>
+      </div>
+    </div>
+
+    <form method="get" class="dashboard-period-form">
+      <label>
+        Periodo
+        <select name="period">
+          <option value="today" {% if chart_filters.period == 'today' %}selected{% endif %}>Hoy</option>
+          <option value="week" {% if chart_filters.period == 'week' %}selected{% endif %}>Esta semana</option>
+          <option value="month" {% if chart_filters.period == 'month' %}selected{% endif %}>Este mes</option>
+          <option value="custom" {% if chart_filters.period == 'custom' %}selected{% endif %}>Rango personalizado</option>
+        </select>
+      </label>
+      <label>
+        Desde
+        <input type="date" name="date_from" value="{{ chart_filters.date_from }}">
+      </label>
+      <label>
+        Hasta
+        <input type="date" name="date_to" value="{{ chart_filters.date_to }}">
+      </label>
+      <button class="btn" type="submit">Actualizar</button>
+    </form>
+
+    <div class="dashboard-chart-grid">
+      <article class="mini-chart-card">
+        <h3>Vehiculos entrantes</h3>
+        <div class="bar-chart-list">
+          {% for row in chart_rows %}
+          <div class="bar-chart-row">
+            <span>{{ row.vehicle_type }}</span>
+            <div class="bar-track"><div class="bar-fill entries-bar" style="width: {{ row.entries_percent }}%;"></div></div>
+            <strong>{{ row.entries }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="mini-chart-card">
+        <h3>Ganancias cobradas</h3>
+        <div class="bar-chart-list">
+          {% for row in chart_rows %}
+          <div class="bar-chart-row">
+            <span>{{ row.vehicle_type }}</span>
+            <div class="bar-track"><div class="bar-fill income-bar" style="width: {{ row.income_percent }}%;"></div></div>
+            <strong>{{ row.income|money }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+  </section>
 </main>
 {% else %}
 <main class="employee-console">

@@ -411,6 +411,80 @@ h2 {
   color: #2f2416;
 }
 
+.dashboard-chart-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-period-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(150px, 0.6fr) minmax(150px, 0.6fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mini-chart-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-strong);
+}
+
+.mini-chart-card h3 {
+  margin: 0;
+  color: var(--secondary);
+}
+
+.bar-chart-list {
+  display: grid;
+  gap: 12px;
+}
+
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(160px, 1fr) minmax(72px, auto);
+  gap: 10px;
+  align-items: center;
+}
+
+.bar-chart-row span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.bar-chart-row strong {
+  color: #2f2416;
+  text-align: right;
+}
+
+.bar-track {
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(15, 67, 107, 0.08);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.entries-bar {
+  background: linear-gradient(90deg, #0b5fc7, #4f96ef);
+}
+
+.income-bar {
+  background: linear-gradient(90deg, #1f7a4c, #6cc58d);
+}
+
 .workspace-grid {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
   align-items: start;
@@ -2523,6 +2597,19 @@ body[data-theme="dark"] .note-dialog-body {
   color: #eef4fb;
 }
 
+body[data-theme="dark"] .mini-chart-card {
+  background: var(--surface);
+}
+
+body[data-theme="dark"] .mini-chart-card h3,
+body[data-theme="dark"] .bar-chart-row strong {
+  color: #eef4fb;
+}
+
+body[data-theme="dark"] .bar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 body[data-theme="dark"] .employee-app-shell {
   background:
     radial-gradient(circle at top right, rgba(76, 145, 255, 0.14), transparent 24%),
@@ -2670,6 +2757,8 @@ body[data-theme="dark"] .ticket-slot-body span {
   .search-grid,
   .auth-stage,
   .workspace-grid,
+  .dashboard-period-form,
+  .dashboard-chart-grid,
   .admin-workspace,
   .employee-dashboard-grid,
   .employee-console-grid,
@@ -2719,6 +2808,14 @@ body[data-theme="dark"] .ticket-slot-body span {
 
   .employee-board-row {
     grid-template-columns: 1fr;
+  }
+
+  .bar-chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-chart-row strong {
+    text-align: left;
   }
 
   .employee-record-actions .btn,

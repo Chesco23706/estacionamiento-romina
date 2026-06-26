@@ -16,7 +16,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload, selectinload
 
 from .decorators import role_required
@@ -348,6 +348,88 @@ def build_ticket_board():
     return board_records, metrics
 
 
+def parse_dashboard_period():
+    period = (request.args.get("period") or "today").strip().lower()
+    if period not in {"today", "week", "month", "custom"}:
+        period = "today"
+
+    now_local = localize_datetime(utc_now())
+    if period == "week":
+        start_date = (now_local - timedelta(days=now_local.weekday())).date()
+        end_date = start_date + timedelta(days=6)
+    elif period == "month":
+        start_date = date(now_local.year, now_local.month, 1)
+        next_month = date(now_local.year + (1 if now_local.month == 12 else 0), 1 if now_local.month == 12 else now_local.month + 1, 1)
+        end_date = next_month - timedelta(days=1)
+    elif period == "custom":
+        try:
+            start_date = parse_cut_date(request.args.get("date_from")) or now_local.date()
+            end_date = parse_cut_date(request.args.get("date_to")) or start_date
+        except ValueError:
+            start_date = now_local.date()
+            end_date = start_date
+        if end_date < start_date:
+            start_date, end_date = end_date, start_date
+    else:
+        start_date = now_local.date()
+        end_date = start_date
+
+    start_at, _unused = get_local_day_bounds(start_date)
+    _unused, end_at = get_local_day_bounds(end_date)
+    return {
+        "period": period,
+        "date_from": start_date.isoformat(),
+        "date_to": end_date.isoformat(),
+        "start_at": start_at,
+        "end_at": end_at,
+        "label": f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}",
+    }
+
+
+def dashboard_chart_data(period_filters):
+    vehicle_types = get_vehicle_types(include_inactive=True)
+    chart_rows = {
+        vehicle_type: {"vehicle_type": vehicle_type, "entries": 0, "income": 0.0}
+        for vehicle_type in vehicle_types
+    }
+    entry_counts = (
+        db.session.query(VehicleRecord.vehicle_type, func.count(VehicleRecord.id))
+        .filter(
+            VehicleRecord.entry_at >= period_filters["start_at"],
+            VehicleRecord.entry_at < period_filters["end_at"],
+        )
+        .group_by(VehicleRecord.vehicle_type)
+        .all()
+    )
+    income_totals = (
+        db.session.query(
+            VehicleRecord.vehicle_type,
+            func.coalesce(func.sum(VehicleRecord.total_amount), 0),
+        )
+        .filter(
+            VehicleRecord.paid_at.isnot(None),
+            VehicleRecord.paid_at >= period_filters["start_at"],
+            VehicleRecord.paid_at < period_filters["end_at"],
+        )
+        .group_by(VehicleRecord.vehicle_type)
+        .all()
+    )
+    for vehicle_type, count in entry_counts:
+        chart_rows.setdefault(vehicle_type, {"vehicle_type": vehicle_type, "entries": 0, "income": 0.0})
+        chart_rows[vehicle_type]["entries"] = int(count or 0)
+    for vehicle_type, income in income_totals:
+        chart_rows.setdefault(vehicle_type, {"vehicle_type": vehicle_type, "entries": 0, "income": 0.0})
+        chart_rows[vehicle_type]["income"] = float(income or 0)
+
+    rows = list(chart_rows.values())
+    max_entries = max((row["entries"] for row in rows), default=0)
+    max_income = max((row["income"] for row in rows), default=0)
+    for row in rows:
+        row["entries_percent"] = (row["entries"] / max_entries * 100) if max_entries else 0
+        row["income_percent"] = (row["income"] / max_income * 100) if max_income else 0
+    return rows
+
+
 def record_matches_filters(record, filters, *, include_date=True):
     status = (filters.get("status") or "").strip()
     search = (filters.get("search") or "").strip().lower()
@@ -607,9 +689,13 @@ def dashboard():
     now_local = localize_datetime(utc_now())
     if current_user.is_admin:
         metrics = dashboard_metrics()
+        chart_filters = parse_dashboard_period()
+        chart_rows = dashboard_chart_data(chart_filters)
         return render_template(
             "dashboard.html",
             metrics=metrics,
+            chart_filters=chart_filters,
+            chart_rows=chart_rows,
             format_duration=format_duration,
             now_local=now_local,
             now_local_label=format_operating_date_label(now_local),

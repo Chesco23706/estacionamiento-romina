@@ -468,6 +468,57 @@ def test_admin_home_is_simplified_and_cuts_have_own_page():
     assert "Cortes generados" in cuts_body
 
 
+def test_admin_dashboard_shows_vehicle_and_income_charts_by_period():
+    app, client = build_client()
+    login(client)
+
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "GRAF-001",
+            "client_name": "Cliente Grafica Moto",
+            "vehicle_type": "Moto",
+            "stay_mode": "hourly",
+            "plate_number": "GRA-001",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+    client.post(
+        "/records/new",
+        data={
+            "ticket_number": "GRAF-002",
+            "client_name": "Cliente Grafica Bici",
+            "vehicle_type": "Bicicleta",
+            "stay_mode": "hourly",
+            "plate_number": "GRA-002",
+            "notes": "",
+        },
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        target_date = datetime(2026, 2, 10, 10, tzinfo=ZoneInfo("America/Mexico_City"))
+        moto = VehicleRecord.query.filter_by(physical_ticket_number="GRAF-001").first()
+        bici = VehicleRecord.query.filter_by(physical_ticket_number="GRAF-002").first()
+        moto.entry_at = target_date.astimezone(timezone.utc)
+        moto.paid_at = target_date.replace(hour=12).astimezone(timezone.utc)
+        moto.total_amount = 80
+        bici.entry_at = target_date.replace(hour=11).astimezone(timezone.utc)
+        db.session.commit()
+
+    response = client.get("/?period=custom&date_from=2026-02-10&date_to=2026-02-10")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Entradas y ganancias por tipo de vehiculo" in body
+    assert "Vehiculos entrantes" in body
+    assert "Ganancias cobradas" in body
+    assert "Moto" in body
+    assert "Bicicleta" in body
+    assert "$80.00" in body
+
+
 def test_employee_records_page_shows_today_payment_shortcut():
     _app, client = build_client()
     login(client, username="empleado1", password="EmpleadoUno2026!")
