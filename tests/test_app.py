@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from app import create_app
 from app.extensions import db
-from app.models import CashCut, Tariff, User, VehicleRecord
+from app.models import CashCut, Tariff, User, VehicleRecord, get_period_bounds
 from app.pricing import utc_now
 from app.routes import build_record_history_events
 from app.services import dashboard_metrics
@@ -170,6 +170,23 @@ def test_admin_can_generate_dated_cut_and_download_report_pdf():
     assert pdf_response.status_code == 200
     assert pdf_response.mimetype == "application/pdf"
     assert pdf_response.data.startswith(b"%PDF")
+
+
+def test_weekly_cut_period_runs_monday_to_sunday():
+    app, _client = build_client()
+    with app.app_context():
+        start, end = get_period_bounds("weekly", reference_date=datetime(2026, 6, 25).date())
+
+    local_tz = ZoneInfo("America/Mexico_City")
+    local_start = start.astimezone(local_tz)
+    local_end = end.astimezone(local_tz)
+
+    assert local_start.weekday() == 0
+    assert local_start.hour == 0
+    assert local_start.minute == 0
+    assert (local_end - timedelta(seconds=1)).weekday() == 6
+    assert local_end.weekday() == 0
+    assert (local_end - local_start).days == 7
 
 
 def test_employee_dashboard_counts_income_by_payment_day():
