@@ -6,3 +6,5 @@ app/__pycache__/
 instance/
 instance/*.db
 public/__pycache__/
+
+.vercel

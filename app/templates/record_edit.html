@@ -10,6 +10,12 @@
         Ficha
         <input type="text" name="ticket_number" required value="{{ record.display_ticket_number }}">
       </label>
+      {% if can_edit_vehicle_entry_dates %}
+      <label>
+        Entrada
+        <input type="datetime-local" name="entry_at_local" required value="{{ record.entry_at|datetime_local }}">
+      </label>
+      {% endif %}
       <label>
         Cliente
         <input type="text" name="client_name" required value="{{ record.client_name }}">

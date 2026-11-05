@@ -90,6 +90,33 @@
                     </div>
                   </form>
 
+                  {% if not user.is_admin %}
+                  <form method="post" action="{{ url_for('main.edit_user_schedule', user_id=user.id) }}" class="employee-action-block employee-schedule-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <strong>Horario de acceso</strong>
+                    <small class="field-help">Si no activas ningun dia, la cuenta queda sin restriccion de horario.</small>
+                    <div class="employee-schedule-grid">
+                      {% for row in schedule_rows[user.id] %}
+                      <div class="employee-schedule-row">
+                        <label class="checkbox-row">
+                          <input type="checkbox" name="enabled_{{ row.weekday }}" {% if row.enabled %}checked{% endif %}>
+                          {{ row.label }}
+                        </label>
+                        <label>
+                          Inicio
+                          <input type="time" name="start_{{ row.weekday }}" value="{{ row.start }}" required>
+                        </label>
+                        <label>
+                          Fin
+                          <input type="time" name="end_{{ row.weekday }}" value="{{ row.end }}" required>
+                        </label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <button class="btn btn-secondary fixed-action-btn" type="submit">Guardar horario</button>
+                  </form>
+                  {% endif %}
+
                   <div class="employee-action-row">
                     {% if user.id != current_user.id %}
                     <form method="post" action="{{ url_for('main.toggle_user', user_id=user.id) }}">

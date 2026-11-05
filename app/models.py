@@ -1,7 +1,7 @@
 import json
 import math
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from flask import current_app
@@ -43,6 +43,12 @@ class User(UserMixin, TimestampMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=False)
 
     role = db.relationship("Role")
+    schedules = db.relationship(
+        "EmployeeSchedule",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="EmployeeSchedule.weekday",
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -58,6 +64,10 @@ class User(UserMixin, TimestampMixin, db.Model):
     def is_admin(self):
         return self.role and self.role.name == "admin"
 
+    @property
+    def has_admin_access(self):
+        return self.is_admin or self.username == "empleado02"
+
     def is_locked(self):
         return bool(self.locked_until and utc_now() < self.locked_until)
 
@@ -69,6 +79,23 @@ class User(UserMixin, TimestampMixin, db.Model):
     def reset_login_guard(self):
         self.failed_login_attempts = 0
         self.locked_until = None
+
+
+class EmployeeSchedule(TimestampMixin, db.Model):
+    __tablename__ = "employee_schedules"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "weekday", name="uq_employee_schedule_user_weekday"),
+        db.Index("ix_employee_schedules_user_weekday", "user_id", "weekday"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    weekday = db.Column(db.Integer, nullable=False)
+    start_time = db.Column(db.Time, nullable=False, default=time(0, 0))
+    end_time = db.Column(db.Time, nullable=False, default=time(23, 59))
+    is_enabled = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship("User", back_populates="schedules")
 
 
 class Tariff(TimestampMixin, db.Model):
@@ -120,6 +147,7 @@ class VehicleRecord(TimestampMixin, db.Model):
     entry_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     exit_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     payment_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    weekly_prepayment_id = db.Column(db.Integer, db.ForeignKey("weekly_prepayments.id"), unique=True)
 
     entry_user = db.relationship("User", foreign_keys=[entry_user_id])
     exit_user = db.relationship("User", foreign_keys=[exit_user_id])
@@ -230,6 +258,8 @@ class VehicleRecord(TimestampMixin, db.Model):
 
     @property
     def status_theme(self):
+        if self.status == "Indeciso":
+            return "uncertain"
         if self.status == "Pagado" and self.exit_at:
             return "paid"
         if self.status in {"Salida registrada", "Pendiente de pago"}:
@@ -239,6 +269,15 @@ class VehicleRecord(TimestampMixin, db.Model):
         if not self.is_hourly and self.weekly_exit_count:
             return "weekly"
         return "inside"
+
+
+db.Index(
+    "ux_vehicle_records_active_physical_ticket",
+    VehicleRecord.physical_ticket_number,
+    unique=True,
+    sqlite_where=db.text("exit_at IS NULL AND physical_ticket_number IS NOT NULL"),
+    postgresql_where=db.text("exit_at IS NULL AND physical_ticket_number IS NOT NULL"),
+).ddl_if(dialect=("sqlite", "postgresql"))
 
 
 class WeeklyExitLog(TimestampMixin, db.Model):
@@ -266,17 +305,95 @@ class CashCut(TimestampMixin, db.Model):
     period_end = db.Column(db.DateTime(timezone=True), nullable=False)
     generated_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
     generated_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    target_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     total_income = db.Column(db.Numeric(10, 2), nullable=False)
+    extra_income = db.Column(db.Numeric(10, 2), default=0, nullable=False)
+    total_expenses = db.Column(db.Numeric(10, 2), default=0, nullable=False)
+    net_total = db.Column(db.Numeric(10, 2), default=0, nullable=False)
     total_pending = db.Column(db.Numeric(10, 2), nullable=False)
     vehicles_served = db.Column(db.Integer, nullable=False)
     vehicles_paid = db.Column(db.Integer, nullable=False)
     breakdown_json = db.Column(db.Text, nullable=False)
 
-    generated_by = db.relationship("User")
+    generated_by = db.relationship("User", foreign_keys=[generated_by_user_id])
+    target_user = db.relationship("User", foreign_keys=[target_user_id])
 
     @property
     def breakdown(self):
         return json.loads(self.breakdown_json)
+
+    @property
+    def vehicle_breakdown(self):
+        return {
+            key: value
+            for key, value in self.breakdown.items()
+            if not key.startswith("_")
+        }
+
+    @property
+    def movement_summary(self):
+        return self.breakdown.get(
+            "_cash_movements",
+            {
+                "income": 0.0,
+                "expense": 0.0,
+                "items": [],
+            },
+        )
+
+
+class CashMovement(TimestampMixin, db.Model):
+    __tablename__ = "cash_movements"
+    __table_args__ = (
+        db.Index("ix_cash_movements_occurred_at", "occurred_at"),
+        db.Index("ix_cash_movements_type_occurred_at", "movement_type", "occurred_at"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    movement_type = db.Column(db.String(20), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    occurred_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    created_by = db.relationship("User")
+
+    @property
+    def signed_amount(self):
+        amount = float(self.amount or 0)
+        return -amount if self.movement_type == "expense" else amount
+
+    @property
+    def type_label(self):
+        return "Gasto" if self.movement_type == "expense" else "Entrada"
+
+
+class WeeklyPrepayment(db.Model):
+    __tablename__ = "weekly_prepayments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String(120), nullable=False)
+    plate_number = db.Column(db.String(50), nullable=False)
+    vehicle_type = db.Column(db.String(50), nullable=False)
+    rate_label = db.Column(db.String(255), nullable=False)
+    movement_id = db.Column(db.Integer, db.ForeignKey("cash_movements.id"), nullable=False, unique=True)
+    activated_at = db.Column(db.DateTime(timezone=True))
+
+    movement = db.relationship("CashMovement")
+
+
+db.event.listen(
+    WeeklyPrepayment.__table__,
+    "after_create",
+    db.DDL("ALTER TABLE weekly_prepayments ENABLE ROW LEVEL SECURITY").execute_if(dialect="postgresql"),
+)
+db.Index(
+    "ux_weekly_prepayments_pending_plate",
+    WeeklyPrepayment.plate_number,
+    unique=True,
+    sqlite_where=WeeklyPrepayment.activated_at.is_(None),
+    postgresql_where=WeeklyPrepayment.activated_at.is_(None),
+).ddl_if(dialect=("sqlite", "postgresql"))
 
 
 class AuditLog(TimestampMixin, db.Model):
@@ -337,13 +454,13 @@ def seed_defaults():
         ("Bicicleta", "daily", 10, "day", "Semana completa", 6, 40, "Se cobra $40 por semana completa de 6 dias."),
         (
             "Carrito callejero",
-            "daily",
+            "flat",
             10,
             "day",
-            "Semana completa",
-            6,
-            40,
-            "Se cobra $40 por semana completa de 6 dias.",
+            None,
+            None,
+            None,
+            "Tarifa fija de $10 sin importar tiempo o dias.",
         ),
         ("Automóvil", "hourly", 20, "hour", None, None, None, "Se cobra por hora o fracción."),
     ]
@@ -471,9 +588,48 @@ def apply_runtime_migrations():
             connection.exec_driver_sql(
                 "ALTER TABLE vehicle_records ADD COLUMN payment_user_id INTEGER NULL"
             )
+    if "cash_cuts" in table_names:
+        cut_columns = {column["name"] for column in inspector.get_columns("cash_cuts")}
+        if "extra_income" not in cut_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE cash_cuts ADD COLUMN extra_income NUMERIC(10, 2) NOT NULL DEFAULT 0"
+            )
+        if "total_expenses" not in cut_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE cash_cuts ADD COLUMN total_expenses NUMERIC(10, 2) NOT NULL DEFAULT 0"
+            )
+        if "net_total" not in cut_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE cash_cuts ADD COLUMN net_total NUMERIC(10, 2) NOT NULL DEFAULT 0"
+            )
+            connection.exec_driver_sql(
+                "UPDATE cash_cuts SET net_total = total_income WHERE net_total = 0"
+            )
+        if "target_user_id" not in cut_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE cash_cuts ADD COLUMN target_user_id INTEGER NULL"
+            )
+    if "cash_movements" not in table_names:
+        CashMovement.__table__.create(bind=db.engine, checkfirst=True)
     if "weekly_exit_logs" not in table_names:
         WeeklyExitLog.__table__.create(bind=db.engine, checkfirst=True)
+    if "employee_schedules" not in table_names:
+        EmployeeSchedule.__table__.create(bind=db.engine, checkfirst=True)
     _ensure_runtime_indexes()
+    if "vehicle_records" in table_names and (
+        "weekly_prepayments" not in table_names or "weekly_prepayment_id" not in record_columns
+    ):
+        if connection.dialect.name == "postgresql":
+            connection.exec_driver_sql("SELECT pg_advisory_xact_lock(62470118)")
+        WeeklyPrepayment.__table__.create(bind=connection, checkfirst=True)
+        current_columns = {column["name"] for column in inspect(connection).get_columns("vehicle_records")}
+        if "weekly_prepayment_id" not in current_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE vehicle_records ADD COLUMN weekly_prepayment_id INTEGER REFERENCES weekly_prepayments(id)"
+            )
+        connection.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_vehicle_records_weekly_prepayment ON vehicle_records (weekly_prepayment_id)"
+        )
     normalize_weekly_six_day_pricing()
     db.session.commit()
 
@@ -482,6 +638,10 @@ def _ensure_runtime_indexes():
     for index in VehicleRecord.__table__.indexes:
         index.create(bind=db.engine, checkfirst=True)
     for index in WeeklyExitLog.__table__.indexes:
+        index.create(bind=db.engine, checkfirst=True)
+    for index in CashMovement.__table__.indexes:
+        index.create(bind=db.engine, checkfirst=True)
+    for index in EmployeeSchedule.__table__.indexes:
         index.create(bind=db.engine, checkfirst=True)
 
 
@@ -495,7 +655,9 @@ def normalize_weekly_six_day_pricing():
     weekly_vehicle_types = {
         "Moto": (10, "Semana completa", 40),
         "Bicicleta": (10, "Semana completa", 40),
-        "Carrito callejero": (10, "Semana completa", 40),
+    }
+    flat_vehicle_types = {
+        "Carrito callejero": (10, "Tarifa fija de $10 sin importar tiempo o dias."),
     }
 
     for vehicle_type, (rate_amount, offer_label, offer_price) in weekly_vehicle_types.items():
@@ -510,6 +672,19 @@ def normalize_weekly_six_day_pricing():
         tariff.offer_price = offer_price
         tariff.notes = "Se cobra $40 por semana completa de 6 dias."
 
+    for vehicle_type, (rate_amount, notes) in flat_vehicle_types.items():
+        tariff = Tariff.query.filter_by(vehicle_type=vehicle_type).first()
+        if not tariff:
+            continue
+        tariff.billing_scheme = "flat"
+        tariff.period_unit = "day"
+        tariff.rate_amount = rate_amount
+        tariff.min_charge_units = 1
+        tariff.offer_label = None
+        tariff.offer_trigger_units = None
+        tariff.offer_price = None
+        tariff.notes = notes
+
     for legacy_name, canonical_name in legacy_vehicle_aliases.items():
         legacy_tariff = Tariff.query.filter(
             db.func.lower(Tariff.vehicle_type) == legacy_name
@@ -519,15 +694,15 @@ def normalize_weekly_six_day_pricing():
             if canonical_tariff:
                 legacy_tariff.active = False
 
-    weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly").all()
+    weekly_records = VehicleRecord.query.filter_by(stay_mode="weekly", weekly_prepayment_id=None).all()
     for record in weekly_records:
         normalized_vehicle_type = legacy_vehicle_aliases.get((record.vehicle_type or "").strip().lower())
         if normalized_vehicle_type:
             record.vehicle_type = normalized_vehicle_type
-        if record.vehicle_type not in weekly_vehicle_types:
+        if record.vehicle_type not in weekly_vehicle_types and record.vehicle_type not in flat_vehicle_types:
             continue
-
-        record.contracted_days = 6
+        if record.vehicle_type in weekly_vehicle_types:
+            record.contracted_days = 6
         pricing = calculate_charge(
             record.vehicle_type,
             record.entry_at,
@@ -566,6 +741,13 @@ def get_period_bounds(cut_type, reference_date=None):
         start = local_start.astimezone(timezone.utc)
         end = start + timedelta(days=1)
         return start, end
+    if cut_type == "monthly":
+        local_start = datetime(now.year, now.month, 1, tzinfo=local_timezone)
+        if now.month == 12:
+            local_end = datetime(now.year + 1, 1, 1, tzinfo=local_timezone)
+        else:
+            local_end = datetime(now.year, now.month + 1, 1, tzinfo=local_timezone)
+        return local_start.astimezone(timezone.utc), local_end.astimezone(timezone.utc)
 
     weekday = now.weekday()
     local_start = datetime(now.year, now.month, now.day, tzinfo=local_timezone) - timedelta(

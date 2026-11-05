@@ -6,9 +6,12 @@
     <div class="section-heading">
       <div>
         <p class="eyebrow">Reporte imprimible</p>
-        <h2>Corte {{ 'diario' if cut.cut_type == 'daily' else 'semanal' }} #{{ cut.id }}</h2>
+        <h2>Corte {{ cash_cut_type_label(cut.cut_type)|lower }} #{{ cut.id }}</h2>
       </div>
       <div class="button-row">
+        {% if cut.cut_type == 'daily' %}
+        <a class="link-button" href="{{ url_for('main.cash_cut_ticket_document', cut_id=cut.id) }}" target="_blank" rel="noopener">Ticket diario</a>
+        {% endif %}
         <a class="link-button" href="{{ url_for('main.cash_cut_document', cut_id=cut.id) }}" target="_blank" rel="noopener">Informe PDF</a>
         <a class="link-button" href="{{ url_for('main.export_cut', cut_id=cut.id) }}">Exportar CSV</a>
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
@@ -25,12 +28,24 @@
         <strong>{{ cut.generated_by.full_name }}</strong>
       </article>
       <article class="report-card">
-        <span>Total cobrado</span>
+        <span>Usuario del corte</span>
+        <strong>{{ cut.target_user.full_name if cut.target_user else 'Todos' }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Total caja</span>
         <strong>{{ cut.total_income|money }}</strong>
       </article>
       <article class="report-card">
         <span>Vehiculos cobrados</span>
         <strong>{{ cut.vehicles_paid }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Entradas independientes</span>
+        <strong>{{ cut.extra_income|money }}</strong>
+      </article>
+      <article class="report-card">
+        <span>Gastos</span>
+        <strong>{{ cut.total_expenses|money }}</strong>
       </article>
     </div>
 
@@ -89,12 +104,43 @@
           </tr>
         </thead>
         <tbody>
-          {% for vehicle_type, values in cut.breakdown.items() %}
+          {% for vehicle_type, values in cut.vehicle_breakdown.items() %}
           <tr>
             <td>{{ vehicle_type }}</td>
             <td>{{ values.count }}</td>
             <td>{{ values.income|money }}</td>
           </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Caja</p>
+        <h2>Gastos y entradas independientes</h2>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Descripcion</th>
+            <th>Cantidad</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for movement in cut.movement_summary['items'] %}
+          <tr>
+            <td>{{ movement.label }}</td>
+            <td>{{ movement.description }}</td>
+            <td>{{ ('-' if movement.type == 'expense' else '+') }}{{ movement.amount|money }}</td>
+            <td>{{ movement.created_by }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4">No hubo gastos ni entradas independientes en este periodo.</td></tr>
           {% endfor %}
         </tbody>
       </table>

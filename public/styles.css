@@ -340,18 +340,20 @@ h2 {
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  min-width: 0;
+  min-width: 112px;
   min-height: 42px;
   padding: 8px 18px;
   border-radius: 999px;
   background: rgba(255, 250, 239, 0.92);
-  border: 1px solid rgba(15, 67, 107, 0.12);
-  color: var(--secondary);
+  border: 1px solid rgba(143, 100, 23, 0.18);
+  color: var(--primary-dark);
   text-decoration: none;
   text-align: center;
   font-weight: 700;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
   box-shadow: var(--shadow-soft);
 }
 
@@ -441,6 +443,33 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.cut-builder-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) minmax(280px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(143, 100, 23, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 253, 247, 0.76);
+}
+
+.cut-builder-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.cut-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.cut-fields-grid label[hidden] {
+  display: none;
 }
 
 .mini-chart-card {
@@ -805,13 +834,13 @@ label:focus-within,
 .section-chip:focus-visible {
   transform: translateY(-1px);
   box-shadow: var(--shadow-soft);
-  background: rgba(15, 67, 107, 0.12);
+  background: rgba(191, 138, 40, 0.14);
 }
 
 .section-chip.is-active {
-  background: linear-gradient(135deg, #1e6dd8, #1456ba);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
-  border-color: rgba(30, 109, 216, 0.28);
+  border-color: rgba(143, 100, 23, 0.32);
 }
 
 .card:hover,
@@ -975,28 +1004,51 @@ dialog::backdrop {
 }
 
 .legend-available {
-  background: rgba(122, 122, 122, 0.12);
-  color: #5f5f5f;
+  background: #eef1f4;
+  color: #3f4a54;
+  border: 1px solid rgba(95, 105, 116, 0.18);
 }
 
 .legend-inside {
-  background: rgba(67, 106, 69, 0.18);
-  color: #234125;
+  background: #d8f5dd;
+  color: #145326;
+  border: 1px solid rgba(24, 122, 54, 0.22);
+}
+
+.legend-hourly {
+  background: #d7f7f3;
+  color: #07544e;
+  border: 1px solid rgba(0, 137, 123, 0.22);
 }
 
 .legend-weekly {
-  background: rgba(15, 67, 107, 0.16);
-  color: #123f65;
+  background: #dce9ff;
+  color: #0d47a1;
+  border: 1px solid rgba(21, 101, 192, 0.24);
+}
+
+.legend-weekly-out {
+  background: #eadcff;
+  color: #5e2ca5;
+  border: 1px solid rgba(94, 44, 165, 0.24);
+}
+
+.legend-uncertain {
+  background: #ffe0e0;
+  color: #a11313;
+  border: 1px solid rgba(190, 44, 44, 0.25);
 }
 
 .legend-checkout {
-  background: rgba(191, 138, 40, 0.2);
-  color: #744f10;
+  background: #fff0bf;
+  color: #795200;
+  border: 1px solid rgba(191, 138, 40, 0.28);
 }
 
 .legend-paid {
-  background: rgba(94, 79, 57, 0.14);
-  color: #514333;
+  background: #ebe3d4;
+  color: #4d4030;
+  border: 1px solid rgba(94, 79, 57, 0.2);
 }
 
 .ticket-slot-grid {
@@ -1045,28 +1097,105 @@ dialog::backdrop {
 }
 
 .ticket-slot-available {
-  border-color: rgba(122, 122, 122, 0.22);
-  background: linear-gradient(180deg, rgba(249, 249, 249, 0.96), rgba(234, 234, 234, 0.92));
+  border-color: rgba(95, 105, 116, 0.28);
+  background: linear-gradient(180deg, #fafbfc, #e9edf1);
 }
 
 .ticket-slot-inside {
-  border-color: rgba(67, 106, 69, 0.3);
-  background: linear-gradient(180deg, rgba(236, 248, 236, 0.96), rgba(221, 240, 223, 0.92));
+  border-color: rgba(24, 122, 54, 0.55);
+  background: linear-gradient(180deg, #e7fbe9, #9fe3ad);
+  box-shadow: inset 0 -4px 0 rgba(24, 122, 54, 0.22), 0 8px 18px rgba(24, 122, 54, 0.14);
 }
 
 .ticket-slot-weekly {
-  border-color: rgba(15, 67, 107, 0.3);
-  background: linear-gradient(180deg, rgba(233, 243, 252, 0.96), rgba(214, 231, 245, 0.92));
+  border-color: rgba(21, 101, 192, 0.62);
+  background: linear-gradient(180deg, #e8f1ff, #8fbdff);
+  box-shadow: inset 0 -4px 0 rgba(21, 101, 192, 0.28), 0 8px 18px rgba(21, 101, 192, 0.16);
+}
+
+.ticket-slot-uncertain {
+  border-color: rgba(190, 44, 44, 0.62);
+  background: linear-gradient(180deg, #ffeaea, #ff9b9b);
+  box-shadow: inset 0 -4px 0 rgba(190, 44, 44, 0.22), 0 8px 18px rgba(190, 44, 44, 0.14);
 }
 
 .ticket-slot-checkout {
-  border-color: rgba(191, 138, 40, 0.32);
-  background: linear-gradient(180deg, rgba(255, 246, 223, 0.96), rgba(245, 227, 180, 0.92));
+  border-color: rgba(191, 138, 40, 0.58);
+  background: linear-gradient(180deg, #fff7df, #ffd978);
+  box-shadow: inset 0 -4px 0 rgba(191, 138, 40, 0.24), 0 8px 18px rgba(191, 138, 40, 0.14);
+}
+
+.ticket-slot-weekly-out {
+  border-color: rgba(94, 44, 165, 0.58);
+  background: linear-gradient(180deg, #f1e8ff, #c6a4ff);
+  box-shadow: inset 0 -4px 0 rgba(94, 44, 165, 0.22), 0 8px 18px rgba(94, 44, 165, 0.14);
 }
 
 .ticket-slot-paid {
-  border-color: rgba(94, 79, 57, 0.22);
-  background: linear-gradient(180deg, rgba(247, 242, 233, 0.96), rgba(236, 227, 212, 0.92));
+  border-color: rgba(94, 79, 57, 0.3);
+  background: linear-gradient(180deg, #f7f2e9, #d8cbb8);
+}
+
+.ticket-combo-available-available {
+  border-color: rgba(95, 105, 116, 0.28);
+  background: linear-gradient(180deg, #fafbfc, #e9edf1);
+}
+
+.ticket-combo-hourly-inside {
+  border-color: rgba(24, 122, 54, 0.55);
+  background: linear-gradient(90deg, #b8f1eb 0 50%, #9fe3ad 50% 100%);
+  box-shadow: inset 0 -4px 0 rgba(24, 122, 54, 0.22), 0 8px 18px rgba(24, 122, 54, 0.14);
+}
+
+.ticket-combo-weekly-inside {
+  border-color: rgba(21, 101, 192, 0.62);
+  background: linear-gradient(90deg, #8fbdff 0 50%, #9fe3ad 50% 100%);
+  box-shadow: inset 0 -4px 0 rgba(21, 101, 192, 0.24), 0 8px 18px rgba(21, 101, 192, 0.16);
+}
+
+.ticket-combo-weekly-weekly-out {
+  border-color: rgba(94, 44, 165, 0.62);
+  background: linear-gradient(90deg, #8fbdff 0 50%, #c6a4ff 50% 100%);
+  box-shadow: inset 0 -4px 0 rgba(94, 44, 165, 0.24), 0 8px 18px rgba(94, 44, 165, 0.14);
+}
+
+.ticket-combo-hourly-uncertain {
+  border-color: rgba(190, 44, 44, 0.62);
+  background: linear-gradient(90deg, #b8f1eb 0 50%, #ff9b9b 50% 100%);
+  box-shadow: inset 0 -4px 0 rgba(190, 44, 44, 0.22), 0 8px 18px rgba(190, 44, 44, 0.14);
+}
+
+.ticket-combo-weekly-uncertain {
+  border-color: rgba(190, 44, 44, 0.62);
+  background: linear-gradient(90deg, #8fbdff 0 50%, #ff9b9b 50% 100%);
+  box-shadow: inset 0 -4px 0 rgba(190, 44, 44, 0.22), 0 8px 18px rgba(190, 44, 44, 0.14);
+}
+
+.ticket-stripes-1 {
+  background: var(--ticket-color-1);
+}
+
+.ticket-stripes-2 {
+  background: linear-gradient(90deg, var(--ticket-color-1) 0 50%, var(--ticket-color-2) 50% 100%);
+}
+
+.ticket-stripes-3 {
+  background: linear-gradient(
+    90deg,
+    var(--ticket-color-1) 0 33.333%,
+    var(--ticket-color-2) 33.333% 66.666%,
+    var(--ticket-color-3) 66.666% 100%
+  );
+}
+
+.ticket-stripes-4 {
+  background: linear-gradient(
+    90deg,
+    var(--ticket-color-1) 0 25%,
+    var(--ticket-color-2) 25% 50%,
+    var(--ticket-color-3) 50% 75%,
+    var(--ticket-color-4) 75% 100%
+  );
 }
 
 .ticket-slot-number {
@@ -1082,9 +1211,11 @@ dialog::backdrop {
 }
 
 .simple-ticket-slot .ticket-slot-number {
-  width: 100%;
-  min-height: 100%;
-  background: transparent;
+  width: 42px;
+  min-height: 30px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(47, 36, 22, 0.08);
+  box-shadow: 0 2px 6px rgba(47, 36, 22, 0.12);
   font-size: 0.95rem;
 }
 
@@ -1163,6 +1294,26 @@ dialog::backdrop {
   gap: 10px;
 }
 
+.employee-schedule-form {
+  padding-top: 4px;
+}
+
+.employee-schedule-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.employee-schedule-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) repeat(2, minmax(110px, 140px));
+  gap: 8px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid rgba(15, 67, 107, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.64);
+}
+
 .employee-action-row {
   display: flex;
   flex-wrap: wrap;
@@ -1218,14 +1369,20 @@ thead {
 
 .status-pill {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   max-width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
+  min-width: 88px;
+  min-height: 32px;
+  padding: 7px 11px;
   border-radius: 999px;
   background: rgba(191, 138, 40, 0.18);
-  line-height: 1.15;
+  font-weight: 800;
+  line-height: 1.2;
   text-align: center;
-  overflow-wrap: anywhere;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .status-pill-inside {
@@ -1236,6 +1393,11 @@ thead {
 .status-pill-weekly {
   background: rgba(15, 67, 107, 0.16);
   color: #123f65;
+}
+
+.status-pill-uncertain {
+  background: rgba(190, 44, 44, 0.16);
+  color: #8e1f1f;
 }
 
 .status-pill-checkout {
@@ -1476,8 +1638,9 @@ thead {
   width: 100%;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top right, rgba(34, 111, 214, 0.08), transparent 26%),
-    linear-gradient(180deg, #f5f8fd 0%, #eef4fb 100%);
+    radial-gradient(circle at top right, rgba(191, 138, 40, 0.18), transparent 28%),
+    radial-gradient(circle at left center, rgba(143, 100, 23, 0.14), transparent 34%),
+    linear-gradient(160deg, #f6f0e4 0%, #efdfbf 46%, #e6cea3 100%);
 }
 
 .employee-sidebar-shell {
@@ -1485,9 +1648,9 @@ thead {
   grid-template-rows: auto 1fr auto;
   gap: 12px;
   padding: 12px 8px;
-  background: rgba(255, 255, 255, 0.82);
-  border-right: 1px solid rgba(15, 67, 107, 0.1);
-  box-shadow: 12px 0 28px rgba(15, 67, 107, 0.06);
+  background: linear-gradient(180deg, rgba(255, 249, 236, 0.96), rgba(246, 233, 205, 0.9));
+  border-right: 1px solid rgba(143, 100, 23, 0.18);
+  box-shadow: 12px 0 28px rgba(74, 46, 15, 0.1);
   position: sticky;
   top: 0;
   height: 100vh;
@@ -1501,12 +1664,12 @@ thead {
   justify-content: center;
   margin: 0 auto;
   border-radius: 14px;
-  background: linear-gradient(135deg, #1e6dd8, #114ca3);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
   text-decoration: none;
   font-weight: 900;
   font-size: 1.2rem;
-  box-shadow: 0 14px 26px rgba(30, 109, 216, 0.24);
+  box-shadow: 0 14px 26px rgba(143, 100, 23, 0.24);
 }
 
 .employee-sidebar-nav,
@@ -1527,9 +1690,9 @@ thead {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  border: 1px solid rgba(15, 67, 107, 0.1);
-  background: rgba(255, 255, 255, 0.92);
-  color: #56718d;
+  border: 1px solid rgba(143, 100, 23, 0.16);
+  background: rgba(255, 253, 247, 0.92);
+  color: #8f6417;
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, background-color 0.18s ease;
@@ -1543,9 +1706,9 @@ thead {
 .employee-nav-btn:hover,
 .employee-nav-btn:focus-visible {
   transform: translateY(-1px);
-  color: #1e6dd8;
+  color: var(--primary-dark);
   box-shadow: var(--shadow-soft);
-  background: rgba(30, 109, 216, 0.08);
+  background: rgba(191, 138, 40, 0.14);
 }
 
 .employee-stage-shell {
@@ -1568,8 +1731,8 @@ thead {
   min-width: 200px;
   padding: 8px 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 67, 107, 0.1);
+  background: linear-gradient(135deg, rgba(255, 249, 236, 0.96), rgba(249, 232, 197, 0.88));
+  border: 1px solid rgba(143, 100, 23, 0.18);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1670,29 +1833,29 @@ thead {
   min-width: 186px;
   min-height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #1e6dd8, #1456ba);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
-  box-shadow: 0 16px 28px rgba(30, 109, 216, 0.2);
+  box-shadow: 0 16px 28px rgba(143, 100, 23, 0.22);
 }
 
 .employee-summary-row {
   display: grid;
-  grid-template-columns: 1.1fr 0.85fr 0.85fr 0.85fr;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
 }
 
 .employee-summary-card {
   padding: 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(15, 67, 107, 0.08);
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(248, 240, 222, 0.92));
+  border: 1px solid rgba(143, 100, 23, 0.14);
   box-shadow: var(--shadow-soft);
   color: #2f2416;
 }
 
 .employee-summary-card span {
   display: block;
-  color: #6c7683;
+  color: var(--muted);
   text-transform: uppercase;
   font-size: 0.76rem;
   letter-spacing: 0.05em;
@@ -1709,7 +1872,7 @@ thead {
 
 .employee-summary-card p {
   margin-bottom: 0;
-  color: #6c7683;
+  color: var(--muted);
   font-weight: 600;
   font-size: 0.82rem;
 }
@@ -1718,14 +1881,14 @@ thead {
   height: 7px;
   margin-top: 10px;
   border-radius: 999px;
-  background: rgba(15, 67, 107, 0.08);
+  background: rgba(143, 100, 23, 0.12);
   overflow: hidden;
 }
 
 .capacity-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1e6dd8, #4f96ef);
+  background: linear-gradient(90deg, var(--primary), #e0b65b);
 }
 
 .money-card strong {
@@ -1733,7 +1896,135 @@ thead {
 }
 
 .exit-card strong {
-  color: #1e6dd8;
+  color: var(--primary-dark);
+}
+
+.uncertain-card strong {
+  color: #b12d2d;
+}
+
+.employee-cash-panel {
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(248, 240, 222, 0.92));
+  border-color: rgba(143, 100, 23, 0.14);
+}
+
+.employee-cut-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.employee-cash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(190px, 1fr)) minmax(220px, 0.85fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.employee-cash-grid-compact {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.employee-cash-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(143, 100, 23, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 253, 247, 0.98);
+}
+
+.employee-cash-quick-actions .btn {
+  min-width: 170px;
+}
+
+.employee-cash-form,
+.employee-cash-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(143, 100, 23, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 253, 247, 0.98);
+  min-width: 0;
+}
+
+.employee-cash-form-modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.employee-cash-list-modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cash-dialog-card {
+  width: min(440px, calc(100vw - 28px));
+}
+
+.employee-cash-form > strong,
+.employee-cash-list > strong {
+  color: var(--secondary);
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+
+.employee-cash-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.cash-movement-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid rgba(143, 100, 23, 0.12);
+}
+
+.cash-movement-item:first-of-type {
+  border-top: 0;
+}
+
+.cash-movement-item span {
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.cash-movement-item strong {
+  color: #1e6f45;
+  text-align: right;
+}
+
+.cash-movement-expense strong {
+  color: #b12d2d;
+}
+
+.cash-movement-item small {
+  grid-column: 1;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.cash-movement-item form {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
 }
 
 .employee-console-grid {
@@ -1746,7 +2037,8 @@ thead {
 
 .employee-board-panel,
 .side-mini-panel {
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.96), rgba(248, 240, 222, 0.92));
+  border-color: rgba(143, 100, 23, 0.14);
   min-width: 0;
   color: #2f2416;
 }
@@ -1776,7 +2068,7 @@ thead {
 
 .employee-panel-header p {
   margin-bottom: 0;
-  color: #6c7683;
+  color: var(--muted);
   font-size: 0.88rem;
 }
 
@@ -1793,7 +2085,7 @@ thead {
 .employee-board-table {
   display: grid;
   gap: 0;
-  border: 1px solid rgba(15, 67, 107, 0.08);
+  border: 1px solid rgba(143, 100, 23, 0.14);
   border-radius: 18px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -1820,17 +2112,17 @@ thead {
 }
 
 .employee-board-head {
-  background: linear-gradient(180deg, rgba(247, 250, 255, 0.98), rgba(235, 243, 252, 0.94));
+  background: linear-gradient(180deg, rgba(255, 249, 236, 0.98), rgba(246, 233, 205, 0.94));
   font-weight: 800;
   text-transform: uppercase;
   font-size: 0.74rem;
-  color: #28425f;
+  color: var(--primary-dark);
 }
 
 .employee-board-row {
-  background: rgba(255, 255, 255, 0.98);
-  border-top: 1px solid rgba(15, 67, 107, 0.08);
-  color: #2a3e55;
+  background: rgba(255, 253, 247, 0.98);
+  border-top: 1px solid rgba(143, 100, 23, 0.12);
+  color: var(--ink);
 }
 
 .employee-board-row strong,
@@ -1842,7 +2134,7 @@ thead {
 .employee-board-row small {
   display: block;
   margin-top: 2px;
-  color: #6f8398;
+  color: var(--muted);
   font-size: 0.74rem;
 }
 
@@ -1850,32 +2142,44 @@ thead {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  min-width: 88px;
   min-height: 30px;
-  padding: 0 10px;
+  padding: 6px 10px;
   border-radius: 10px;
   font-weight: 800;
   text-transform: uppercase;
   font-size: 0.8rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .employee-status-tag-inside {
-  background: rgba(255, 217, 122, 0.36);
-  color: #8e6312;
+  background: rgba(67, 106, 69, 0.18);
+  color: #234125;
 }
 
 .employee-status-tag-weekly {
-  background: rgba(80, 140, 235, 0.18);
-  color: #1252a3;
+  background: rgba(15, 67, 107, 0.16);
+  color: #123f65;
+}
+
+.employee-status-tag-uncertain {
+  background: rgba(190, 44, 44, 0.16);
+  color: #8e1f1f;
 }
 
 .employee-status-tag-checkout {
-  background: rgba(80, 140, 235, 0.18);
-  color: #1252a3;
+  background: rgba(191, 138, 40, 0.2);
+  color: #744f10;
 }
 
 .employee-status-tag-paid {
-  background: rgba(134, 224, 170, 0.3);
-  color: #177546;
+  background: rgba(94, 79, 57, 0.14);
+  color: #514333;
 }
 
 .employee-row-actions {
@@ -1928,7 +2232,7 @@ thead {
 }
 
 .icon-action-blue {
-  background: linear-gradient(135deg, #1e6dd8, #1456ba);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
 .icon-action-sky {
@@ -1955,7 +2259,7 @@ thead {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
-  border-top: 1px solid rgba(15, 67, 107, 0.08);
+  border-top: 1px solid rgba(143, 100, 23, 0.12);
 }
 
 .recent-exit-item:first-child {
@@ -1987,7 +2291,7 @@ thead {
 }
 
 .quick-action-blue {
-  background: linear-gradient(135deg, #1e6dd8, #1456ba);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
 }
 
@@ -1997,9 +2301,9 @@ thead {
 }
 
 .quick-action-slate {
-  background: rgba(243, 247, 252, 0.98);
+  background: rgba(255, 253, 247, 0.98);
   color: var(--ink);
-  border: 1px solid rgba(15, 67, 107, 0.1);
+  border: 1px solid rgba(143, 100, 23, 0.14);
 }
 
 .employee-filter-row {
@@ -2022,7 +2326,7 @@ thead {
   gap: 14px;
   padding: 20px;
   background:
-    radial-gradient(circle at top right, rgba(15, 67, 107, 0.14), transparent 30%),
+    radial-gradient(circle at top right, rgba(191, 138, 40, 0.16), transparent 30%),
     linear-gradient(135deg, rgba(255, 250, 241, 0.98), rgba(246, 233, 205, 0.92));
 }
 
@@ -2198,13 +2502,25 @@ thead {
   gap: 12px;
 }
 
+.records-sort-links {
+  margin: 0 0 14px;
+}
+
+.admin-record-grid {
+  align-items: stretch;
+}
+
+.admin-legacy-record-table {
+  display: none;
+}
+
 .employee-record-card,
 .empty-state-card {
   display: grid;
   gap: 12px;
   padding: 16px;
   border-radius: 20px;
-  border: 1px solid rgba(15, 67, 107, 0.1);
+  border: 1px solid rgba(143, 100, 23, 0.14);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 239, 223, 0.92));
   color: #2f2416;
   box-shadow: var(--shadow-soft);
@@ -2217,11 +2533,31 @@ thead {
   box-shadow: var(--shadow);
 }
 
-.record-theme-inside { border-color: rgba(67, 106, 69, 0.22); }
-.record-theme-weekly { border-color: rgba(15, 67, 107, 0.22); }
+.record-theme-inside {
+  border-color: rgba(67, 106, 69, 0.28);
+  background: linear-gradient(180deg, rgba(67, 106, 69, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.record-theme-weekly {
+  border-color: rgba(15, 67, 107, 0.28);
+  background: linear-gradient(180deg, rgba(15, 67, 107, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.record-theme-uncertain {
+  border-color: rgba(190, 44, 44, 0.36);
+  background: linear-gradient(180deg, rgba(190, 44, 44, 0.1), rgba(255, 255, 255, 0.96));
+}
+
 .record-theme-checkout,
-.checkout-card { border-color: rgba(191, 138, 40, 0.28); }
-.record-theme-paid { border-color: rgba(79, 88, 99, 0.18); }
+.checkout-card {
+  border-color: rgba(191, 138, 40, 0.34);
+  background: linear-gradient(180deg, rgba(191, 138, 40, 0.12), rgba(255, 255, 255, 0.96));
+}
+
+.record-theme-paid {
+  border-color: rgba(94, 79, 57, 0.22);
+  background: linear-gradient(180deg, rgba(94, 79, 57, 0.08), rgba(255, 255, 255, 0.96));
+}
 
 .employee-record-top,
 .employee-record-meta,
@@ -2240,8 +2576,8 @@ thead {
   min-height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(15, 67, 107, 0.08);
-  color: var(--secondary);
+  background: rgba(191, 138, 40, 0.14);
+  color: var(--primary-dark);
   font-weight: 800;
 }
 
@@ -2262,8 +2598,8 @@ thead {
   padding: 0 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(15, 67, 107, 0.08);
-  color: #6c7683;
+  border: 1px solid rgba(143, 100, 23, 0.12);
+  color: var(--muted);
 }
 
 .employee-record-info-strip > div,
@@ -2274,7 +2610,7 @@ thead {
 
 .employee-record-info-strip span,
 .amount-block span {
-  color: #6c7683;
+  color: var(--muted);
 }
 
 .employee-record-info-strip strong,
@@ -2298,9 +2634,10 @@ thead {
 
 .btn-small {
   min-height: 38px;
-  padding: 0 14px;
+  padding: 6px 14px;
   border-radius: 11px;
   font-size: 0.88rem;
+  line-height: 1.15;
 }
 
 .employee-entry-layout {
@@ -2563,6 +2900,7 @@ body[data-theme="dark"] .empty-state-card,
 body[data-theme="dark"] .ticket-slot,
 body[data-theme="dark"] .vehicle-option-card,
 body[data-theme="dark"] .mode-option-card,
+body[data-theme="dark"] .cut-builder-card,
 body[data-theme="dark"] .hero-meta-card,
 body[data-theme="dark"] .entry-meta-card,
 body[data-theme="dark"] .mini-stat-item,
@@ -2662,6 +3000,10 @@ body[data-theme="dark"] .service-panel input::placeholder {
 
 body[data-theme="dark"] .employee-summary-card,
 body[data-theme="dark"] .side-mini-panel,
+body[data-theme="dark"] .employee-cash-panel,
+body[data-theme="dark"] .employee-cash-quick-actions,
+body[data-theme="dark"] .employee-cash-form,
+body[data-theme="dark"] .employee-cash-list,
 body[data-theme="dark"] .employee-record-card,
 body[data-theme="dark"] .empty-state-card,
 body[data-theme="dark"] .pending-record-card,
@@ -2731,6 +3073,14 @@ body[data-theme="dark"] .employee-board-row small {
   color: #a2b5ca;
 }
 
+body[data-theme="dark"] .cash-movement-item {
+  border-color: rgba(146, 181, 217, 0.14);
+}
+
+body[data-theme="dark"] .cash-movement-item small {
+  color: #eef4fb;
+}
+
 body[data-theme="dark"] .ticket-qr-image,
 body[data-theme="dark"] .ticket-frame {
   background: #f7f8fb;
@@ -2747,6 +3097,109 @@ body[data-theme="dark"] .ticket-slot-body strong {
 body[data-theme="dark"] .stat-card span,
 body[data-theme="dark"] .ticket-slot-body span {
   color: #a2b5ca;
+}
+
+body[data-theme="dark"] .ticket-slot-available {
+  border-color: rgba(146, 181, 217, 0.24);
+  background: linear-gradient(180deg, #1a2531, #111a24);
+}
+
+body[data-theme="dark"] .ticket-slot-inside {
+  border-color: rgba(82, 211, 112, 0.58);
+  background: linear-gradient(180deg, #153820, #1f7a37);
+  box-shadow: inset 0 -4px 0 rgba(82, 211, 112, 0.22), 0 8px 18px rgba(82, 211, 112, 0.12);
+}
+
+body[data-theme="dark"] .ticket-slot-weekly {
+  border-color: rgba(120, 178, 255, 0.66);
+  background: linear-gradient(180deg, #143157, #1f68c8);
+  box-shadow: inset 0 -4px 0 rgba(120, 178, 255, 0.24), 0 8px 18px rgba(61, 137, 239, 0.15);
+}
+
+body[data-theme="dark"] .ticket-slot-uncertain {
+  border-color: rgba(255, 130, 130, 0.66);
+  background: linear-gradient(180deg, #541d1d, #b83232);
+  box-shadow: inset 0 -4px 0 rgba(255, 130, 130, 0.2), 0 8px 18px rgba(255, 130, 130, 0.12);
+}
+
+body[data-theme="dark"] .ticket-slot-checkout {
+  border-color: rgba(255, 206, 97, 0.66);
+  background: linear-gradient(180deg, #4a3512, #a87312);
+  box-shadow: inset 0 -4px 0 rgba(255, 206, 97, 0.2), 0 8px 18px rgba(255, 206, 97, 0.12);
+}
+
+body[data-theme="dark"] .ticket-slot-weekly-out {
+  border-color: rgba(198, 164, 255, 0.66);
+  background: linear-gradient(180deg, #332052, #7147c7);
+  box-shadow: inset 0 -4px 0 rgba(198, 164, 255, 0.2), 0 8px 18px rgba(198, 164, 255, 0.12);
+}
+
+body[data-theme="dark"] .ticket-slot-paid {
+  border-color: rgba(185, 171, 145, 0.36);
+  background: linear-gradient(180deg, #332b21, #514333);
+}
+
+body[data-theme="dark"] .ticket-combo-available-available {
+  border-color: rgba(146, 181, 217, 0.24);
+  background: linear-gradient(180deg, #1a2531, #111a24);
+}
+
+body[data-theme="dark"] .ticket-combo-hourly-inside {
+  border-color: rgba(82, 211, 112, 0.58);
+  background: linear-gradient(90deg, #0f5f59 0 50%, #1f7a37 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-combo-weekly-inside {
+  border-color: rgba(120, 178, 255, 0.66);
+  background: linear-gradient(90deg, #1f68c8 0 50%, #1f7a37 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-combo-weekly-weekly-out {
+  border-color: rgba(198, 164, 255, 0.66);
+  background: linear-gradient(90deg, #1f68c8 0 50%, #7147c7 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-combo-hourly-uncertain {
+  border-color: rgba(255, 130, 130, 0.66);
+  background: linear-gradient(90deg, #0f5f59 0 50%, #b83232 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-combo-weekly-uncertain {
+  border-color: rgba(255, 130, 130, 0.66);
+  background: linear-gradient(90deg, #1f68c8 0 50%, #b83232 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-stripes-1 {
+  background: var(--ticket-dark-color-1);
+}
+
+body[data-theme="dark"] .ticket-stripes-2 {
+  background: linear-gradient(90deg, var(--ticket-dark-color-1) 0 50%, var(--ticket-dark-color-2) 50% 100%);
+}
+
+body[data-theme="dark"] .ticket-stripes-3 {
+  background: linear-gradient(
+    90deg,
+    var(--ticket-dark-color-1) 0 33.333%,
+    var(--ticket-dark-color-2) 33.333% 66.666%,
+    var(--ticket-dark-color-3) 66.666% 100%
+  );
+}
+
+body[data-theme="dark"] .ticket-stripes-4 {
+  background: linear-gradient(
+    90deg,
+    var(--ticket-dark-color-1) 0 25%,
+    var(--ticket-dark-color-2) 25% 50%,
+    var(--ticket-dark-color-3) 50% 75%,
+    var(--ticket-dark-color-4) 75% 100%
+  );
+}
+
+body[data-theme="dark"] .simple-ticket-slot .ticket-slot-number {
+  background: rgba(9, 17, 27, 0.72);
+  border-color: rgba(238, 244, 251, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
 @media (max-width: 900px) {
@@ -2785,7 +3238,10 @@ body[data-theme="dark"] .ticket-slot-body span {
   .workspace-grid,
   .dashboard-period-form,
   .dashboard-chart-grid,
+  .cut-builder-card,
+  .cut-fields-grid,
   .admin-workspace,
+  .employee-cash-grid,
   .employee-dashboard-grid,
   .employee-console-grid,
   .employee-summary-row,
@@ -2812,7 +3268,8 @@ body[data-theme="dark"] .ticket-slot-body span {
   }
 
   .employee-console-header,
-  .employee-console-actions {
+  .employee-console-actions,
+  .employee-cut-actions {
     flex-direction: column;
     align-items: stretch;
   }

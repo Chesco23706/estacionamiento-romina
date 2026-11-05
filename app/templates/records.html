@@ -13,10 +13,11 @@
     </div>
     <div class="quick-links">
       <a class="section-chip" href="{{ url_for('main.records_page', status='Dentro del estacionamiento') }}">Vehiculos dentro</a>
+      <a class="section-chip" href="{{ url_for('main.records_page', status='Indeciso') }}">Indecisos</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='Pagado') }}">Pagados</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='Salida registrada') }}">Salidas registradas</a>
       <a class="section-chip {% if filters.status == 'Pagado' and filters.date == today_filter_value and (filters.date_field or 'payment') == 'payment' %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Pagado', date=today_filter_value, date_field='payment') }}">Pagos de hoy</a>
-      <a class="section-chip {% if filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
       <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
       <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
       <a class="section-chip" href="{{ url_for('main.records_page', status='') }}">Todos</a>
@@ -53,12 +54,105 @@
           <option value="{{ vehicle_type }}" {% if filters.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
           {% endfor %}
         </select>
+        <select name="stay_mode">
+          <option value="">Todas las modalidades</option>
+          <option value="hourly" {% if filters.stay_mode == 'hourly' %}selected{% endif %}>Por hora / por dia</option>
+          <option value="weekly" {% if filters.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
+        </select>
         <button class="btn btn-secondary" type="submit">Buscar</button>
         <a class="link-button" href="{{ url_for('main.records_page') }}">Limpiar filtros</a>
       </form>
     </div>
 
-    <div class="table-wrapper">
+    <div class="quick-links records-sort-links">
+      <a class="section-chip {% if filters.sort_by == 'entry' %}is-active{% endif %}" href="{{ url_for('main.records_page', **sort_links.entry) }}">Ordenar por entrada</a>
+      <a class="section-chip {% if filters.sort_by == 'exit' %}is-active{% endif %}" href="{{ url_for('main.records_page', **sort_links.exit) }}">Ordenar por salida</a>
+    </div>
+
+    <div class="employee-record-grid admin-record-grid">
+      {% for record in records %}
+      <article class="employee-record-card record-theme-{{ record.status_theme }}" data-record-search-card data-search-text="{{ (record.display_ticket_number ~ ' ' ~ record.client_name ~ ' ' ~ record.plate_number ~ ' ' ~ record.vehicle_type)|lower }}">
+        <div class="employee-record-top">
+          <span class="employee-record-ticket">Ficha {{ record.display_ticket_number }}</span>
+          <span class="status-pill status-pill-{{ record.status_theme }}">{{ record.status }}</span>
+        </div>
+        <strong>{{ record.client_name }}</strong>
+        <div class="employee-record-meta">
+          <span>ID {{ record.id }}</span>
+          <span>{{ record.vehicle_type }}</span>
+          <span>{{ record.plate_number }}</span>
+          <span>{{ record.mode_label }}</span>
+          <span>Entrada {{ record.entry_at|dt }}</span>
+          <span class="status-pill status-pill-{{ record.payment_theme }}">{{ record.payment_state_label }}</span>
+        </div>
+        <div class="employee-record-info-strip">
+          <div>
+            <span>Tiempo</span>
+            {% if record.status == 'Dentro del estacionamiento' and record.is_hourly %}
+            <strong class="live-timer" data-entry-at="{{ record.entry_at.isoformat() }}">00:00:00</strong>
+            {% elif record.status == 'Dentro del estacionamiento' %}
+            <strong class="live-day-counter" data-entry-at="{{ record.entry_at.isoformat() }}" data-contracted-days="{{ record.contracted_days or 6 }}">
+              {{ record.consumed_day_units() }}/{{ record.contracted_days or 6 }} dias
+            </strong>
+            {% elif not record.is_hourly %}
+            <strong>{{ record.consumed_day_units(reference_time=record.exit_at) }}/{{ record.contracted_days or 6 }} dias</strong>
+            {% else %}
+            <strong>{{ format_duration(record.duration_seconds) }}</strong>
+            {% endif %}
+          </div>
+          <div>
+            <span>Total</span>
+            <strong>{{ (record.total_amount if record.exit_at or record.is_paid else record.live_total_amount)|money }}</strong>
+          </div>
+          <div>
+            <span>Salida</span>
+            <strong>{{ record.exit_at|dt }}</strong>
+          </div>
+        </div>
+        {% if not record.is_hourly %}
+        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Dias restantes: {{ record.remaining_day_units(reference_time=record.exit_at) }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+        {% endif %}
+        <div class="employee-record-actions">
+          <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
+          {% if not record.exit_at %}
+          {% if not record.is_hourly %}
+          <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
+              {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+            </button>
+          </form>
+          {% if not record.is_hourly %}
+          <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" type="submit" {% if record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
+          </form>
+          {% endif %}
+          {% include "record_note_action.html" %}
+          <button class="btn btn-secondary" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
+          <button class="btn btn-secondary" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
+        </div>
+        {% include "record_modal_fragment.html" %}
+      </article>
+      {% else %}
+      <article class="empty-state-card">
+        <strong>No hay registros que coincidan con la busqueda.</strong>
+        <span>Prueba con otros filtros o registra una nueva entrada.</span>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="table-wrapper admin-legacy-record-table">
       <table>
         <thead>
           <tr>
@@ -155,7 +249,6 @@
                 <button class="btn btn-secondary fixed-action-btn" type="button" data-open-dialog="record-history-dialog-{{ record.id }}">Historial</button>
                 <button class="btn fixed-action-btn" type="button" data-open-dialog="record-dialog-{{ record.id }}">Editar</button>
               </div>
-              {% include "record_modal_fragment.html" %}
             </td>
           </tr>
           {% else %}
@@ -179,10 +272,11 @@
   <section class="employee-records-toolbar card" id="busqueda">
     <div class="quick-links">
       <a class="section-chip {% if filters.status == 'Pagado' and filters.date == today_filter_value and (filters.date_field or 'payment') == 'payment' %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Pagado', date=today_filter_value, date_field='payment') }}">Pagos de hoy</a>
-      <a class="section-chip {% if filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
+      <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'entry' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry') }}">Entradas de hoy</a>
       <a class="section-chip {% if filters.date == today_filter_value and filters.date_field == 'exit' and not filters.status %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='exit') }}">Salidas de hoy</a>
       <a class="section-chip {% if filters.status == 'Dentro del estacionamiento' and not filters.date %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Dentro del estacionamiento', date='') }}">Vehiculos dentro</a>
-      <a class="section-chip {% if not filters.status and not filters.search and filters.date == today_filter_value and (filters.date_field or 'entry') == 'entry' %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, date_field='entry', status='') }}">Todos los de hoy</a>
+      <a class="section-chip {% if filters.status == 'Indeciso' and not filters.date %}is-active{% endif %}" href="{{ url_for('main.records_page', status='Indeciso', date='') }}">Indecisos</a>
+      <a class="section-chip {% if not filters.status and not filters.search and filters.date == today_filter_value and not filters.date_field %}is-active{% endif %}" href="{{ url_for('main.records_page', date=today_filter_value, status='') }}">Todos los de hoy</a>
       <a class="section-chip" href="{{ url_for('main.current_cut_document') }}" target="_blank" rel="noopener">Corte actual PDF</a>
     </div>
     <p class="muted">Para validar el corte usa <strong>Pagos de hoy</strong>. Ese filtro toma la fecha real del pago y ordena de la hora mas reciente a la mas antigua.</p>
@@ -198,6 +292,23 @@
           {% for status in status_options %}
           <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
           {% endfor %}
+        </select>
+      </label>
+      <label class="search-field compact-select">
+        <span>Tipo de vehiculo</span>
+        <select name="vehicle_type">
+          <option value="">Todos</option>
+          {% for vehicle_type in vehicle_types %}
+          <option value="{{ vehicle_type }}" {% if filters.vehicle_type == vehicle_type %}selected{% endif %}>{{ vehicle_type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="search-field compact-select">
+        <span>Modalidad de cobro</span>
+        <select name="stay_mode">
+          <option value="">Todas</option>
+          <option value="hourly" {% if filters.stay_mode == 'hourly' %}selected{% endif %}>Por hora / por dia</option>
+          <option value="weekly" {% if filters.stay_mode == 'weekly' %}selected{% endif %}>Por semana</option>
         </select>
       </label>
       <label class="search-field">
@@ -218,6 +329,7 @@
     </form>
   </section>
 
+  {% if show_current_records %}
   <section class="employee-live-section card">
     <div class="section-heading">
       <div>
@@ -255,7 +367,7 @@
           </div>
         </div>
         {% if not record.is_hourly %}
-        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Dias restantes: {{ record.remaining_day_units() }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
         <p class="weekly-action-note">Salida del dia registra una salida parcial. Salida final cierra la ficha semanal.</p>
         {% endif %}
         <div class="employee-record-actions">
@@ -296,6 +408,7 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
   <section class="employee-live-section card">
     <div class="section-heading">
@@ -330,7 +443,7 @@
           </div>
         </div>
         {% if not record.is_hourly %}
-        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+        <p class="weekly-action-note">Dias pagados: {{ record.contracted_days or 6 }} | Dias restantes: {{ record.remaining_day_units(reference_time=record.exit_at) }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
         {% endif %}
         <div class="employee-record-actions">
           <a class="link-button" href="{{ url_for('main.print_ticket', record_id=record.id) }}">Ticket PDF</a>
@@ -338,6 +451,24 @@
           <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>
+          </form>
+          {% endif %}
+          {% if not record.exit_at %}
+          <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" type="submit" {% if record.is_paid %}disabled{% endif %}>
+              {% if record.is_paid %}Pago registrado{% else %}Marcar pagado{% endif %}
+            </button>
+          </form>
+          {% if not record.is_hourly %}
+          <form method="post" action="{{ url_for('main.register_vehicle_weekly_exit', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" type="submit" {% if record.status != 'Dentro del estacionamiento' %}disabled{% endif %}>Salida del dia</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('main.register_vehicle_exit', record_id=record.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn touch-primary-btn" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Registrar salida{% else %}Salida final{% endif %}</button>
           </form>
           {% endif %}
           {% include "record_note_action.html" %}

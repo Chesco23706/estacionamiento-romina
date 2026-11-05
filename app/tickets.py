@@ -237,19 +237,22 @@ def build_cash_cut_pdf(cut, paid_records, datetime_formatter):
         pdf.setFont(font, size)
         pdf.drawString(x, text_y, str(text))
 
-    cut_label = "diario" if cut.cut_type == "daily" else "semanal"
+    cut_label = _cut_type_label(cut.cut_type)
     pdf.setTitle(f"Informe de corte {cut_label} #{cut.id}")
     draw_text("Estacionamiento Romina", margin, y, "Helvetica-Bold", 16, blue)
     draw_text(f"Informe de corte {cut_label} #{cut.id}", margin, y - 7 * mm, "Helvetica-Bold", 12, gold)
     draw_text(f"Periodo: {datetime_formatter(cut.period_start)} a {datetime_formatter(cut.period_end)}", margin, y - 14 * mm, "Helvetica", 9, muted)
     draw_text(f"Generado por: {cut.generated_by.full_name}", margin, y - 20 * mm, "Helvetica", 9, muted)
-    y -= 31 * mm
+    draw_text(f"Usuario del corte: {cut.target_user.full_name if cut.target_user else 'Todos'}", margin, y - 26 * mm, "Helvetica", 9, muted)
+    y -= 37 * mm
 
     summary_items = [
-        ("Total cobrado", f"${float(cut.total_income or 0):,.2f}"),
+        ("Total caja", f"${float(cut.total_income or 0):,.2f}"),
         ("Vehiculos cobrados", cut.vehicles_paid),
+        ("Entradas extra", f"${float(cut.extra_income or 0):,.2f}"),
+        ("Gastos", f"${float(cut.total_expenses or 0):,.2f}"),
     ]
-    box_width = (width - (margin * 2) - (3 * mm)) / 2
+    box_width = (width - (margin * 2) - (9 * mm)) / 4
     for index, (label, value) in enumerate(summary_items):
         x = margin + index * (box_width + 3 * mm)
         pdf.setStrokeColor(line_color)
@@ -272,6 +275,113 @@ def build_cash_cut_pdf(cut, paid_records, datetime_formatter):
         datetime_formatter,
         include_total=True,
     )
+    y -= 6 * mm
+    y = _draw_movement_section(
+        pdf,
+        cut.movement_summary.get("items", []),
+        y,
+        margin,
+        width,
+        height,
+        ensure_space,
+        draw_text,
+    )
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def build_cash_cut_ticket_pdf(cut, paid_records, datetime_formatter):
+    movements = cut.movement_summary.get("items", [])
+    page_width = 80 * mm
+    margin_x = 5 * mm
+    line_height = 4.2 * mm
+    estimated_height = 118 * mm
+    estimated_height += len(cut.vehicle_breakdown) * line_height
+    estimated_height += len(movements) * (line_height * 1.4)
+    if cut.target_user:
+        estimated_height += line_height
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=(page_width, estimated_height))
+    width, height = page_width, estimated_height
+
+    ink = HexColor("#2f2416")
+    muted = HexColor("#7b6950")
+    blue = HexColor("#0f436b")
+    gold = HexColor("#bf8a28")
+
+    def draw_text(text, x, text_y, font="Helvetica", size=8, color=ink):
+        pdf.setFillColor(color)
+        pdf.setFont(font, size)
+        pdf.drawString(x, text_y, str(text))
+
+    def draw_money(label, amount, y):
+        draw_text(label, margin_x, y, "Helvetica-Bold", 8, ink)
+        draw_text(f"${float(amount or 0):,.2f}", width - margin_x - 23 * mm, y, "Helvetica-Bold", 8, ink)
+        return y - line_height
+
+    pdf.setTitle(f"Ticket de corte #{cut.id}")
+    y = height - 8 * mm
+    pdf.setStrokeColor(gold)
+    pdf.roundRect(2 * mm, 2 * mm, width - 4 * mm, height - 4 * mm, 3 * mm, stroke=1, fill=0)
+    draw_text("Estacionamiento Romina", margin_x, y, "Helvetica-Bold", 11, blue)
+    y -= 5 * mm
+    draw_text(f"Ticket corte {_cut_type_label(cut.cut_type)} #{cut.id}", margin_x, y, "Helvetica-Bold", 8, gold)
+    y -= 5 * mm
+    draw_text(f"Periodo: {datetime_formatter(cut.period_start)}", margin_x, y, "Helvetica", 7, muted)
+    y -= 4 * mm
+    draw_text(f"a {datetime_formatter(cut.period_end)}", margin_x, y, "Helvetica", 7, muted)
+    y -= 4 * mm
+    draw_text(f"Generado por: {cut.generated_by.full_name}", margin_x, y, "Helvetica", 7, muted)
+    y -= 4 * mm
+    draw_text(f"Usuario: {cut.target_user.full_name if cut.target_user else 'Todos'}", margin_x, y, "Helvetica", 7, muted)
+    y -= 6 * mm
+    pdf.line(margin_x, y, width - margin_x, y)
+    y -= 5 * mm
+
+    vehicle_total = float(cut.total_income or 0) - float(cut.extra_income or 0) + float(cut.total_expenses or 0)
+    y = draw_money("Vehiculos", vehicle_total, y)
+    y = draw_money("Entradas extra", cut.extra_income, y)
+    y = draw_money("Gastos", -float(cut.total_expenses or 0), y)
+    pdf.line(margin_x, y, width - margin_x, y)
+    y -= 5 * mm
+    draw_text("TOTAL CAJA", margin_x, y, "Helvetica-Bold", 10, blue)
+    draw_text(f"${float(cut.total_income or 0):,.2f}", width - margin_x - 26 * mm, y, "Helvetica-Bold", 10, blue)
+    y -= 7 * mm
+
+    draw_text("Vehiculos totales", margin_x, y, "Helvetica-Bold", 8, ink)
+    draw_text(str(cut.vehicles_paid), width - margin_x - 8 * mm, y, "Helvetica-Bold", 8, ink)
+    y -= 6 * mm
+
+    draw_text("Resumen por vehiculo", margin_x, y, "Helvetica-Bold", 8, blue)
+    y -= 4 * mm
+    for vehicle_type, values in cut.vehicle_breakdown.items():
+        if not values.get("count") and not values.get("income"):
+            continue
+        draw_text(f"{vehicle_type}: {values.get('count', 0)}", margin_x, y, "Helvetica", 7, ink)
+        draw_text(f"${float(values.get('income', 0)):,.2f}", width - margin_x - 22 * mm, y, "Helvetica", 7, ink)
+        y -= line_height
+
+    y -= 2 * mm
+    draw_text("Movimientos de caja", margin_x, y, "Helvetica-Bold", 8, blue)
+    y -= 4 * mm
+    if not movements:
+        draw_text("Sin gastos ni entradas extra.", margin_x, y, "Helvetica", 7, muted)
+        y -= line_height
+    for movement in movements:
+        sign = "-" if movement.get("type") == "expense" else "+"
+        label = f"{movement.get('label', '-')}: {movement.get('description', '-')}"
+        for line in _wrap_text(label, 30):
+            draw_text(line, margin_x, y, "Helvetica", 7, ink)
+            y -= 3.8 * mm
+        draw_text(f"{sign}${float(movement.get('amount', 0)):,.2f}", width - margin_x - 22 * mm, y + 3.8 * mm, "Helvetica-Bold", 7, ink)
+
+    y -= 3 * mm
+    pdf.line(margin_x, max(y, 10 * mm), width - margin_x, max(y, 10 * mm))
+    draw_text("Ticket para corte de caja.", margin_x, 7 * mm, "Helvetica-Oblique", 7, muted)
 
     pdf.showPage()
     pdf.save()
@@ -353,6 +463,68 @@ def _draw_cut_section(
     return y
 
 
+def _draw_movement_section(
+    pdf,
+    movements,
+    y,
+    margin,
+    width,
+    height,
+    ensure_space,
+    draw_text,
+):
+    ink = HexColor("#2f2416")
+    muted = HexColor("#7b6950")
+    line_color = HexColor("#e1d2bc")
+    y = ensure_space(y, 18 * mm)
+    draw_text("Gastos y entradas independientes", margin, y, "Helvetica-Bold", 12, HexColor("#0f436b"))
+    y -= 8 * mm
+
+    if not movements:
+        draw_text("Sin movimientos de caja en este periodo.", margin, y, "Helvetica", 9, muted)
+        return y - 8 * mm
+
+    headers = ["Tipo", "Descripcion", "Cantidad", "Usuario"]
+    col_widths = [28 * mm, 70 * mm, 30 * mm, width - (margin * 2) - (128 * mm)]
+    x = margin
+    for index, header in enumerate(headers):
+        draw_text(header, x, y, "Helvetica-Bold", 7, muted)
+        x += col_widths[index]
+    y -= 5 * mm
+
+    for movement in movements:
+        y = ensure_space(y, 15 * mm)
+        sign = "-" if movement.get("type") == "expense" else "+"
+        row_values = [
+            movement.get("label", "-"),
+            movement.get("description", "-"),
+            f"{sign}${float(movement.get('amount', 0)):,.2f}",
+            movement.get("created_by", "-"),
+        ]
+        x = margin
+        max_lines = 1
+        wrapped_columns = []
+        for index, value in enumerate(row_values):
+            max_chars = max(8, int(col_widths[index] / (2.2 * mm)))
+            lines = _wrap_text(str(value or "-"), max_chars)
+            wrapped_columns.append(lines)
+            max_lines = max(max_lines, len(lines))
+
+        row_height = max_lines * 4 * mm + 3 * mm
+        y = ensure_space(y, row_height + 2 * mm)
+        for index, lines in enumerate(wrapped_columns):
+            line_y = y
+            for line in lines:
+                draw_text(line, x, line_y, "Helvetica", 7, ink)
+                line_y -= 4 * mm
+            x += col_widths[index]
+        y -= row_height
+        pdf.setStrokeColor(line_color)
+        pdf.line(margin, y + 1.5 * mm, width - margin, y + 1.5 * mm)
+
+    return y
+
+
 def _wrap_text(value, max_length):
     words = str(value).split()
     if not words:
@@ -369,6 +541,16 @@ def _wrap_text(value, max_length):
             current = word
     lines.append(current)
     return lines
+
+
+def _cut_type_label(cut_type):
+    labels = {
+        "daily": "diario",
+        "weekly": "semanal",
+        "monthly": "mensual",
+        "custom": "fecha especifica",
+    }
+    return labels.get(cut_type, str(cut_type or "caja"))
 
 
 def build_ticket_qr_svg(qr_value, size=168):

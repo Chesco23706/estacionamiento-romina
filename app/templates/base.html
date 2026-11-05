@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
+    {% set admin_access = current_user.is_authenticated and current_user.has_admin_access %}
     {% set employee_mode = current_user.is_authenticated and not current_user.is_admin %}
 
     {% if employee_mode %}
@@ -28,14 +29,22 @@
           <a class="employee-nav-btn" href="{{ url_for('main.tickets_board_page') }}" title="Fichas">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v10H6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10 7v10M14 7v10" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
           </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.cuts_page') }}" title="Cortes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.9"/><path d="M9.5 8h5M9.5 12h5M9.5 16h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></svg>
+          </a>
           <a class="employee-nav-btn" href="{{ url_for('main.help_page') }}" title="Ayuda">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9.7 9.1a2.6 2.6 0 1 1 4.6 1.7c-.6.7-1.3 1-1.8 1.6-.3.4-.5.8-.5 1.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>
           </a>
+          {% if admin_access %}
+          <a class="employee-nav-btn" href="{{ url_for('main.tariffs_page') }}" title="Tarifas">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9 9h6M9 12h6M9 15h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></svg>
+          </a>
+          <a class="employee-nav-btn" href="{{ url_for('main.employees_page') }}" title="Empleados">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M4.5 19c.7-3 2.3-4.5 4.5-4.5s3.8 1.5 4.5 4.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/><path d="M15 7.5a2.4 2.4 0 1 1 2.3 3M15.8 14.3c1.8.3 3 1.7 3.7 4.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></svg>
+          </a>
+          {% endif %}
         </nav>
         <div class="employee-sidebar-tools">
-          <button class="employee-nav-btn" type="button" data-theme-toggle title="Cambiar modo de color">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
-          </button>
           <form method="post" action="{{ url_for('main.logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="employee-nav-btn" type="submit" title="Cerrar sesion">
@@ -62,14 +71,14 @@
             <div>
               <h1>{{ config.APP_NAME }}</h1>
               {% if current_user.is_authenticated %}
-              <p class="brand-subtitle">{{ 'Centro de control' if current_user.is_admin else 'Terminal de operacion sencilla' }}</p>
+              <p class="brand-subtitle">{{ 'Centro de control' if admin_access else 'Terminal de operacion sencilla' }}</p>
               {% endif %}
             </div>
           </div>
           {% if current_user.is_authenticated %}
           <div class="topbar-actions">
             <nav class="topbar-nav">
-              {% if current_user.is_admin %}
+              {% if admin_access %}
               <a href="{{ url_for('main.dashboard') }}">Inicio</a>
               <a href="{{ url_for('main.tickets_board_page') }}">Fichas</a>
               <a href="{{ url_for('main.records_page') }}">Registros</a>
@@ -80,12 +89,9 @@
               <a href="{{ url_for('main.employees_page') }}">Empleados</a>
               {% endif %}
             </nav>
-            <div class="topbar-tools">
-              <button class="tool-chip" type="button" data-theme-toggle aria-label="Cambiar modo de color">Modo oscuro</button>
-            </div>
             <div class="user-card">
               <strong>{{ current_user.full_name }}</strong>
-              <span>{{ 'Administrador' if current_user.is_admin else 'Empleado' }}</span>
+              <span>{{ 'Administrador' if admin_access else 'Empleado' }}</span>
             </div>
             <form method="post" action="{{ url_for('main.logout') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -3,25 +3,69 @@
 {% block content %}
 <main class="dashboard-layout">
   <section class="card feature-card">
-    <p class="eyebrow">Cortes</p>
-    <h2>Caja</h2>
-    <div class="button-row action-row">
-      <form method="post" action="{{ url_for('main.generate_cut') }}" class="inline-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="cut_type" value="daily">
-        <label>
-          Fecha del corte
-          <input type="date" name="cut_date" required>
-        </label>
-        <button class="btn fixed-action-btn" type="submit">Corte por fecha</button>
-      </form>
-      <form method="post" action="{{ url_for('main.generate_cut') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="cut_type" value="weekly">
-        <button class="btn btn-secondary fixed-action-btn" type="submit">Corte semanal</button>
-      </form>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Cortes</p>
+        <h2>Caja</h2>
+        <p class="section-note">Genera cortes por dia, fecha especifica, semana completa o mes. El total de caja incluye vehiculos, entradas independientes y gastos.</p>
+      </div>
     </div>
-    <p class="section-note">El corte semanal toma la semana completa de lunes a domingo.</p>
+
+    <form method="post" action="{{ url_for('main.generate_cut') }}" class="cut-builder-card" data-cut-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Tipo de corte
+          <select name="cut_type" required data-cut-type-select>
+            <option value="daily">Diario</option>
+            <option value="weekly">Semana</option>
+            <option value="monthly">Mensual</option>
+            <option value="custom">Fecha especifica</option>
+          </select>
+        </label>
+        <label>
+          Usuario
+          <select name="target_user_id">
+            <option value="">Todos los usuarios</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role.name|capitalize }})</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <div class="cut-fields-grid">
+          <label data-cut-field="daily">
+            Fecha del corte
+            <input type="date" name="cut_date" value="{{ today.isoformat() }}" required>
+          </label>
+
+          <label data-cut-field="weekly" hidden>
+            Fecha de inicio
+            <input type="date" name="week_start_date" value="{{ today.isoformat() }}">
+          </label>
+          <label data-cut-field="weekly" hidden>
+            Fecha de fin
+            <input type="date" name="week_end_date" value="{{ today.isoformat() }}">
+          </label>
+
+          <label data-cut-field="monthly" hidden>
+            Mes del corte
+            <input type="month" name="month_date" value="{{ current_month }}">
+          </label>
+
+          <label data-cut-field="custom" hidden>
+            Fecha de inicio
+            <input type="date" name="custom_start_date" value="{{ today.isoformat() }}">
+          </label>
+          <label data-cut-field="custom" hidden>
+            Fecha de fin
+            <input type="date" name="custom_end_date" value="{{ today.isoformat() }}">
+          </label>
+        </div>
+
+        <div class="button-row compact-action-row">
+          <button class="btn fixed-action-btn" type="submit">Generar corte</button>
+        </div>
+    </form>
   </section>
 
   <section class="card feature-card records-card">
@@ -38,8 +82,11 @@
             <th>ID</th>
             <th>Tipo</th>
             <th>Fecha</th>
+            <th>Usuario</th>
             <th>Periodo</th>
-            <th>Ingresos</th>
+            <th>Total caja</th>
+            <th>Entradas</th>
+            <th>Gastos</th>
             <th>Accion</th>
           </tr>
         </thead>
@@ -47,14 +94,24 @@
           {% for cut in cuts %}
           <tr>
             <td>{{ cut.id }}</td>
-            <td>{{ 'Diario' if cut.cut_type == 'daily' else 'Semanal' }}</td>
+            <td>{{ cash_cut_type_label(cut.cut_type) }}</td>
             <td>{{ cut.generated_at|dt }}</td>
+            <td>{{ cut.target_user.full_name if cut.target_user else 'Todos' }}</td>
             <td>{{ cut.period_start|dt }} a {{ cut.period_end|dt }}</td>
             <td>{{ cut.total_income|money }}</td>
-            <td><a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a></td>
+            <td>{{ cut.extra_income|money }}</td>
+            <td>{{ cut.total_expenses|money }}</td>
+            <td>
+              <div class="button-row compact-action-row">
+                <a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_detail', cut_id=cut.id) }}">Ver detalle</a>
+                {% if cut.cut_type == 'daily' %}
+                <a class="link-button fixed-action-btn" href="{{ url_for('main.cash_cut_ticket_document', cut_id=cut.id) }}" target="_blank" rel="noopener">Ticket</a>
+                {% endif %}
+              </div>
+            </td>
           </tr>
           {% else %}
-          <tr><td colspan="6">Todavia no hay cortes generados.</td></tr>
+          <tr><td colspan="9">Todavia no hay cortes generados.</td></tr>
           {% endfor %}
         </tbody>
       </table>

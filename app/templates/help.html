@@ -5,7 +5,7 @@
   <section class="card feature-card">
     <h2>Guia de uso</h2>
     <div class="help-grid">
-      {% if current_user.is_admin %}
+      {% if current_user.has_admin_access %}
       <article class="help-card">
         <h3>Administrador</h3>
         <div class="section-stack">
@@ -23,7 +23,7 @@
               <li>Captura la <strong>ficha fisica</strong>, el nombre del cliente, tipo de vehiculo y placas o identificador.</li>
               <li>En <strong>Modalidad</strong> elige si sera <strong>Por hora</strong> o <strong>Por semana</strong>.</li>
               <li>Si es <strong>Por hora</strong>, el sistema llevara el tiempo en cuenta continua.</li>
-              <li>Si es <strong>Por semana</strong>, el sistema registra automaticamente los 6 dias pagados y mostrara los dias restantes.</li>
+              <li>Si es <strong>Por semana</strong>, la vigencia de 6 dias empieza al registrar la entrada del vehiculo.</li>
               <li>Si el cliente pide extras, pulsa <strong>Agregar servicios</strong> y selecciona lavado, cambio de aceite y precio del aceite cuando aplique.</li>
               <li>Guarda la entrada para generar el ticket y dejar el registro activo en el estacionamiento.</li>
             </ol>
@@ -131,6 +131,18 @@
     </div>
   </section>
 
+  <section class="card feature-card" id="ayuda-anticipos-semanales">
+    <h2>Anticipos semanales</h2>
+    <p>Sirven para cobrar la tarifa semanal cuando el cliente quiere pagar hoy y traer su vehiculo otro dia.</p>
+    <ol class="help-list">
+      <li><strong>Al recibir el dinero:</strong> abre <a href="{{ url_for('main.operations_page', _anchor='weekly-prepayments') }}">Nueva entrada</a>, ve a <strong>Anticipos semanales</strong> y elige <strong>Registrar anticipo</strong>.</li>
+      <li>Escribe el nombre del cliente y la placa o identificador. Selecciona el tipo de vehiculo, revisa el importe y pulsa <strong>Registrar pago recibido</strong>. El ingreso queda en el corte de ese dia, a nombre de quien lo cobro.</li>
+      <li><strong>Cuando llegue el vehiculo:</strong> busca al cliente o la placa en <strong>Pendientes de llegada</strong>, captura el numero de ficha fisica y pulsa <strong>Activar al llegar</strong>.</li>
+      <li>La ficha se abre como pagada. Los seis dias empiezan en ese momento y puedes consultar la vigencia en la vista del ticket.</li>
+    </ol>
+    <p><strong>Ejemplo.</strong> Si el cliente paga el sabado y trae la moto el lunes, el dinero entra en el corte del sabado. El lunes solo asignas la ficha y activas la semana.</p>
+  </section>
+
   <section class="card feature-card">
     <h2>Preguntas frecuentes</h2>
     <div class="faq-stack">
@@ -144,7 +156,7 @@
       </details>
       <details class="faq-item">
         <summary>Quien puede marcar pagos o eliminar registros?</summary>
-        {% if current_user.is_admin %}
+        {% if current_user.has_admin_access %}
         <p>Como administrador puedes marcar pagos, editar, registrar salidas y eliminar registros desde la vista de registros.</p>
         {% else %}
         <p>Como empleado puedes marcar pagos y registrar salidas desde registros, pero la eliminacion queda reservada al administrador.</p>

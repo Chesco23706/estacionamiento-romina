@@ -11,6 +11,9 @@ def role_required(*role_names):
             if not current_user.is_authenticated:
                 abort(401)
 
+            if "admin" in role_names and getattr(current_user, "has_admin_access", False):
+                return view(*args, **kwargs)
+
             if current_user.role is None or current_user.role.name not in role_names:
                 abort(403)
 

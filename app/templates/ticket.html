@@ -26,6 +26,10 @@
       <img class="ticket-qr-image" src="{{ url_for('main.ticket_qr_document', record_id=record.id) }}" alt="Codigo QR del ticket {{ record.display_ticket_number }}">
     </section>
 
+    {% if weekly_ends_at and record.is_paid %}
+    <p class="muted">Vigencia semanal: {{ record.entry_at|dt }} al {{ weekly_ends_at|dt }}</p>
+    {% endif %}
+
     {% if not record.exit_at %}
     <div class="button-row">
       <form method="post" action="{{ url_for('main.mark_paid', record_id=record.id) }}">
@@ -35,7 +39,7 @@
         </button>
       </form>
       {% if not record.is_hourly %}
-      <p class="muted">Dias pagados: {{ record.contracted_days or 6 }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
+      <p class="muted">{{ 'Dias pagados' if record.is_paid else 'Dias contratados' }}: {{ record.contracted_days or 6 }} | Dias restantes: {{ record.remaining_day_units(reference_time=record.exit_at) }} | Salidas del dia: {{ record.weekly_exit_count }} | Entradas del dia: {{ record.weekly_entry_count }}</p>
       <form method="post" action="{{ url_for('main.register_vehicle_weekly_entry', record_id=record.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-secondary" type="submit" {% if record.status == 'Dentro del estacionamiento' %}disabled{% endif %}>Entrada del dia</button>

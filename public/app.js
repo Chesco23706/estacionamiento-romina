@@ -98,6 +98,21 @@ function syncSectionFromHash() {
 }
 
 function setupRecordModeFields() {
+  document.querySelectorAll("[data-weekly-prepaid-field]").forEach((field) => {
+    const form = field.closest("form");
+    const checkbox = field.querySelector("input");
+    const syncPrepaid = () => {
+      const weekly = form.elements.stay_mode.value === "weekly";
+      field.hidden = !weekly;
+      checkbox.disabled = !weekly;
+      if (!weekly) checkbox.checked = false;
+    };
+    form.querySelectorAll("[data-record-mode]").forEach((mode) => {
+      mode.addEventListener("change", syncPrepaid);
+    });
+    syncPrepaid();
+  });
+
   const modeSelects = document.querySelectorAll("[data-record-mode]");
   modeSelects.forEach((modeSelect) => {
     const form = modeSelect.closest("form");
@@ -199,35 +214,6 @@ function setupDialogs() {
   });
 }
 
-function setupThemeToggle() {
-  const toggle = document.querySelector("[data-theme-toggle]");
-  if (!toggle) {
-    return;
-  }
-
-  const isIconOnly = toggle.classList.contains("employee-nav-btn");
-
-  const applyTheme = (theme) => {
-    document.body.dataset.theme = theme;
-    const label = theme === "dark" ? "Modo claro" : "Modo oscuro";
-    if (isIconOnly) {
-      toggle.setAttribute("title", label);
-      toggle.setAttribute("aria-label", label);
-    } else {
-      toggle.textContent = label;
-    }
-  };
-
-  const storedTheme = window.localStorage.getItem("romina-theme") || "light";
-  applyTheme(storedTheme);
-
-  toggle.addEventListener("click", () => {
-    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-    window.localStorage.setItem("romina-theme", nextTheme);
-    applyTheme(nextTheme);
-  });
-}
-
 function setupLiveClock() {
   const clock = document.querySelector("[data-live-clock]");
   const date = document.querySelector("[data-live-date]");
@@ -297,6 +283,30 @@ function setupLiveSearchCards() {
   filterCards();
 }
 
+function setupCutTypeFields() {
+  document.querySelectorAll("[data-cut-form]").forEach((form) => {
+    const typeSelect = form.querySelector("[data-cut-type-select]");
+    const fieldGroups = form.querySelectorAll("[data-cut-field]");
+    if (!typeSelect || !fieldGroups.length) {
+      return;
+    }
+
+    const syncFields = () => {
+      fieldGroups.forEach((group) => {
+        const active = group.dataset.cutField === typeSelect.value;
+        group.hidden = !active;
+        group.querySelectorAll("input, select, textarea").forEach((input) => {
+          input.required = active;
+          input.disabled = !active;
+        });
+      });
+    };
+
+    typeSelect.addEventListener("change", syncFields);
+    syncFields();
+  });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   startLiveTimers();
   startLiveDayCounters();
@@ -304,10 +314,10 @@ window.addEventListener("DOMContentLoaded", () => {
   setupRecordModeFields();
   setupServiceFields();
   setupDialogs();
-  setupThemeToggle();
   setupLiveClock();
   setupFriendlyValidation();
   setupLiveSearchCards();
+  setupCutTypeFields();
   syncSectionFromHash();
 });
 

@@ -11,6 +11,12 @@
         Ficha
         <input type="text" name="ticket_number" required value="{{ record.display_ticket_number }}">
       </label>
+      {% if can_edit_vehicle_entry_dates %}
+      <label>
+        Entrada
+        <input type="datetime-local" name="entry_at_local" required value="{{ record.entry_at|datetime_local }}">
+      </label>
+      {% endif %}
       <label>
         Cliente
         <input type="text" name="client_name" required value="{{ record.client_name }}">
@@ -106,8 +112,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-secondary" type="submit" {% if not record.is_paid %}disabled{% endif %}>{% if record.is_hourly %}Marcar salida{% else %}Salida final{% endif %}</button>
       </form>
+      <form method="post" action="{{ url_for('main.mark_uncertain', record_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger" type="submit" {% if record.status == 'Indeciso' %}disabled{% endif %}>Marcar indeciso</button>
+      </form>
       {% endif %}
-      {% if current_user.is_admin %}
+      {% if can_delete_vehicle_records %}
       <form method="post" action="{{ url_for('main.delete_record', record_id=record.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este registro?');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-danger" type="submit">Eliminar</button>

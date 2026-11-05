@@ -24,6 +24,59 @@
     </div>
   </section>
 
+  <section class="card touch-form-card" id="weekly-prepayments">
+    <div class="section-heading">
+      <h3>Anticipos semanales</h3>
+    </div>
+    <details>
+      <summary>Registrar anticipo</summary>
+      <form method="post" action="{{ url_for('main.create_weekly_prepayment_route') }}" class="touch-form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="touch-field">
+          <span>Nombre del cliente</span>
+          <input name="client_name" maxlength="120" required>
+        </label>
+        <label class="touch-field">
+          <span>Placa o identificador</span>
+          <input name="plate_number" maxlength="50" required>
+        </label>
+        <label class="touch-field">
+          <span>Tipo de vehiculo e importe</span>
+          <select name="vehicle_type" required>
+            <option value="">Seleccionar</option>
+            {% for vehicle_type in vehicle_types %}
+            <option value="{{ vehicle_type }}">{{ vehicle_type }} · {{ weekly_prices[vehicle_type]|money }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="touch-form-actions">
+          <button class="btn" type="submit">Registrar pago recibido</button>
+        </div>
+      </form>
+    </details>
+    {% if weekly_prepayments %}
+    <h4>Pendientes de llegada</h4>
+    <div class="employee-record-grid">
+      {% for prepayment in weekly_prepayments %}
+      <article class="employee-record-card">
+        <strong>{{ prepayment.client_name }}</strong>
+        <div class="employee-record-meta">
+          <span>{{ prepayment.vehicle_type }}</span>
+          <span>{{ prepayment.plate_number }}</span>
+          <span>{{ prepayment.movement.amount|money }}</span>
+        </div>
+        <p>Pago del {{ prepayment.movement.occurred_at|dt }}</p>
+        <form method="post" action="{{ url_for('main.activate_weekly_prepayment_route', prepayment_id=prepayment.id) }}" class="compact-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Ficha fisica <input name="ticket_number" maxlength="30" required></label>
+          <button class="btn" type="submit">Activar al llegar</button>
+        </form>
+      </article>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
   <section class="employee-entry-layout">
     <section class="card touch-form-card">
       <form method="post" action="{{ url_for('main.create_record') }}" class="touch-form-grid" data-friendly-form>
@@ -97,6 +150,12 @@
             {% endfor %}
           </div>
           <input type="hidden" name="contracted_days" value="6" data-contracted-days-input>
+          <div data-weekly-prepaid-field hidden>
+            <label class="checkbox-row">
+              <input type="checkbox" name="weekly_prepaid" disabled>
+              Pago semanal recibido
+            </label>
+          </div>
         </section>
 
         <label class="touch-field">
