@@ -22,7 +22,7 @@
       <article class="report-card">
         <span>{{ row.user.full_name }}</span>
         <strong>{{ row.total|money }}</strong>
-        <small>Vehiculos {{ row.vehicle_total|money }} | Entradas {{ row.cash_income|money }} | Gastos {{ row.cash_expense|money }}</small>
+        <small>Vehiculos {{ row.vehicle_total|money }} | Otros ingresos {{ row.cash_income|money }} | Gastos {{ row.cash_expense|money }}</small>
       </article>
       {% endfor %}
     </div>
@@ -131,12 +131,12 @@
     <article class="employee-summary-card money-card">
       <span>Total caja hoy</span>
       <strong>{{ employee_metrics.total_day|money }}</strong>
-      <p>Vehiculos {{ employee_metrics.vehicle_income_day|money }} | Entradas {{ employee_metrics.cash_income_day|money }} | Gastos {{ employee_metrics.cash_expense_day|money }}</p>
+      <p>Vehiculos {{ employee_metrics.vehicle_income_day|money }} | Otros ingresos {{ employee_metrics.cash_income_day|money }} | Gastos {{ employee_metrics.cash_expense_day|money }}</p>
     </article>
     <article class="employee-summary-card money-card">
       <span>Cobrado por ti</span>
       <strong>{{ employee_metrics.user_total_day|money }}</strong>
-      <p>Vehiculos {{ employee_metrics.user_vehicle_income_day|money }} | Entradas {{ employee_metrics.user_cash_income_day|money }} | Gastos {{ employee_metrics.user_cash_expense_day|money }}</p>
+      <p>Vehiculos {{ employee_metrics.user_vehicle_income_day|money }} | Otros ingresos {{ employee_metrics.user_cash_income_day|money }} | Gastos {{ employee_metrics.user_cash_expense_day|money }}</p>
     </article>
     <article class="employee-summary-card exit-card">
       <span>Ya salieron</span>
@@ -158,7 +158,7 @@
       <article class="employee-summary-card money-card">
         <span>{{ row.user.full_name }}</span>
         <strong>{{ row.total|money }}</strong>
-        <p>Vehiculos {{ row.vehicle_total|money }} | Entradas {{ row.cash_income|money }} | Gastos {{ row.cash_expense|money }}</p>
+        <p>Vehiculos {{ row.vehicle_total|money }} | Otros ingresos {{ row.cash_income|money }} | Gastos {{ row.cash_expense|money }}</p>
       </article>
       {% endfor %}
     </div>
@@ -248,6 +248,9 @@
         {% for movement in today_cash_movements %}
         <div class="cash-movement-item cash-movement-{{ movement.movement_type }}">
           <span>{{ movement.type_label }}</span>
+          {% if movement.weekly_prepayment %}
+          <span class="status-pill status-pill-weekly">{{ 'Entrada activada' if movement.weekly_prepayment.activated_at else 'Pendiente de entrada' }}</span>
+          {% endif %}
           <strong>{{ ('-' if movement.movement_type == 'expense' else '+') }}{{ movement.amount|money }}</strong>
           <small>{{ movement.description }}</small>
           {% if can_delete_cash_movements %}

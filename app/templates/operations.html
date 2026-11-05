@@ -26,10 +26,13 @@
 
   <section class="card touch-form-card" id="weekly-prepayments">
     <div class="section-heading">
-      <h3>Anticipos semanales</h3>
+      <div>
+        <h3>Adelantos semanales</h3>
+        <p class="section-note">El pago se registra hoy. La entrada del vehiculo se activa cuando llegue.</p>
+      </div>
     </div>
     <details>
-      <summary>Registrar anticipo</summary>
+      <summary>Registrar adelanto pendiente de entrada</summary>
       <form method="post" action="{{ url_for('main.create_weekly_prepayment_route') }}" class="touch-form-grid">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label class="touch-field">
@@ -54,12 +57,13 @@
         </div>
       </form>
     </details>
+    <h4>Pendientes de entrada ({{ weekly_prepayments|length }})</h4>
     {% if weekly_prepayments %}
-    <h4>Pendientes de llegada</h4>
     <div class="employee-record-grid">
       {% for prepayment in weekly_prepayments %}
       <article class="employee-record-card">
         <strong>{{ prepayment.client_name }}</strong>
+        <span class="status-pill status-pill-weekly">Pendiente de entrada</span>
         <div class="employee-record-meta">
           <span>{{ prepayment.vehicle_type }}</span>
           <span>{{ prepayment.plate_number }}</span>
@@ -74,6 +78,8 @@
       </article>
       {% endfor %}
     </div>
+    {% else %}
+    <p class="section-note">No hay adelantos pendientes de entrada.</p>
     {% endif %}
   </section>
 
@@ -151,10 +157,7 @@
           </div>
           <input type="hidden" name="contracted_days" value="6" data-contracted-days-input>
           <div data-weekly-prepaid-field hidden>
-            <label class="checkbox-row">
-              <input type="checkbox" name="weekly_prepaid" disabled>
-              Pago semanal recibido
-            </label>
+            <a class="link-button" href="#weekly-prepayments">¿Pago antes de llegar? Registrar adelanto semanal</a>
           </div>
         </section>
 

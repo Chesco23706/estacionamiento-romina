@@ -100,17 +100,14 @@ function syncSectionFromHash() {
 function setupRecordModeFields() {
   document.querySelectorAll("[data-weekly-prepaid-field]").forEach((field) => {
     const form = field.closest("form");
-    const checkbox = field.querySelector("input");
-    const syncPrepaid = () => {
+    const syncAdvanceLink = () => {
       const weekly = form.elements.stay_mode.value === "weekly";
       field.hidden = !weekly;
-      checkbox.disabled = !weekly;
-      if (!weekly) checkbox.checked = false;
     };
     form.querySelectorAll("[data-record-mode]").forEach((mode) => {
-      mode.addEventListener("change", syncPrepaid);
+      mode.addEventListener("change", syncAdvanceLink);
     });
-    syncPrepaid();
+    syncAdvanceLink();
   });
 
   const modeSelects = document.querySelectorAll("[data-record-mode]");

@@ -357,6 +357,7 @@ class CashMovement(TimestampMixin, db.Model):
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     created_by = db.relationship("User")
+    weekly_prepayment = db.relationship("WeeklyPrepayment", back_populates="movement", uselist=False)
 
     @property
     def signed_amount(self):
@@ -365,6 +366,8 @@ class CashMovement(TimestampMixin, db.Model):
 
     @property
     def type_label(self):
+        if self.weekly_prepayment:
+            return "Anticipo semanal"
         return "Gasto" if self.movement_type == "expense" else "Entrada"
 
 
@@ -379,7 +382,7 @@ class WeeklyPrepayment(db.Model):
     movement_id = db.Column(db.Integer, db.ForeignKey("cash_movements.id"), nullable=False, unique=True)
     activated_at = db.Column(db.DateTime(timezone=True))
 
-    movement = db.relationship("CashMovement")
+    movement = db.relationship("CashMovement", back_populates="weekly_prepayment")
 
 
 db.event.listen(

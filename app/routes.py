@@ -1266,7 +1266,11 @@ def operations_page():
 def create_weekly_prepayment_route():
     try:
         prepayment = create_weekly_prepayment(request.form, current_user)
-        flash(f"Anticipo registrado por {money_filter(prepayment.movement.amount)}.", "success")
+        flash(
+            f"Anticipo registrado por {money_filter(prepayment.movement.amount)}. "
+            "Pendiente de entrada hasta que llegue el vehiculo.",
+            "success",
+        )
     except ValueError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("main.operations_page", _anchor="weekly-prepayments"))
@@ -1332,12 +1336,23 @@ def help_page():
 @login_required
 def create_record():
     try:
+        if request.form.get("weekly_prepaid") == "on":
+            if request.form.get("stay_mode") != "weekly":
+                raise ValueError("El anticipo requiere la modalidad semanal.")
+            if any(
+                request.form.get(field)
+                for field in ("service_wash", "service_oil_change", "service_oil_price", "notes")
+            ):
+                raise ValueError("Los servicios y las notas se registran cuando llegue el vehiculo.")
+            prepayment = create_weekly_prepayment(request.form, current_user)
+            flash(
+                f"Anticipo registrado por {money_filter(prepayment.movement.amount)}. "
+                "Pendiente de entrada; asigna la ficha cuando llegue el vehiculo.",
+                "success",
+            )
+            return redirect(url_for("main.operations_page", _anchor="weekly-prepayments"))
         record = create_vehicle_record(request.form, current_user)
-        flash(
-            "Entrada y pago semanal registrados correctamente."
-            if record.is_paid else "Entrada registrada correctamente.",
-            "success",
-        )
+        flash("Entrada registrada correctamente.", "success")
         return redirect(url_for("main.print_ticket", record_id=record.id))
     except ValueError as exc:
         flash(str(exc), "danger")

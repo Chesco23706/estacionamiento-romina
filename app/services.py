@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from flask import current_app
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from .extensions import db
 from .models import (
@@ -104,9 +105,6 @@ def create_vehicle_record(form_data, user, prepayment=None):
     plate_number = clean_plate(form_data.get("plate_number"))
     stay_mode = _clean_stay_mode(form_data.get("stay_mode"))
     contracted_days = _clean_contracted_days(form_data.get("contracted_days"), stay_mode)
-    weekly_prepaid = form_data.get("weekly_prepaid") == "on"
-    if weekly_prepaid and stay_mode != "weekly":
-        raise ValueError("El pago por adelantado requiere la modalidad semanal.")
     service_wash, service_oil_change, service_oil_price = _clean_service_payload(form_data)
     notes = clean_optional_text(form_data.get("notes"), 500)
 
@@ -166,8 +164,6 @@ def create_vehicle_record(form_data, user, prepayment=None):
                 "service_oil_price": float(service_oil_price),
             },
         )
-        if weekly_prepaid:
-            _apply_vehicle_payment(record, user, record.entry_at)
         if prepayment is not None:
             log_action(user, "weekly_prepayment_activated", "vehicle_record", record.id)
         db.session.commit()
@@ -665,7 +661,7 @@ def delete_cash_movement(movement, user):
 
 
 def cash_movements_for_period(start, end, target_user=None):
-    query = CashMovement.query.filter(
+    query = CashMovement.query.options(joinedload(CashMovement.weekly_prepayment)).filter(
         CashMovement.occurred_at >= start,
         CashMovement.occurred_at < end,
     )

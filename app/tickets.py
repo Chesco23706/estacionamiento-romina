@@ -249,7 +249,7 @@ def build_cash_cut_pdf(cut, paid_records, datetime_formatter):
     summary_items = [
         ("Total caja", f"${float(cut.total_income or 0):,.2f}"),
         ("Vehiculos cobrados", cut.vehicles_paid),
-        ("Entradas extra", f"${float(cut.extra_income or 0):,.2f}"),
+        ("Otros ingresos", f"${float(cut.extra_income or 0):,.2f}"),
         ("Gastos", f"${float(cut.total_expenses or 0):,.2f}"),
     ]
     box_width = (width - (margin * 2) - (9 * mm)) / 4
@@ -344,7 +344,7 @@ def build_cash_cut_ticket_pdf(cut, paid_records, datetime_formatter):
 
     vehicle_total = float(cut.total_income or 0) - float(cut.extra_income or 0) + float(cut.total_expenses or 0)
     y = draw_money("Vehiculos", vehicle_total, y)
-    y = draw_money("Entradas extra", cut.extra_income, y)
+    y = draw_money("Otros ingresos", cut.extra_income, y)
     y = draw_money("Gastos", -float(cut.total_expenses or 0), y)
     pdf.line(margin_x, y, width - margin_x, y)
     y -= 5 * mm

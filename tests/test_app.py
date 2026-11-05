@@ -83,10 +83,10 @@ def test_admin_login_and_vehicle_flow():
         assert CashCut.query.count() == 1
 
 
-def test_prepaid_weekly_entry_starts_on_arrival_and_credits_employee(monkeypatch):
+def test_weekly_prepayment_from_entry_form_waits_for_vehicle_arrival(monkeypatch):
     app, client = build_client()
-    arrival = datetime(2026, 11, 7, 10, tzinfo=ZoneInfo("America/Mexico_City"))
-    monkeypatch.setattr("app.services.utc_now", lambda: arrival.astimezone(timezone.utc))
+    paid = datetime(2026, 11, 7, 10, tzinfo=ZoneInfo("America/Mexico_City"))
+    monkeypatch.setattr("app.services.utc_now", lambda: paid.astimezone(timezone.utc))
     login(client, "empleado1", "EmpleadoUno2026!")
 
     payload = {
@@ -100,16 +100,18 @@ def test_prepaid_weekly_entry_starts_on_arrival_and_credits_employee(monkeypatch
     response = client.post("/records/new", data=payload, follow_redirects=True)
     body = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "Vigencia semanal: 2026-11-07 10:00:00 al 2026-11-13 10:00:00" in body
-    assert "Pago registrado" in body
+    assert "Pendientes de entrada (1)" in body
+    assert "Cliente prepago" in body
+    assert "Pendiente de entrada" in body
     client.post("/records/new", data=payload)
 
     with app.app_context():
-        record = VehicleRecord.query.filter_by(physical_ticket_number="PREPAGO-01").one()
-        assert record.paid_at == record.entry_at
-        assert record.payment_user.username == "empleado1"
-        assert record.total_amount == 40
-        employee_id = record.payment_user_id
+        assert VehicleRecord.query.count() == 0
+        prepayment = WeeklyPrepayment.query.one()
+        assert prepayment.activated_at is None
+        assert prepayment.movement.type_label == "Anticipo semanal"
+        assert prepayment.movement.amount == 40
+        employee_id = prepayment.movement.created_by_user_id
 
     response = client.post("/cuts/generate", data={
         "cut_type": "daily", "cut_date": "2026-11-07", "target_user_id": employee_id,
@@ -117,7 +119,8 @@ def test_prepaid_weekly_entry_starts_on_arrival_and_credits_employee(monkeypatch
     assert response.status_code == 302
     with app.app_context():
         cut = CashCut.query.one()
-        assert cut.vehicles_paid == 1
+        assert cut.vehicles_paid == 0
+        assert cut.extra_income == 40
         assert cut.total_income == 40
 
 
@@ -137,6 +140,7 @@ def test_weekly_advance_payment_is_collected_saturday_and_activated_monday(monke
         assert VehicleRecord.query.count() == 0
         assert CashMovement.query.count() == 1
         assert prepayment.movement.amount == 40
+        assert prepayment.movement.type_label == "Anticipo semanal"
         employee_id = prepayment.movement.created_by_user_id
         prepayment_id = prepayment.id
 
@@ -590,7 +594,7 @@ def test_employee_can_register_cash_movements_and_generate_daily_cut_ticket():
 
     assert cut_response.status_code == 200
     assert "Total caja" in cut_body
-    assert "Entradas independientes" in cut_body
+    assert "Otros ingresos" in cut_body
     assert "Gastos" in cut_body
     assert "Entrada inicial" in cut_body
     assert "Compra de papel" in cut_body
@@ -1250,7 +1254,7 @@ def test_admin_dashboard_shows_collected_amount_by_user():
     assert "Empleado 2" in body
     assert "$90.00" in body
     assert "$80.00" in body
-    assert "Entradas $20.00" in body
+    assert "Otros ingresos $20.00" in body
     assert "Gastos $10.00" in body
 
 
@@ -2279,7 +2283,7 @@ def test_sergio_a_has_admin_home_and_management_sections():
     assert "Empleado 2" in home_body
     assert "$90.00" in home_body
     assert "$80.00" in home_body
-    assert "Entradas $20.00" in home_body
+    assert "Otros ingresos $20.00" in home_body
     assert "Gastos $10.00" in home_body
     assert "Movimientos de caja" in home_body
     assert "employee-app-shell" in home_body
