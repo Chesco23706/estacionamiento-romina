@@ -3,6 +3,7 @@
 {% block content %}
 {% if current_user.is_admin %}
 <main class="dashboard-layout">
+  {% include "pending_weekly_prepayments.html" %}
   <section class="card feature-card">
     <div class="section-heading">
       <div>
@@ -261,6 +262,7 @@
 </main>
 {% else %}
 <main class="employee-records-shell">
+  {% include "pending_weekly_prepayments.html" %}
   <section class="employee-page-top card">
     <div>
       <p class="eyebrow">Panel de operacion</p>

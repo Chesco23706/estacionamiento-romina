@@ -124,6 +124,60 @@ def test_weekly_prepayment_from_entry_form_waits_for_vehicle_arrival(monkeypatch
         assert cut.total_income == 40
 
 
+def test_weekly_advance_is_pending_across_employee_and_admin_views():
+    app, client = build_client()
+    login(client, "empleado1", "EmpleadoUno2026!")
+
+    form = client.get("/operations").get_data(as_text=True)
+    assert 'name="weekly_registration" value="advance"' in form
+
+    response = client.post(
+        "/records/new",
+        data={
+            "client_name": "Cliente por llegar",
+            "vehicle_type": "Moto",
+            "plate_number": "PEN-101",
+            "stay_mode": "weekly",
+            "weekly_registration": "advance",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert "Pendientes de entrada (1)" in response.get_data(as_text=True)
+
+    with app.app_context():
+        assert VehicleRecord.query.count() == 0
+        prepayment = WeeklyPrepayment.query.one()
+        assert prepayment.activated_at is None
+        prepayment_id = prepayment.id
+
+    for path in ("/", "/records", "/tickets-board"):
+        body = client.get(path).get_data(as_text=True)
+        assert "Cliente por llegar" in body
+        assert "Pendiente de entrada" in body
+        if path == "/":
+            assert "Anticipo semanal" in body
+
+    client.post("/logout")
+    login(client)
+    for path in ("/", "/records", "/tickets-board"):
+        body = client.get(path).get_data(as_text=True)
+        assert "Cliente por llegar" in body
+        assert "Pendiente de entrada" in body
+
+    activated = client.post(
+        f"/weekly-prepayments/{prepayment_id}/activate",
+        data={"ticket_number": "015"},
+        follow_redirects=True,
+    )
+    assert activated.status_code == 200
+    with app.app_context():
+        assert VehicleRecord.query.count() == 1
+        assert db.session.get(WeeklyPrepayment, prepayment_id).activated_at is not None
+    for path in ("/", "/records", "/tickets-board"):
+        assert "Pendientes de entrada (1)" not in client.get(path).get_data(as_text=True)
+
+
 def test_weekly_advance_payment_is_collected_saturday_and_activated_monday(monkeypatch):
     app, client = build_client()
     local_tz = ZoneInfo("America/Mexico_City")

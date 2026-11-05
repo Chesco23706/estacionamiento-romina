@@ -892,6 +892,15 @@ def cut_records_for_period(cut):
     return paid_records
 
 
+def pending_weekly_prepayments():
+    return (
+        WeeklyPrepayment.query.options(joinedload(WeeklyPrepayment.movement))
+        .filter(WeeklyPrepayment.activated_at.is_(None))
+        .order_by(WeeklyPrepayment.id.desc())
+        .all()
+    )
+
+
 @main_bp.app_context_processor
 def inject_now():
     return {
@@ -961,6 +970,7 @@ def logout():
 @login_required
 def dashboard():
     now_local = localize_datetime(utc_now())
+    pending_prepayments = pending_weekly_prepayments()
 
     def collector_rows_for_period(start, end):
         vehicle_totals = dict(
@@ -1021,6 +1031,7 @@ def dashboard():
         chart_rows = dashboard_chart_data(chart_filters)
         return render_template(
             "dashboard.html",
+            pending_prepayments=pending_prepayments,
             metrics=metrics,
             collector_rows=collector_rows_for_period(day_start, day_end),
             chart_filters=chart_filters,
@@ -1144,6 +1155,7 @@ def dashboard():
 
     return render_template(
         "dashboard.html",
+        pending_prepayments=pending_prepayments,
         today_records=employee_table_records,
         today_cash_movements=today_cash_movements,
         collector_rows=collector_rows_for_period(day_start, day_end)
@@ -1205,6 +1217,7 @@ def records_page():
         enrich_records(current_records)
         return render_template(
             "records.html",
+            pending_prepayments=pending_weekly_prepayments(),
             records=records,
             current_records=current_records,
             show_current_records=show_current_records,
@@ -1218,6 +1231,7 @@ def records_page():
         )
     return render_template(
         "records.html",
+        pending_prepayments=pending_weekly_prepayments(),
         records=records,
         pending_checkout_records=pending_checkout_records,
         filters=filters,
@@ -1236,6 +1250,7 @@ def tickets_board_page():
     enrich_records([slot["record"] for slot in board_records if slot["record"]])
     return render_template(
         "tickets_board.html",
+        pending_prepayments=pending_weekly_prepayments(),
         records=board_records,
         board_metrics=board_metrics,
         vehicle_types=get_vehicle_types(include_inactive=True),
@@ -1256,8 +1271,7 @@ def operations_page():
             vehicle_type: calculate_charge(vehicle_type, now, now, "weekly", 6)["total"]
             for vehicle_type in vehicle_types
         },
-        weekly_prepayments=WeeklyPrepayment.query.options(joinedload(WeeklyPrepayment.movement))
-        .filter_by(activated_at=None).order_by(WeeklyPrepayment.id.desc()).all(),
+        weekly_prepayments=pending_weekly_prepayments(),
     )
 
 
@@ -1336,7 +1350,10 @@ def help_page():
 @login_required
 def create_record():
     try:
-        if request.form.get("weekly_prepaid") == "on":
+        registration_type = (request.form.get("weekly_registration") or "entry").strip().lower()
+        if registration_type not in {"entry", "advance"}:
+            raise ValueError("Selecciona si el vehiculo ya ingreso o es un adelanto.")
+        if registration_type == "advance" or request.form.get("weekly_prepaid") == "on":
             if request.form.get("stay_mode") != "weekly":
                 raise ValueError("El anticipo requiere la modalidad semanal.")
             if any(

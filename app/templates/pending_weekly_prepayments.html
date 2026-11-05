@@ -1,0 +1,21 @@
+{% if pending_prepayments %}
+<section class="pending-weekly-section" aria-label="Adelantos pendientes de entrada">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Adelantos semanales</p>
+      <h2>Pendientes de entrada ({{ pending_prepayments|length }})</h2>
+    </div>
+    <a class="link-button" href="{{ url_for('main.operations_page', _anchor='weekly-prepayments') }}">Activar llegada</a>
+  </div>
+  <div class="pending-weekly-list">
+    {% for prepayment in pending_prepayments %}
+    <div class="pending-weekly-row">
+      <strong>{{ prepayment.client_name }}</strong>
+      <span>{{ prepayment.vehicle_type }} | {{ prepayment.plate_number }}</span>
+      <span>{{ prepayment.movement.amount|money }} cobrado el {{ prepayment.movement.occurred_at|dt }}</span>
+      <span class="status-pill status-pill-weekly">Pendiente de entrada</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

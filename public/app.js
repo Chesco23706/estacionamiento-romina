@@ -98,16 +98,40 @@ function syncSectionFromHash() {
 }
 
 function setupRecordModeFields() {
-  document.querySelectorAll("[data-weekly-prepaid-field]").forEach((field) => {
+  document.querySelectorAll("[data-weekly-registration-field]").forEach((field) => {
     const form = field.closest("form");
-    const syncAdvanceLink = () => {
+    const ticketField = form.querySelector("[data-entry-ticket-field]");
+    const ticketInput = ticketField.querySelector("input[name='ticket_number']");
+    const entryOnlyFields = form.querySelectorAll("[data-entry-only-field]");
+    const submitButton = form.querySelector("[data-registration-submit]");
+    const registrationOptions = form.querySelectorAll("[name='weekly_registration']");
+    const syncRegistration = () => {
       const weekly = form.elements.stay_mode.value === "weekly";
       field.hidden = !weekly;
+      registrationOptions.forEach((option) => {
+        option.disabled = !weekly;
+        option.required = weekly;
+        if (!weekly) option.checked = false;
+      });
+      const selection = weekly ? form.elements.weekly_registration.value : "entry";
+      const advance = selection === "advance";
+      ticketField.hidden = advance;
+      ticketInput.disabled = advance;
+      ticketInput.required = !advance;
+      ticketInput.setCustomValidity("");
+      entryOnlyFields.forEach((section) => {
+        section.hidden = advance;
+        section.querySelectorAll("input, textarea, select, button").forEach((control) => {
+          control.disabled = advance;
+        });
+      });
+      submitButton.disabled = weekly && !selection;
+      submitButton.textContent = advance ? "Registrar adelanto" : "Registrar vehiculo";
     };
-    form.querySelectorAll("[data-record-mode]").forEach((mode) => {
-      mode.addEventListener("change", syncAdvanceLink);
+    form.querySelectorAll("[data-record-mode], [name='weekly_registration']").forEach((mode) => {
+      mode.addEventListener("change", syncRegistration);
     });
-    syncAdvanceLink();
+    syncRegistration();
   });
 
   const modeSelects = document.querySelectorAll("[data-record-mode]");

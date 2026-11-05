@@ -9,6 +9,7 @@
     <article class="stat-card"><span>Vehiculos pendientes por cobrar</span><strong>{{ metrics.pending_count }}</strong></article>
     <article class="stat-card"><span>Total pendiente hoy</span><strong>{{ metrics.pending_total|money }}</strong></article>
   </section>
+  {% include "pending_weekly_prepayments.html" %}
 
   <section class="card feature-card">
     <div class="section-heading">
@@ -144,6 +145,7 @@
       <p>No pagados dentro: {{ employee_metrics.unpaid_today_count }}</p>
     </article>
   </section>
+  {% include "pending_weekly_prepayments.html" %}
 
   {% if current_user.has_admin_access %}
   <section class="employee-cash-panel card">

@@ -88,7 +88,7 @@
       <form method="post" action="{{ url_for('main.create_record') }}" class="touch-form-grid" data-friendly-form>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <label class="touch-field">
+        <label class="touch-field" data-entry-ticket-field>
           <span>Ficha fisica</span>
           <input
             type="text"
@@ -156,8 +156,20 @@
             {% endfor %}
           </div>
           <input type="hidden" name="contracted_days" value="6" data-contracted-days-input>
-          <div data-weekly-prepaid-field hidden>
-            <a class="link-button" href="#weekly-prepayments">¿Pago antes de llegar? Registrar adelanto semanal</a>
+          <div class="full-width" data-weekly-registration-field hidden>
+            <div class="field-group-title"><span>Situacion del vehiculo semanal</span></div>
+            <div class="mode-option-grid" role="group" aria-label="Situacion del vehiculo semanal">
+              <label class="mode-option-card">
+                <input type="radio" name="weekly_registration" value="entry">
+                <strong>Ya ingreso</strong>
+                <span>Asigna la ficha y registra su entrada.</span>
+              </label>
+              <label class="mode-option-card">
+                <input type="radio" name="weekly_registration" value="advance">
+                <strong>Adelanto pendiente</strong>
+                <span>Registra el pago. La ficha y la entrada se asignan al llegar.</span>
+              </label>
+            </div>
           </div>
         </section>
 
@@ -175,7 +187,7 @@
           <small>Si no tiene placa, escribe una referencia facil de reconocer.</small>
         </label>
 
-        <section class="service-panel full-width touch-service-panel" data-service-panel>
+        <section class="service-panel full-width touch-service-panel" data-service-panel data-entry-only-field>
           <div class="service-panel-header">
             <div>
               <span>Servicios extra</span>
@@ -210,13 +222,13 @@
           </div>
         </section>
 
-        <label class="touch-field full-width">
+        <label class="touch-field full-width" data-entry-only-field>
           <span>Notas</span>
           <textarea name="notes" rows="3" maxlength="500" placeholder="Opcional: casco negro, deja llaves, etc."></textarea>
         </label>
 
         <div class="touch-form-actions full-width">
-          <button class="btn touch-primary-btn" type="submit">Registrar vehiculo</button>
+          <button class="btn touch-primary-btn" type="submit" data-registration-submit>Registrar vehiculo</button>
           <a class="link-button" href="{{ url_for('main.records_page') }}">Ir a salidas</a>
         </div>
       </form>
