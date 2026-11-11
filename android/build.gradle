@@ -10,8 +10,8 @@ android {
         applicationId = 'mx.romina.estacionamiento.propietario'
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = '1.0'
+        versionCode = 3
+        versionName = '1.2'
     }
 
     compileOptions {
@@ -33,5 +33,5 @@ tasks.named('preBuild') {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation 'androidx.browser:browser:1.10.0'
 }

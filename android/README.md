@@ -1,6 +1,6 @@
 # Romina Propietario para Android
 
-El APK usa una Trusted Web Activity para abrir `https://estacionamiento-romina.vercel.app/owner`. La aplicación comprueba el manifiesto de Romina antes de abrir el panel. Una vez publicado el backend, conserva el acceso al mismo servicio y a los avisos Web Push configurados en el panel.
+El APK abre `https://estacionamiento-romina.vercel.app/owner` dentro de la aplicación. En Ajustes, el botón **Abrir avisos en el navegador** abre la configuración de Web Push en un navegador compatible. En Pagos, **Descargar PDF** abre el selector de archivos de Android para elegir dónde guardar el desglose.
 
 ## Compilar y firmar
 
@@ -12,4 +12,4 @@ gradle -p android assembleRelease
 
 El APK sin firma queda en `android/build/outputs/apk/release/romina-owner-release-unsigned.apk`. Firma el APK con `apksigner` y la clave de lanzamiento de Romina. En el equipo de compilación, la clave está en `%USERPROFILE%\.android\romina-owner-signing\release.p12` y su contraseña está protegida por Windows en el mismo directorio. Usa la misma clave en las actualizaciones para que Android las instale sobre la versión actual.
 
-El sitio publicado debe servir `/.well-known/assetlinks.json` con el certificado de la versión firmada. Chrome usa esa asociación para abrir el panel en modo de aplicación y habilitar la delegación de notificaciones.
+El sitio publicado debe servir `/.well-known/assetlinks.json` con el certificado de la versión firmada para que Android pueda abrir los enlaces del panel en Romina.

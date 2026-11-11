@@ -2,6 +2,7 @@ from base64 import urlsafe_b64encode
 from datetime import datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -10,9 +11,14 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from app import create_app
 from app.extensions import db
 from app.models import CashMovement, User, VehicleRecord, WeeklyPrepayment
-from app.owner_models import OwnerPushDelivery, OwnerPushDevice, OwnerShiftAssignment, OwnerShiftReport
+from app.owner_models import (
+    OwnerPayMovement, OwnerPushDelivery, OwnerPushDevice, OwnerShiftAssignment, OwnerShiftReport,
+    OwnerWeeklyPay,
+)
+from app.owner_payroll import pay_movements, pay_totals
 from app.owner_reports import weekly_ledger
 from app.pricing import ensure_utc
+from app.services import generate_cash_cut
 from config import TestingConfig
 
 
@@ -259,3 +265,70 @@ def test_owner_push_retries_and_does_not_send_twice(monkeypatch):
     assert client.delete("/owner/device", json=phone).status_code == 204
     with app.app_context():
         assert OwnerPushDelivery.query.count() == 0
+
+
+def test_weekly_pay_calculation_cut_assignment_and_pdf(monkeypatch):
+    app = create_app(OwnerTestingConfig)
+    client = app.test_client()
+    now = local_time(11, 13, 0)
+    monkeypatch.setattr("app.owner.utc_now", lambda: now)
+    with app.app_context():
+        employee = User.query.filter_by(username="empleado1").one()
+        employee_id = employee.id
+        cut = generate_cash_cut("daily", employee, target_date=local_time(10, 11, 0).date(), target_user=employee)
+        manual_id = cut.id
+    url = f"/owner/payments?week=2026-11-09&employee={employee_id}"
+    assert client.get(url).location.startswith("/owner/login?next=")
+    owner_login(client, url)
+    assert "Sueldo por capturar" in client.get(url).text
+
+    assert client.post(url, data={"action": "salary", "salary": "2000.50"}).status_code == 302
+    expense_key = uuid4().hex
+    for kind, amount, concept, cut_key in (
+        ("expense", "100.25", "Material de limpieza", "2026-11-09:morning"),
+        ("reimbursement", "35.50", "Taxi reembolsado", ""),
+        ("discount", "25", "Descuento registrado", ""),
+        ("loan", "300", "Préstamo de la semana", ""),
+    ):
+        data = {"action": "add", "kind": kind, "amount": amount, "description": concept,
+                "cut": cut_key, "entry_key": expense_key if kind == "expense" else uuid4().hex}
+        assert client.post(url, data=data).status_code == 302
+        if kind == "expense":
+            client.post(url, data=data)
+
+    assert "$1,610.75" in client.get(url).text
+    assert "Material de limpieza" in client.get("/owner?day=2026-11-09").text
+    with app.app_context():
+        pay = OwnerWeeklyPay.query.one()
+        assert pay_totals(pay, pay_movements(pay))["net"] == Decimal("1610.75")
+        expense = OwnerPayMovement.query.filter_by(kind="expense").one()
+        movement_id, pay_id = expense.id, pay.id
+
+    invalid = client.post(url, data={"action": "assign", "movement_id": movement_id,
+                                    "cut": "2026-11-02:morning"}, follow_redirects=True)
+    assert "Selecciona un corte de la semana" in invalid.text
+    assert "Material de limpieza" in client.get("/owner?day=2026-11-09").text
+    client.post(url, data={"action": "assign", "movement_id": movement_id, "cut": f"manual:{manual_id}"})
+    assert "Material de limpieza" not in client.get("/owner?day=2026-11-09").text
+    assert "Material de limpieza" in client.get(f"/owner/cuts/{manual_id}").text
+
+    download = client.get(f"/owner/payments/{pay_id}/pdf")
+    assert download.status_code == 200 and download.data.startswith(b"%PDF-")
+    assert download.mimetype == "application/pdf" and "pago-2026-11-09" in download.headers["Content-Disposition"]
+    assert download.headers["Cache-Control"] == "no-store"
+    client.post(url, data={"action": "void", "movement_id": movement_id})
+    history = client.get(url).text
+    assert "Material de limpieza" in history and "Anulado" in history and "$1,711.00" in history
+    assert "Material de limpieza" not in client.get(f"/owner/cuts/{manual_id}").text
+
+    previous_week = f"/owner/payments?week=2026-11-02&employee={employee_id}"
+    assert "Sueldo por capturar" in client.get(previous_week).text
+    client.post(previous_week, data={"action": "salary", "salary": "1800"})
+    assert "$1,800.00" in client.get(previous_week).text
+    assert "$1,711.00" in client.get(url).text
+
+    client.post("/logout")
+    assert client.get(f"/owner/payments/{pay_id}/pdf").status_code == 401
+    client.post("/login", data={"username": "empleado1", "password": "EmpleadoUno2026!"})
+    assert client.get(url).status_code == 403
+    assert client.get(f"/owner/payments/{pay_id}/pdf").status_code == 403

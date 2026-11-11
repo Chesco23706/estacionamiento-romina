@@ -1,18 +1,25 @@
 from datetime import date, timedelta
 from functools import wraps
 from hmac import compare_digest
+from uuid import uuid4
 
 from flask import (
     Blueprint, abort, current_app, flash, make_response, redirect, render_template,
-    request, url_for,
+    request, send_file, url_for,
 )
 from flask_login import current_user
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
 from .extensions import db
 from .models import CashCut, User
-from .owner_models import OWNER_TABLES, OwnerPushDevice, OwnerShiftAssignment, OwnerShiftReport
+from .owner_models import OWNER_TABLES, OwnerPushDevice, OwnerShiftAssignment, OwnerShiftReport, OwnerWeeklyPay
+from .owner_payroll import (
+    MOVEMENT_LABELS, employee_key, linked_pay_movements, movement_cut_key, movement_cut_label,
+    pay_employees, pay_movements, pay_totals, save_pay_change, week_cut_options,
+)
+from .owner_payroll_pdf import build_weekly_pay_pdf
 from .owner_push import delete_device, device_key, push_configured, read_subscription, send_due_notifications, send_push
 from .owner_reports import (
     ALL_SHIFTS, SHIFTS, assignment_history, close_due_shifts, manual_cuts, scheduled_shifts,
@@ -44,7 +51,7 @@ def owner_required(view):
     @wraps(view)
     def allowed(*args, **kwargs):
         if not current_user.is_authenticated:
-            if request.endpoint not in {"owner.dashboard", "owner.settings", "owner.manual_cut"}:
+            if request.endpoint not in {"owner.dashboard", "owner.settings", "owner.manual_cut", "owner.payments"}:
                 abort(401)
             target = request.full_path.rstrip("?")
             if request.args.get("fragment") == "1":
@@ -102,6 +109,7 @@ def dashboard():
         )
     }
     manual = manual_cuts(monday, sunday)
+    pay_links = linked_pay_movements(day)
     history = assignment_history(now)
     day_shifts = scheduled_shifts(day)
     if day == sunday:
@@ -112,6 +120,7 @@ def dashboard():
         shifts.append({
             "shift": shift, "report": reports.get((day, shift.key)), "due": end <= now,
             "employee": shift_employee(day, shift, now, history),
+            "pay_movements": [movement for movement in pay_links if movement.cut_kind == shift.key],
         })
     weekly_cuts = [
         (
@@ -127,6 +136,7 @@ def dashboard():
         current_week=monday <= today <= sunday, local_now=local_now, total=total, chart=chart,
         day_total=days[day], shifts=shifts, manual=manual[day], employees=employees, weekly_cuts=weekly_cuts,
         open_shift=request.args.get("shift"),
+        pay_movement_labels=MOVEMENT_LABELS, pay_employee_key=employee_key,
     )
     template = "owner_dashboard_content.html" if request.args.get("fragment") == "1" else "owner_dashboard.html"
     return render_template(template, **context)
@@ -142,6 +152,64 @@ def manual_cut(cut_id):
     return render_template(
         "owner_manual_cut.html", cut=cut, day=day, day_name=WEEKDAYS[day.weekday()],
         created=localize_datetime(cut.generated_at),
+        cut_pay_movements=[movement for movement in linked_pay_movements(day) if movement.cash_cut_id == cut.id],
+        pay_movement_labels=MOVEMENT_LABELS, pay_employee_key=employee_key,
+    )
+
+
+@owner_bp.route("/owner/payments", methods=["GET", "POST"])
+@owner_required
+def payments():
+    now = utc_now()
+    today = localize_datetime(now).date()
+    week = request.args.get("week")
+    day = requested_day(week, today, today)
+    monday = day - timedelta(days=day.weekday())
+    sunday = monday + timedelta(days=6)
+    employees = pay_employees(monday)
+    requested_employee = request.args.get("employee")
+    employee = employees.get(requested_employee)
+
+    if request.method == "POST":
+        if week != monday.isoformat():
+            abort(400)
+        if employee is None:
+            abort(404)
+        try:
+            message = save_pay_change(employee, monday, request.form, current_user, now)
+            db.session.commit()
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error), "danger")
+        else:
+            flash(message, "success")
+        return redirect(url_for("owner.payments", week=monday, employee=employee.key))
+
+    if employee is None:
+        employee = next(iter(employees.values()), None)
+    pay = employee.pay if employee else None
+    movements = pay_movements(pay)
+    return render_template(
+        "owner_payments.html", today=today, monday=monday, sunday=sunday,
+        previous=monday - timedelta(days=7), following=min(monday + timedelta(days=7), today),
+        current_week=monday <= today <= sunday, employees=employees.values(), employee=employee,
+        movements=movements, totals=pay_totals(pay, movements), movement_labels=MOVEMENT_LABELS,
+        cut_options=week_cut_options(monday) if employee else {},
+        cut_key=movement_cut_key, cut_label=movement_cut_label, entry_key=uuid4().hex,
+    )
+
+
+@owner_bp.get("/owner/payments/<int:pay_id>/pdf")
+@owner_required
+def payments_pdf(pay_id):
+    pay = db.get_or_404(OwnerWeeklyPay, pay_id)
+    movements = pay_movements(pay)
+    options = week_cut_options(pay.week_start)
+    pdf = build_weekly_pay_pdf(pay, movements, options)
+    name = secure_filename(pay.employee_name) or "empleado"
+    return send_file(
+        pdf, mimetype="application/pdf", as_attachment=True,
+        download_name=f"pago-{pay.week_start.isoformat()}-{name}.pdf",
     )
 
 

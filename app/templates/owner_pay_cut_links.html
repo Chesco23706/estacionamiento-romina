@@ -1,0 +1,16 @@
+{% if cut_pay_movements %}
+<details class="disclosure cut-detail pay-cut-links" id="{{ pay_links_id }}">
+  <summary><span>Movimientos de pago vinculados</span><span>{{ cut_pay_movements|length }}</span></summary>
+  <ul class="activity">
+    {% for movement in cut_pay_movements %}
+    <li>
+      <a class="manual-link" href="{{ url_for('owner.payments', week=movement.weekly_pay.week_start, employee=pay_employee_key(movement.weekly_pay)) }}#pay-history">
+        <span><strong>{{ movement.description }}</strong><small>{{ movement.weekly_pay.employee_name }} · {{ pay_movement_labels[movement.kind] }}</small></span>
+        <strong>{{ movement.signed_amount|money }}</strong>
+        <span class="arrow" aria-hidden="true">›</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}

@@ -310,6 +310,8 @@ Abre `/owner` con la cuenta administradora indicada por `OWNER_MOBILE_USERNAME`.
 
 En **Ajustes**, asigna a los dos empleados según los turnos que tienen en la semana actual. Cada lunes se intercambian los turnos de mañana y tarde. De lunes a sábado, el corte de mañana incluye hasta las 14:30 y el de tarde abarca desde las 14:31 hasta el último segundo del día. El domingo trabaja quien tiene la mañana esa semana y se guarda un solo corte de jornada completa a su nombre, al finalizar el día. Cada cierre automático guarda los cobros y movimientos del empleado asignado. El resumen de lunes a domingo incluye toda la caja, incluso movimientos de otros empleados.
 
+En **Pagos**, elige al empleado y la semana de lunes a domingo. Guarda su sueldo base y captura gastos a descontar, reembolsos, descuentos y préstamos a descontar en esa semana. Puedes vincular cada movimiento a un corte de la misma semana y cambiar el vínculo desde el historial. Los movimientos se reflejan en el cálculo del sueldo, y el vínculo permite consultarlos desde el corte sin modificar sus importes de caja. **Descargar PDF** genera el desglose del empleado para la semana seleccionada.
+
 Para activar los cierres y avisos en producción:
 
 1. Configura `CRON_SECRET` como un secreto aleatorio y conserva HTTPS. Los trabajos de `vercel.json` invocan `/owner/jobs/close-shifts` después de ambos cierres, con reintentos. Están expresados en UTC para `America/Mexico_City`. El plan Hobby puede invocar un trabajo en cualquier minuto de la hora programada. La hora contable del corte se conserva aunque el aviso llegue después.

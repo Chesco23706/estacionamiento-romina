@@ -1,0 +1,136 @@
+{% extends "owner_base.html" %}
+{% block title %}Pagos semanales · Romina{% endblock %}
+{% macro cut_select(field_id, selected='') %}
+<label for="{{ field_id }}">Corte asociado</label>
+<select name="cut" id="{{ field_id }}">
+  <option value="">Sin corte asignado</option>
+  {% if selected and selected not in cut_options %}<option disabled selected>Corte archivado</option>{% endif %}
+  {% for group in cut_options.values()|groupby('day') %}
+  <optgroup label="{{ group.grouper.strftime('%d/%m/%Y') }}">
+    {% for cut in group.list %}
+    <option value="{{ cut.key }}" {% if selected == cut.key %}selected{% endif %}>{{ cut.label }}{{ '' if cut.closed else ' · sin cierre' }}</option>
+    {% endfor %}
+  </optgroup>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% block content %}
+<div class="page-heading">
+  <div><p class="kicker">Vista del propietario</p><h1>Pagos semanales</h1></div>
+</div>
+<div class="week-controls">
+  <a class="icon-btn" href="{{ url_for('owner.payments', week=previous, employee=employee.key if employee else none) }}" aria-label="Semana anterior">‹</a>
+  <strong>{{ monday|owner_short_date }} – {{ sunday|owner_short_date }} {{ sunday.year }}</strong>
+  {% if current_week %}
+  <span class="icon-btn" aria-disabled="true" aria-label="Semana siguiente">›</span>
+  {% else %}
+  <a class="icon-btn" href="{{ url_for('owner.payments', week=following, employee=employee.key if employee else none) }}" aria-label="Semana siguiente">›</a>
+  {% endif %}
+</div>
+
+{% if employee %}
+{% set pay_url = url_for('owner.payments', week=monday, employee=employee.key) %}
+<form class="panel settings pay-picker" method="get">
+  <div>
+    <label for="pay-employee">Empleado</label>
+    <select name="employee" id="pay-employee">
+      {% for item in employees %}
+      <option value="{{ item.key }}" {% if item.key == employee.key %}selected{% endif %}>{{ item.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="pay-week">Fecha de la semana</label>
+    <input type="date" name="week" id="pay-week" value="{{ monday }}" max="{{ today }}" required>
+  </div>
+  <button type="submit" class="button secondary">Consultar</button>
+</form>
+
+<div class="week-grid pay-grid">
+  <article class="balance pay-balance">
+    <p>{{ employee.name }}</p>
+    {% if totals.net is none %}
+    <div class="balance-number"><strong class="pay-pending">Sueldo por capturar</strong></div>
+    {% else %}
+    <p class="pay-net-label">{{ 'Saldo pendiente' if totals.net < 0 else 'Total a pagar' }}</p>
+    <div class="balance-number"><strong>{{ (totals.net|abs)|money }}</strong><span>MXN</span></div>
+    {% endif %}
+    <dl>
+      <div><dt>Sueldo base</dt><dd>{{ totals.salary|money if totals.salary is not none else 'Pendiente' }}</dd></div>
+      <div><dt>Reembolsos</dt><dd>{{ totals.amounts.reimbursement|money }}</dd></div>
+      <div><dt>Deducciones</dt><dd>{{ totals.deductions|money }}</dd></div>
+    </dl>
+    {% if employee.pay %}
+    <a class="button pay-download" href="{{ url_for('owner.payments_pdf', pay_id=employee.pay.id) }}">Descargar PDF</a>
+    {% endif %}
+  </article>
+  <section class="panel settings">
+    <h2>Sueldo base de la semana</h2>
+    <form action="{{ pay_url }}" method="post" class="pay-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="salary">
+      <label for="salary">Sueldo en MXN</label>
+      <input type="number" name="salary" id="salary" min="0" max="99999999.99" step=".01"
+             inputmode="decimal" value="{{ totals.salary if totals.salary is not none else '' }}" required>
+      <button class="button primary" type="submit">Guardar sueldo</button>
+    </form>
+    <p class="pay-note">Cada semana guarda su propio sueldo.</p>
+  </section>
+</div>
+
+<div class="week-grid pay-grid pay-ledger">
+  <section class="panel settings">
+    <h2>Agregar movimiento</h2>
+    <form action="{{ pay_url }}" method="post" class="pay-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="add">
+      <input type="hidden" name="entry_key" value="{{ entry_key }}">
+      <label for="pay-kind">Tipo</label>
+      <select name="kind" id="pay-kind" required>
+        {% for key, label in movement_labels.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+      </select>
+      <label for="pay-description">Concepto</label>
+      <input type="text" name="description" id="pay-description" maxlength="255" required>
+      <label for="pay-amount">Importe en MXN</label>
+      <input type="number" name="amount" id="pay-amount" min=".01" max="99999999.99" step=".01" inputmode="decimal" required>
+      {{ cut_select('new-pay-cut') }}
+      <button class="button primary" type="submit">Guardar movimiento</button>
+    </form>
+  </section>
+
+  <section class="panel settings" id="pay-history">
+    <h2>Historial de la semana</h2>
+    <ul class="activity pay-movements">
+      {% for movement in movements %}
+      <li class="pay-movement{% if movement.voided_at %} voided{% endif %}">
+        <div class="pay-movement-head">
+          <span><strong>{{ movement.description }}</strong><small>{{ movement_labels[movement.kind] }} · {{ movement.created_at|dt }}</small></span>
+          <span class="pay-movement-amount"><strong>{{ movement.signed_amount|money }}</strong>{% if movement.voided_at %}<small>Anulado</small>{% endif %}</span>
+        </div>
+        <p>{{ cut_label(movement, cut_options) }}</p>
+        {% if not movement.voided_at %}
+        <details class="disclosure pay-edit">
+          <summary><span>Editar corte o anular</span></summary>
+          <form action="{{ pay_url }}" method="post" class="pay-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="movement_id" value="{{ movement.id }}">
+            {{ cut_select('pay-cut-' ~ movement.id, cut_key(movement)) }}
+            <div class="actions">
+              <button class="button secondary" type="submit" name="action" value="assign">Guardar corte</button>
+              <button class="button danger-button" type="submit" name="action" value="void">Anular movimiento</button>
+            </div>
+          </form>
+        </details>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="muted">Sin movimientos registrados para este empleado.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% else %}
+<section class="panel settings"><p>Agrega un empleado en el sistema para capturar su pago semanal.</p></section>
+{% endif %}
+{% endblock %}

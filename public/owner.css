@@ -219,6 +219,7 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 .owner-login .remember { display: flex; gap: 7px; align-items: center; margin-bottom: 16px; }
 .owner-login .remember input { width: 19px; height: 19px; accent-color: var(--accent); }
 .settings p.notice, .notice, .connection-status { background: #e6f2ee; color: #205a4d; padding: 10px 12px; border-radius: 10px; font-size: .85rem; line-height: 1.4; margin: 12px 0; }
+.notice.notice-error { background: #fde8e8; color: #8d252a; }
 .button { min-height: 44px; border-radius: 10px; padding: 9px 12px; font-size: .86rem; font-weight: 730; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); }
 .primary { background: var(--accent); color: white; border-color: var(--accent); }
 .secondary { background: #f7fafb; color: var(--ink); }
@@ -228,10 +229,32 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 #install-help p + p { margin-top: 7px; }
 
 .tabbar { position: fixed; z-index: 5; bottom: 0; width: 100%; border-top: 1px solid var(--line); background: var(--white); padding-bottom: env(safe-area-inset-bottom); }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 600px; margin: auto; padding: 4px 12px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 600px; margin: auto; padding: 4px 12px; }
 .tabs a { min-height: 50px; display: grid; justify-items: center; align-content: center; gap: 3px; font-size: .75rem; font-weight: 700; color: var(--muted); border-radius: 11px; }
 .tabs a[aria-current] { background: #e6f4ef; color: #0d5f50; }
 .tabs a:hover, .icon-btn[href]:hover, .button.secondary:hover { background: #edf4f5; }
+
+.pay-picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 180px) auto; align-items: end; gap: 10px; }
+.pay-picker label { margin-top: 0; }
+.pay-picker input, .pay-form input:not([type=hidden]) { min-width: 0; min-height: 44px; width: 100%; padding: 7px 10px; border: 1px solid #aebac8; border-radius: 9px; background: white; color: var(--ink); font: inherit; }
+.pay-grid { align-items: start; margin-top: 14px; }
+.pay-balance .balance-number { margin-bottom: 16px; }
+.pay-balance .pay-pending { font-size: clamp(1.3rem, 5vw, 2rem); }
+.pay-net-label { margin-top: 9px; }
+.pay-download { width: fit-content; margin-top: 14px; color: white; background: #ffffff17; border-color: #ffffff55; }
+.pay-download:hover { background: #ffffff30; }
+.pay-form > .button { margin-top: 13px; }
+.pay-note { margin-top: 11px !important; }
+.pay-movements { margin-top: 11px; }
+.activity .pay-movement { display: block; }
+.pay-movement-head { display: flex; justify-content: space-between; gap: 10px; }
+.pay-movement-amount { text-align: right; flex: none; }
+.pay-movement.voided .pay-movement-amount { color: var(--muted); }
+.pay-edit { margin-top: 2px; }
+.pay-edit summary { min-height: 38px; padding: 4px 2px; color: var(--accent); font-size: .8rem; }
+.pay-edit label { margin-top: 0; }
+.danger-button { background: #fff3f3; border-color: #f4cbcb; color: #8d252a; }
+.pay-cut-links { margin-top: 12px; border-top: 1px solid var(--line); }
 
 @media (max-width: 680px) {
   .top-inner { min-height: 60px; padding-inline: 14px; }
@@ -243,6 +266,8 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
   .chart-panel, .manual-panel, .settings { padding: 14px; }
   .bar-track { height: 61px; }
   .cut-section { margin-top: 25px; }
+  .pay-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pay-picker > button { grid-column: 1 / -1; justify-self: start; }
 }
 @media (max-width: 365px) {
   .live-label { font-size: .64rem; padding-inline: 6px; }

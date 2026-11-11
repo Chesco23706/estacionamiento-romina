@@ -38,6 +38,7 @@
       <li class="muted">Sin otros movimientos.</li>
       {% endfor %}
     </ul>
+    {% with pay_links_id='manual-pay-links' %}{% include "owner_pay_cut_links.html" %}{% endwith %}
   </article>
 </div>
 {% endblock %}

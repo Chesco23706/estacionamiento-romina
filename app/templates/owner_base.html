@@ -29,7 +29,7 @@
   <main class="shell">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
-      <p class="notice" role="status">{{ message }}</p>
+      <p class="notice{% if category == 'danger' %} notice-error{% endif %}" role="{{ 'alert' if category == 'danger' else 'status' }}">{{ message }}</p>
       {% endfor %}
     {% endwith %}
     {% block content %}{% endblock %}
@@ -44,6 +44,10 @@
       <a href="{{ url_for('owner.dashboard', day=day if day is defined else none) }}#cortes" data-tab="cortes" {% if request.endpoint == 'owner.manual_cut' %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-3-2-3 2-3-2-3 2zM9 8h6m-6 4h6"/></svg>
         Cortes
+      </a>
+      <a href="{{ url_for('owner.payments', week=day if day is defined else none) }}" data-tab="pagos" {% if request.endpoint == 'owner.payments' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M3.5 10h17m-13 4h4"/></svg>
+        Pagos
       </a>
       <a href="{{ url_for('owner.settings') }}" data-tab="ajustes" {% if request.endpoint == 'owner.settings' %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5"/><circle cx="15" cy="17" r="2.5"/></svg>

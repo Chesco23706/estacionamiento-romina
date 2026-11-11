@@ -136,6 +136,9 @@
           <p class="shift-note">{{ 'No había un empleado asignado al cierre de este turno.' if row.due else 'Asigna a la persona que cierra este turno.' }}</p>
           {% if not row.due %}<a class="text-link" href="{{ url_for('owner.settings') }}#turnos">Asignar empleado →</a>{% endif %}
         {% endif %}
+        {% with cut_pay_movements=row.pay_movements, pay_links_id='pay-links-' ~ shift.key %}
+        {% include "owner_pay_cut_links.html" %}
+        {% endwith %}
       </article>
     {% endfor %}
   </div>

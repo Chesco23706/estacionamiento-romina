@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">Romina Propietario</string>
     <string name="start_url" translatable="false">https://estacionamiento-romina.vercel.app/owner</string>
-    <string name="manifest_url" translatable="false">https://estacionamiento-romina.vercel.app/owner/manifest.webmanifest</string>
-    <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://estacionamiento-romina.vercel.app\"}}]</string>
     <string name="app_title">Romina · Propietario</string>
     <string name="connecting">Conectando al estacionamiento…</string>
     <string name="unpublished">El panel del propietario aún no está publicado en el servidor.</string>
@@ -10,6 +8,13 @@
     <string name="connection_error">No pudimos conectar con el estacionamiento. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="browser_required">Necesitas un navegador compatible, como Chrome, para abrir el panel.</string>
     <string name="retry">Volver a intentar</string>
+    <string name="webview_error">Android no pudo cargar el panel. Puedes volver a intentar o abrirlo en el navegador.</string>
+    <string name="open_browser">Abrir en el navegador</string>
+    <string name="browser_alerts">Abrir avisos en el navegador</string>
+    <string name="pdf_preparing">Preparando el PDF…</string>
+    <string name="pdf_download_error">No se pudo descargar el PDF. Revisa tu sesión e inténtalo de nuevo.</string>
+    <string name="pdf_save_error">No se pudo guardar el PDF.</string>
+    <string name="pdf_saved">PDF guardado.</string>
     <color name="romina_navy">#13223A</color>
     <color name="romina_green">#116759</color>
     <color name="romina_page">#F3F5F8</color>

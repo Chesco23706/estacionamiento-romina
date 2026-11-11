@@ -919,7 +919,8 @@ def login():
     try:
         target = urlsplit(next_url)
         owner_next = (
-            (target.path in {"/owner", "/owner/settings"} or re.fullmatch(r"/owner/cuts/[0-9]+", target.path))
+            (target.path in {"/owner", "/owner/settings", "/owner/payments"}
+             or re.fullmatch(r"/owner/cuts/[0-9]+", target.path))
             and not target.scheme and not target.netloc
             and next_url.startswith("/owner")
             and not any(ord(char) < 32 for char in next_url)
