@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#13223a">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Romina · Propietario{% endblock %}</title>
+  <link rel="manifest" href="{{ url_for('owner.manifest') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='owner-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='owner-192.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='owner.css') }}">
+  <script src="{{ url_for('static', filename='owner.js') }}" defer></script>
+</head>
+<body data-worker="{{ url_for('static', filename='owner-sw.js') }}">
+  <header class="top">
+    <div class="top-inner">
+      <a class="brand" href="{{ url_for('owner.dashboard') }}">
+        <img src="{{ url_for('static', filename='owner-192.png') }}" width="42" height="42" alt="">
+        <span><strong>Romina</strong><small>Estacionamiento</small></span>
+      </a>
+      {% if current_user.is_authenticated and current_user.is_owner %}
+      <a class="profile" href="{{ url_for('owner.settings') }}" aria-label="Ajustes de la cuenta propietaria">
+        {{ current_user.full_name[0]|upper }}
+      </a>
+      {% endif %}
+    </div>
+  </header>
+  <main class="shell">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <p class="notice" role="status">{{ message }}</p>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  {% if current_user.is_authenticated and current_user.is_owner %}
+  <nav class="tabbar" aria-label="Navegación de la aplicación">
+    <div class="tabs">
+      <a href="{{ url_for('owner.dashboard', day=day if day is defined else none) }}#semana" data-tab="semana" {% if request.endpoint == 'owner.dashboard' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15v-3m5 3V7m5 8v-5"/></svg>
+        Semana
+      </a>
+      <a href="{{ url_for('owner.dashboard', day=day if day is defined else none) }}#cortes" data-tab="cortes" {% if request.endpoint == 'owner.manual_cut' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-3-2-3 2-3-2-3 2zM9 8h6m-6 4h6"/></svg>
+        Cortes
+      </a>
+      <a href="{{ url_for('owner.settings') }}" data-tab="ajustes" {% if request.endpoint == 'owner.settings' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5"/><circle cx="15" cy="17" r="2.5"/></svg>
+        Ajustes
+      </a>
+    </div>
+  </nav>
+  {% endif %}
+</body>
+</html>

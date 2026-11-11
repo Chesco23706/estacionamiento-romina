@@ -1,0 +1,7 @@
+{% extends "owner_base.html" %}
+{% block content %}
+<div id="live-dashboard" data-refresh>
+  {% include "owner_dashboard_content.html" %}
+</div>
+<p id="connection-status" class="connection-status" role="status" hidden></p>
+{% endblock %}

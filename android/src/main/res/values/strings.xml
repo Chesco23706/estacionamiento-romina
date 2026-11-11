@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Romina Propietario</string>
+    <string name="start_url" translatable="false">https://estacionamiento-romina.vercel.app/owner</string>
+    <string name="manifest_url" translatable="false">https://estacionamiento-romina.vercel.app/owner/manifest.webmanifest</string>
+    <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://estacionamiento-romina.vercel.app\"}}]</string>
+    <string name="app_title">Romina · Propietario</string>
+    <string name="connecting">Conectando al estacionamiento…</string>
+    <string name="unpublished">El panel del propietario aún no está publicado en el servidor.</string>
+    <string name="unavailable">El servidor no pudo abrir el panel. Inténtalo de nuevo en unos minutos.</string>
+    <string name="connection_error">No pudimos conectar con el estacionamiento. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="browser_required">Necesitas un navegador compatible, como Chrome, para abrir el panel.</string>
+    <string name="retry">Volver a intentar</string>
+    <color name="romina_navy">#13223A</color>
+    <color name="romina_green">#116759</color>
+    <color name="romina_page">#F3F5F8</color>
+    <color name="romina_muted">#52627A</color>
+    <style name="RominaTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">@color/romina_green</item>
+        <item name="android:windowBackground">@color/romina_page</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

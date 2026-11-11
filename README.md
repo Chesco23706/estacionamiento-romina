@@ -302,6 +302,26 @@ Las pruebas actuales cubren:
 - Flujo de alta, salida, pago y corte.
 - Restriccion de rutas administrativas para empleados.
 - Creacion de usuarios iniciales de desarrollo.
+- Acceso móvil, cierres por turno, anticipos semanales y reintento de notificaciones.
+
+## App móvil del propietario
+
+Abre `/owner` con la cuenta administradora indicada por `OWNER_MOBILE_USERNAME`. Si no se define, usa `ADMIN_BOOTSTRAP_USERNAME`. Instálala desde el menú de Chrome en Android o desde **Compartir → Añadir a pantalla de inicio** en Safari de iPhone. En iPhone, abre el icono instalado antes de habilitar avisos (iOS 16.4 o posterior). El acceso inicial puede recordar la sesión de ese teléfono.
+
+En **Ajustes**, asigna a los dos empleados según los turnos que tienen en la semana actual. Cada lunes se intercambian los turnos de mañana y tarde. De lunes a sábado, el corte de mañana incluye hasta las 14:30 y el de tarde abarca desde las 14:31 hasta el último segundo del día. El domingo trabaja quien tiene la mañana esa semana y se guarda un solo corte de jornada completa a su nombre, al finalizar el día. Cada cierre automático guarda los cobros y movimientos del empleado asignado. El resumen de lunes a domingo incluye toda la caja, incluso movimientos de otros empleados.
+
+Para activar los cierres y avisos en producción:
+
+1. Configura `CRON_SECRET` como un secreto aleatorio y conserva HTTPS. Los trabajos de `vercel.json` invocan `/owner/jobs/close-shifts` después de ambos cierres, con reintentos. Están expresados en UTC para `America/Mexico_City`. El plan Hobby puede invocar un trabajo en cualquier minuto de la hora programada. La hora contable del corte se conserva aunque el aviso llegue después.
+2. Genera un par VAPID una sola vez y conserva la clave privada en las variables de producción. El siguiente comando usa las dependencias de Python del proyecto. Guarda las dos líneas de salida como `OWNER_PUSH_PRIVATE_KEY` y `OWNER_PUSH_PUBLIC_KEY`, en ese orden.
+
+   ```powershell
+   py -c "from base64 import urlsafe_b64encode as b64; from cryptography.hazmat.primitives.asymmetric import ec; from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat; k=ec.generate_private_key(ec.SECP256R1()); print(b64(k.private_numbers().private_value.to_bytes(32, 'big')).decode().rstrip('=')); print(b64(k.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)).decode().rstrip('='))"
+   ```
+
+3. Define `OWNER_PUSH_SUBJECT` con una dirección de contacto en formato `mailto:contacto@tu-dominio.mx`. Publica la app y abre **Ajustes → Activar avisos → Enviar aviso de prueba** desde el teléfono instalado.
+
+En Docker u otro servidor, programa una solicitud GET a la misma ruta cada cinco minutos desde el planificador del servidor y envía `Authorization: Bearer <CRON_SECRET>`. Si cambia la zona horaria de la aplicación, ajusta también el horario del planificador. Los cierres se recuperan hasta siete días después de una interrupción, a partir de las asignaciones registradas.
 
 ## Explicacion tecnica sencilla
 

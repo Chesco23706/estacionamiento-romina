@@ -1,6 +1,8 @@
-from io import BytesIO
-from datetime import date, datetime, timedelta
+import re
 from collections import defaultdict
+from datetime import date, datetime, timedelta
+from io import BytesIO
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from flask import (
@@ -31,6 +33,7 @@ from .services import (
     RECORD_STAY_MODES,
     STATUS_OPTIONS,
     activate_weekly_prepayment,
+    cash_cut_payments,
     cash_movement_totals,
     create_cash_movement,
     create_employee,
@@ -876,17 +879,9 @@ def require_cut_month(raw_value):
 
 
 def cut_records_for_period(cut):
-    query = (
-        vehicle_record_display_query()
-        .filter(
-            VehicleRecord.paid_at.isnot(None),
-            VehicleRecord.paid_at >= cut.period_start,
-            VehicleRecord.paid_at < cut.period_end,
-            VehicleRecord.weekly_prepayment_id.is_(None),
-        )
+    query = cash_cut_payments(cut.period_start, cut.period_end, cut.target_user_id).options(
+        *RECORD_DISPLAY_OPTIONS,
     )
-    if cut.target_user_id:
-        query = query.filter(VehicleRecord.payment_user_id == cut.target_user_id)
     paid_records = query.order_by(VehicleRecord.paid_at.asc(), VehicleRecord.entry_at.asc()).all()
     enrich_records(paid_records)
     return paid_records
@@ -919,7 +914,28 @@ def health():
 
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
+    mobile_login = request.endpoint == "owner.login"
+    next_url = request.args.get("next", "/owner" if mobile_login else "")
+    try:
+        target = urlsplit(next_url)
+        owner_next = (
+            (target.path in {"/owner", "/owner/settings"} or re.fullmatch(r"/owner/cuts/[0-9]+", target.path))
+            and not target.scheme and not target.netloc
+            and next_url.startswith("/owner")
+            and not any(ord(char) < 32 for char in next_url)
+        )
+    except ValueError:
+        owner_next = False
+    if mobile_login and not owner_next:
+        next_url = url_for("owner.dashboard")
+        owner_next = True
+
+    def login_form():
+        return render_template("owner_login.html" if owner_next else "login.html")
+
     if current_user.is_authenticated:
+        if owner_next and current_user.is_owner:
+            return redirect(next_url)
         return redirect(url_for("main.dashboard"))
 
     if request.method == "POST":
@@ -932,28 +948,32 @@ def login():
                 user.register_failed_login()
                 db.session.commit()
             flash("Usuario o contraseña inválidos.", "danger")
-            return render_template("login.html")
+            return login_form()
 
         if user.is_locked():
             flash("Tu cuenta está temporalmente bloqueada por intentos fallidos.", "danger")
-            return render_template("login.html")
+            return login_form()
 
         if not user.is_active_user:
             flash("Tu usuario está desactivado. Contacta al administrador.", "danger")
-            return render_template("login.html")
+            return login_form()
 
         if not is_employee_within_schedule(user):
             flash("Tu cuenta solo puede usarse dentro del horario asignado.", "danger")
-            return render_template("login.html")
+            return login_form()
 
-        login_user(user)
+        if owner_next and not user.is_owner:
+            flash("Este acceso es exclusivo de la cuenta propietaria.", "danger")
+            return login_form(), 403
+
+        login_user(user, remember=owner_next and request.form.get("remember_phone") == "on")
         user.last_login_at = utc_now()
         user.reset_login_guard()
         log_action(user, "login", "session", details={"username": username})
         db.session.commit()
-        return redirect(url_for("main.dashboard"))
+        return redirect(next_url if owner_next else url_for("main.dashboard"))
 
-    return render_template("login.html")
+    return login_form()
 
 
 @main_bp.route("/logout", methods=["POST"])
@@ -963,7 +983,7 @@ def logout():
     db.session.commit()
     logout_user()
     flash("Sesión cerrada correctamente.", "success")
-    return redirect(url_for("main.login"))
+    return redirect(url_for("owner.login" if request.endpoint == "owner.logout" else "main.login"))
 
 
 @main_bp.route("/")

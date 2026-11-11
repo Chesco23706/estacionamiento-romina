@@ -1,0 +1,18 @@
+{% extends "owner_base.html" %}
+{% block title %}Entrar a Romina{% endblock %}
+{% block content %}
+<section class="panel settings owner-login">
+  <p class="kicker">Vista del propietario</p>
+  <h1>Entra a Romina</h1>
+  <p>Usa tu cuenta actual del estacionamiento.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="owner-username">Usuario</label>
+    <input id="owner-username" type="text" name="username" required maxlength="50" autocomplete="username">
+    <label for="owner-password">Contraseña</label>
+    <input id="owner-password" type="password" name="password" required autocomplete="current-password">
+    <label class="remember"><input type="checkbox" name="remember_phone" checked> Recordar mi acceso en este teléfono</label>
+    <button class="button primary" type="submit">Entrar</button>
+  </form>
+</section>
+{% endblock %}

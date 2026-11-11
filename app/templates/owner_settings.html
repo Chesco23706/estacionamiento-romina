@@ -1,0 +1,63 @@
+{% extends "owner_base.html" %}
+{% block title %}Ajustes · Romina{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="kicker">Vista del propietario</p><h1>Ajustes</h1></div></div>
+<div class="settings-grid">
+  <section class="panel settings" id="turnos">
+    <h2>Cierres automáticos</h2>
+    <p>Asigna los turnos para la semana del <strong>{{ monday|owner_short_date }} al {{ sunday|owner_short_date }}</strong>. Con dos empleados asignados, la mañana y la tarde se intercambian cada lunes.</p>
+    {% if not scheduler_ready %}
+    <p class="notice">El servidor todavía requiere activar la tarea que ejecuta los cierres.</p>
+    {% endif %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for shift in shifts %}
+      {% set assignment = assignments[shift.key] %}
+      <label for="setting-{{ shift.key }}">{{ shift.label }} <small>{{ shift.window }}</small></label>
+      <select name="{{ shift.key }}" id="setting-{{ shift.key }}">
+        <option value="">Sin asignar</option>
+        {% for user in users %}
+        <option value="{{ user.id }}" {% if assignment and assignment.user_id == user.id %}selected{% endif %}>{{ user.full_name }} · @{{ user.username }}</option>
+        {% endfor %}
+      </select>
+      {% endfor %}
+      <p class="muted">De lunes a sábado, la mañana incluye movimientos hasta las 14:30 y la tarde de 14:31 a 23:59. El domingo lo trabaja quien tiene la mañana esa semana. Su corte cubre la jornada completa y cierra a las 23:59.</p>
+      <button class="button primary" type="submit">Guardar turnos</button>
+    </form>
+  </section>
+  <div class="settings-side">
+    <section class="panel settings" id="avisos"
+      data-device-url="{{ url_for('owner.device') }}"
+      data-test-url="{{ url_for('owner.test_device') }}"
+      data-public-key="{{ public_key if push_ready else '' }}">
+      <h2>Avisos en este teléfono</h2>
+      <p>Recibe un aviso al quedar listo cada corte automático. Tócalo para abrir su detalle.</p>
+      <p id="push-status" class="notice" role="status">{{ 'Comprobando disponibilidad…' if push_ready else 'Los avisos todavía requieren configuración en el servidor.' }}</p>
+      <div class="actions">
+        <button type="button" class="button primary" id="push-enable" hidden>Activar avisos</button>
+        <button type="button" class="button secondary" id="push-test" hidden>Enviar aviso de prueba</button>
+        <button type="button" class="button secondary" id="push-disable" hidden>Desactivar</button>
+      </div>
+    </section>
+    <section class="panel settings">
+      <h2>Instalar Romina</h2>
+      <p>Abre el resumen desde el icono del teléfono.</p>
+      <button class="button secondary" type="button" id="install-button" hidden>Instalar aplicación</button>
+      <div id="install-help">
+        <p><strong>iPhone</strong> · En Safari, toca Compartir y luego Añadir a pantalla de inicio. Abre el icono de Romina para activar los avisos.</p>
+        <p><strong>Android</strong> · En Chrome, abre el menú y elige Instalar aplicación o Añadir a pantalla de inicio.</p>
+      </div>
+    </section>
+    <section class="panel settings account">
+      <div><h2>{{ current_user.full_name }}</h2><p>@{{ current_user.username }}</p></div>
+      <div class="actions">
+        <a class="button secondary" href="{{ url_for('main.dashboard') }}">Volver al sistema</a>
+        <form method="post" action="{{ url_for('owner.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button secondary" type="submit">Cerrar sesión</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

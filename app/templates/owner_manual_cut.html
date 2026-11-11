@@ -1,0 +1,43 @@
+{% extends "owner_base.html" %}
+{% block title %}Corte #{{ cut.id }} · Romina{% endblock %}
+{% block content %}
+<a class="text-link back" href="{{ url_for('owner.dashboard', day=day) }}#cortes">‹ Cortes del día</a>
+<div class="page-heading">
+  <div><p class="kicker">{{ day_name }} {{ day|owner_short_date }}</p><h1>Corte de caja #{{ cut.id }}</h1></div>
+  <span class="pill">Manual</span>
+</div>
+<div class="week-grid">
+  <article class="balance">
+    <p>{{ cut.target_user.full_name if cut.target_user else 'Caja general' }}</p>
+    <div class="balance-number"><strong>{{ cut.total_income|money }}</strong><span>MXN netos</span></div>
+    <dl>
+      <div><dt>Otros ingresos</dt><dd>{{ cut.extra_income|money }}</dd></div>
+      <div><dt>Gastos</dt><dd>{{ cut.total_expenses|money }}</dd></div>
+      <div><dt>Vehículos cobrados</dt><dd>{{ cut.vehicles_paid }}</dd></div>
+    </dl>
+  </article>
+  <article class="panel settings">
+    <h2>Generado por {{ cut.generated_by.full_name }}</h2>
+    <p>{{ created.strftime('%d/%m/%Y a las %H:%M') }}</p>
+    <h3 class="manual-subtitle">Cobros por tipo de vehículo</h3>
+    <ul class="activity">
+      {% for name, values in cut.vehicle_breakdown.items() if values.count %}
+      <li><span><strong>{{ name }}</strong><small>{{ values.count }} cobrados</small></span><strong>{{ values.income|money }}</strong></li>
+      {% else %}
+      <li class="muted">Sin vehículos cobrados.</li>
+      {% endfor %}
+    </ul>
+    <h3 class="manual-subtitle">Movimientos registrados</h3>
+    <ul class="activity">
+      {% for movement in cut.movement_summary['items'] %}
+      <li>
+        <span><strong>{{ movement.description }}</strong><small>{{ movement.label }} · {{ movement.created_by }}</small></span>
+        <strong>{{ ('−' if movement.type == 'expense' else '+') ~ (movement.amount|money) }}</strong>
+      </li>
+      {% else %}
+      <li class="muted">Sin otros movimientos.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</div>
+{% endblock %}

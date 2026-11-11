@@ -1,0 +1,37 @@
+plugins {
+    id 'com.android.application' version '9.1.1'
+}
+
+android {
+    namespace = 'mx.romina.estacionamiento.propietario'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'mx.romina.estacionamiento.propietario'
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = '1.0'
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets.main.res.srcDir(layout.buildDirectory.dir('generated/romina/res').get().asFile)
+}
+
+def syncRominaIcon = tasks.register('syncRominaIcon', Copy) {
+    from('../public/owner-192.png')
+    into(layout.buildDirectory.dir('generated/romina/res/drawable-nodpi'))
+    rename { 'romina_icon.png' }
+}
+
+tasks.named('preBuild') {
+    dependsOn(syncRominaIcon)
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}

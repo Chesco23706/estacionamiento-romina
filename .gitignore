@@ -8,3 +8,7 @@ instance/*.db
 public/__pycache__/
 
 .vercel
+/android/.gradle/
+/android/build/
+/android/dist/
+/android/local.properties

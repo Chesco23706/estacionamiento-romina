@@ -5,6 +5,7 @@ from flask import Flask, session
 from config import INSTANCE_DIR, get_config
 
 from .extensions import csrf, db, login_manager
+from .owner import owner_bp, register_owner_tables
 from .routes import main_bp
 from .security import apply_security_headers, configure_proxy
 
@@ -45,8 +46,11 @@ def create_app(config_object=None):
         if app.config.get("AUTO_INIT_DATABASE", False):
             db.create_all()
             models.seed_defaults()
+        else:
+            register_owner_tables()
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(owner_bp)
     register_cli_commands(app)
 
     return app

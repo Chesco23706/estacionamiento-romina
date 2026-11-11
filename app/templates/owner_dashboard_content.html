@@ -1,0 +1,193 @@
+<section id="semana" aria-labelledby="week-title">
+  <div class="page-heading">
+    <div>
+      <p class="kicker">Vista del propietario</p>
+      <h1 id="week-title">Resumen semanal</h1>
+    </div>
+    {% if current_week %}<span class="live-label"><i></i> Semana en curso</span>{% endif %}
+  </div>
+
+  <div class="week-controls">
+    <a class="icon-btn" href="{{ url_for('owner.dashboard', week=previous) }}#semana" aria-label="Semana anterior">‹</a>
+    <strong>{{ monday|owner_short_date }} – {{ sunday|owner_short_date }} {{ sunday.year }}</strong>
+    {% if current_week %}
+    <span class="icon-btn" aria-disabled="true" aria-label="Semana siguiente">›</span>
+    {% else %}
+    <a class="icon-btn" href="{{ url_for('owner.dashboard', week=following) }}#semana" aria-label="Semana siguiente">›</a>
+    {% endif %}
+  </div>
+
+  <div class="week-grid">
+    <article class="balance">
+      <p>Ingreso neto de la semana</p>
+      <div class="balance-number"><strong>{{ total.net|money }}</strong><span>MXN</span></div>
+      <dl>
+        <div><dt>Ingresos</dt><dd>{{ total.gross|money }}</dd></div>
+        <div><dt>Gastos</dt><dd>{{ total.expenses|money }}</dd></div>
+        <div><dt>Vehículos cobrados</dt><dd>{{ total.count }}</dd></div>
+      </dl>
+    </article>
+
+    <article class="panel chart-panel">
+      <div class="section-title">
+        <div><h2>Caja por día</h2><p>Selecciona un día para ver sus cortes.</p></div>
+        <span class="small-label">Neto · MXN</span>
+      </div>
+      <div class="bars">
+        {% for item in chart %}
+          {% if item.date <= today %}
+          <a class="bar-day{% if item.date == day %} selected{% endif %}" href="{{ url_for('owner.dashboard', day=item.date) }}#cortes"
+             aria-label="{{ item.name }} {{ item.date|owner_short_date }}, {{ item.total|money }} netos"
+             {% if item.date == day %}aria-current="date"{% endif %}>
+            <span class="bar-track" aria-hidden="true"><i class="{% if item.total < 0 %}negative{% endif %}" style="--bar: {{ item.height }}%"></i></span>
+            <span>{{ item.name }}</span><small>{{ item.date.day }}</small>
+          </a>
+          {% else %}
+          <span class="bar-day future"><span class="bar-track" aria-hidden="true"></span><span>{{ item.name }}</span><small>{{ item.date.day }}</small></span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+
+  <div class="week-grid week-breakdown">
+    <details class="panel disclosure" id="weekly-income">
+      <summary><span>Desglose de ingresos</span><span>{{ total.gross|money }}</span></summary>
+      <dl class="rows">
+        <div><dt>Cobros de vehículos</dt><dd>{{ total.vehicles|money }}</dd></div>
+        <div><dt>Anticipos semanales</dt><dd>{{ total.advances|money }}</dd></div>
+        <div><dt>Otras entradas</dt><dd>{{ total.other|money }}</dd></div>
+        <div><dt>Gastos</dt><dd>{{ total.expenses|money }}</dd></div>
+      </dl>
+    </details>
+    <details class="panel disclosure" id="weekly-employees">
+      <summary><span>Caja por empleado</span><span>{{ employees|length }}</span></summary>
+      <ul class="activity">
+        {% for name, totals in employees %}
+        <li><span><strong>{{ name }}</strong><small>{{ totals.gross|money }} de ingresos · {{ totals.expenses|money }} de gastos</small></span><strong>{{ totals.net|money }}</strong></li>
+        {% else %}
+        <li class="muted">Sin movimientos en esta semana.</li>
+        {% endfor %}
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section id="cortes" class="cut-section" aria-labelledby="cut-title">
+  <div class="page-heading">
+    <div>
+      <p class="kicker">{{ day_name }} {{ day|owner_short_date }}</p>
+      <h2 id="cut-title">Cortes del día</h2>
+    </div>
+    <div class="day-net"><span>Caja neta del día</span><strong>{{ day_total.net|money }}</strong></div>
+  </div>
+  <div class="day-picker">
+    {% for item in chart if item.date <= today %}
+    <a href="{{ url_for('owner.dashboard', day=item.date) }}#cortes" {% if item.date == day %}aria-current="date"{% endif %}>{{ item.name }} <span>{{ item.date.day }}</span></a>
+    {% endfor %}
+  </div>
+
+  <div class="week-grid shift-grid{% if shifts|length == 1 %} single-shift{% endif %}">
+    {% for row in shifts %}
+      {% set shift = row.shift %}
+      {% set report = row.report %}
+      <article class="panel shift" id="shift-{{ shift.key }}">
+        <div class="shift-head">
+          <span class="shift-icon {{ shift.key }}">
+            {% if shift.key != 'night' %}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.8 15A8 8 0 0 1 9 4.2 8.5 8.5 0 1 0 19.8 15z"/></svg>
+            {% endif %}
+          </span>
+          <div><h3>{{ shift.label }}</h3><p>{{ shift.window }}</p></div>
+          {% if report %}<span class="pill complete">Cerrado</span>
+          {% elif not row.employee %}<span class="pill">Sin asignar</span>
+          {% elif row.due %}<span class="pill waiting">Pendiente</span>
+          {% else %}<span class="pill waiting">Por cerrar</span>{% endif %}
+        </div>
+        {% if report %}
+          {% set snapshot = report.snapshot %}
+          <div class="shift-main"><span>{{ report.employee_name }}<small>{{ snapshot.count }} vehículos cobrados</small></span><strong>{{ snapshot.net|money }}</strong></div>
+          <dl class="shift-money">
+            <div><dt>Ingresos</dt><dd>{{ snapshot.gross|money }}</dd></div>
+            <div><dt>Gastos</dt><dd>{{ snapshot.expenses|money }}</dd></div>
+          </dl>
+          <details class="disclosure cut-detail" id="detail-{{ shift.key }}"{% if open_shift == shift.key %} open data-linked-cut{% endif %}>
+            <summary><span>Ver detalle del corte</span></summary>
+            <dl class="rows">
+              <div><dt>Cobros de vehículos</dt><dd>{{ snapshot.vehicles|money }}</dd></div>
+              <div><dt>Anticipos semanales</dt><dd>{{ snapshot.advances|money }}</dd></div>
+              <div><dt>Otras entradas</dt><dd>{{ snapshot.other|money }}</dd></div>
+            </dl>
+            <ul class="activity">
+              {% for movement in snapshot.movements %}
+              <li><span><strong>{{ movement.description }}</strong><small>{{ movement.time }} · {{ movement.label }}</small></span><strong>{{ movement.amount|money }}</strong></li>
+              {% endfor %}
+              {% for payment in snapshot.payments %}
+              <li><span><strong>Ficha {{ payment.ticket }}</strong><small>{{ payment.time }} · {{ payment.type }}</small></span><strong>{{ payment.amount|money }}</strong></li>
+              {% endfor %}
+              {% if not snapshot.movements and not snapshot.payments %}<li class="muted">Sin movimientos en el turno.</li>{% endif %}
+            </ul>
+          </details>
+        {% elif row.employee %}
+          <p class="shift-note"><strong>{{ row.employee.full_name }}</strong><br>{{ 'El cierre está en espera de la siguiente ejecución programada.' if row.due else 'El corte aparecerá aquí al terminar el turno.' }}</p>
+        {% else %}
+          <p class="shift-note">{{ 'No había un empleado asignado al cierre de este turno.' if row.due else 'Asigna a la persona que cierra este turno.' }}</p>
+          {% if not row.due %}<a class="text-link" href="{{ url_for('owner.settings') }}#turnos">Asignar empleado →</a>{% endif %}
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+
+  <article class="panel manual-panel">
+    <div class="section-title"><div><h3>Cortes registrados en caja</h3><p>Reportes diarios generados desde el sistema.</p></div><span class="pill">{{ manual|length }}</span></div>
+    <ul class="activity">
+      {% for cut, created, shift_label in manual %}
+      <li>
+        <a class="manual-link" href="{{ url_for('owner.manual_cut', cut_id=cut.id) }}">
+          <span>
+            <strong>{{ cut.target_user.full_name if cut.target_user else 'Caja general' }}</strong>
+            <small>{{ cut.generated_by.full_name }} · {{ created.strftime('%d/%m %H:%M') }} · {{ shift_label }}</small>
+          </span>
+          <span class="manual-amount"><strong>{{ cut.total_income|money }}</strong><small>Gastos {{ cut.total_expenses|money }}</small></span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="muted">Sin cortes manuales para esta fecha.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+<details class="panel disclosure weekly-cuts" id="weekly-cuts"{% if day.weekday() == 6 %} open{% endif %}>
+  <summary><span>Cortes de la semana</span><span>{{ weekly_cuts|length }} {{ 'día' if weekly_cuts|length == 1 else 'días' }}</span></summary>
+  {% for date, name, automatic, manual_rows in weekly_cuts %}
+  <section class="weekly-cut-day" aria-label="{{ name }} {{ date|owner_short_date }}">
+    <h3><a href="{{ url_for('owner.dashboard', day=date) }}#cortes">{{ name }} {{ date|owner_short_date }} <span aria-hidden="true">›</span></a></h3>
+    <ul class="activity">
+      {% for shift, report in automatic %}
+      <li>
+        <a class="manual-link" href="{{ url_for('owner.dashboard', day=date, shift=shift.key) }}#shift-{{ shift.key }}">
+          <span><strong>{{ report.employee_name }}</strong><small>{{ shift.label }}</small></span>
+          <span class="manual-amount"><strong>{{ report.snapshot.net|money }}</strong><small>Gastos {{ report.snapshot.expenses|money }}</small></span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% endfor %}
+      {% for cut, created, shift_label in manual_rows %}
+      <li>
+        <a class="manual-link" href="{{ url_for('owner.manual_cut', cut_id=cut.id) }}">
+          <span><strong>{{ cut.target_user.full_name if cut.target_user else 'Caja general' }}</strong><small>{{ cut.generated_by.full_name }} · {{ created.strftime('%H:%M') }} · Manual</small></span>
+          <span class="manual-amount"><strong>{{ cut.total_income|money }}</strong><small>Gastos {{ cut.total_expenses|money }}</small></span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <p class="weekly-cut-day muted">Todavía no hay cortes para esta semana.</p>
+  {% endfor %}
+</details>
+<footer class="freshness">Actualizado a las {{ local_now.strftime('%H:%M') }} · Hora local del estacionamiento</footer>

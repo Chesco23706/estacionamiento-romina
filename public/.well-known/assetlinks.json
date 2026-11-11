@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "mx.romina.estacionamiento.propietario",
+      "sha256_cert_fingerprints": [
+        "7E:EA:A2:BE:96:83:CF:57:DB:C0:45:E1:FD:1C:F9:76:2C:31:F9:79:7E:70:F2:D8:10:1F:FC:2A:12:22:69:E5"
+      ]
+    }
+  }
+]

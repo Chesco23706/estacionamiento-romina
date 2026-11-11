@@ -661,7 +661,9 @@ def delete_cash_movement(movement, user):
 
 
 def cash_movements_for_period(start, end, target_user=None):
-    query = CashMovement.query.options(joinedload(CashMovement.weekly_prepayment)).filter(
+    query = CashMovement.query.options(
+        joinedload(CashMovement.weekly_prepayment), joinedload(CashMovement.created_by),
+    ).filter(
         CashMovement.occurred_at >= start,
         CashMovement.occurred_at < end,
     )
@@ -690,6 +692,18 @@ def cash_movement_totals(start, end, target_user=None):
     }
 
 
+def cash_cut_payments(start, end, target_user_id=None):
+    query = VehicleRecord.query.filter(
+        VehicleRecord.weekly_prepayment_id.is_(None),
+        VehicleRecord.paid_at.isnot(None),
+        VehicleRecord.paid_at >= start,
+        VehicleRecord.paid_at < end,
+    )
+    if target_user_id is not None:
+        query = query.filter(VehicleRecord.payment_user_id == target_user_id)
+    return query
+
+
 def generate_cash_cut(
     cut_type,
     user,
@@ -701,21 +715,8 @@ def generate_cash_cut(
     if period_start and period_end:
         start, end = period_start, period_end
     else:
-        start, end = get_period_bounds(
-            cut_type,
-            reference_date=target_date,
-        )
-    paid_records_query = VehicleRecord.query.filter(
-        VehicleRecord.weekly_prepayment_id.is_(None),
-        VehicleRecord.paid_at.isnot(None),
-        VehicleRecord.paid_at >= start,
-        VehicleRecord.paid_at < end,
-    )
-    if target_user:
-        paid_records_query = paid_records_query.filter(
-            VehicleRecord.payment_user_id == target_user.id
-        )
-    paid_records = paid_records_query.all()
+        start, end = get_period_bounds(cut_type, reference_date=target_date)
+    paid_records = cash_cut_payments(start, end, target_user.id if target_user else None).all()
 
     vehicle_income = Decimal("0.00")
     vehicle_types = get_vehicle_types(include_inactive=True)

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/owner/jobs/close-shifts", "schedule": "31 20 * * *" },
+    { "path": "/owner/jobs/close-shifts", "schedule": "0 21 * * *" },
+    { "path": "/owner/jobs/close-shifts", "schedule": "0 6 * * *" },
+    { "path": "/owner/jobs/close-shifts", "schedule": "0 7 * * *" }
+  ]
+}

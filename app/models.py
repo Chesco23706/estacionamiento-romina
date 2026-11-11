@@ -68,6 +68,12 @@ class User(UserMixin, TimestampMixin, db.Model):
     def has_admin_access(self):
         return self.is_admin or self.username == "empleado02"
 
+    @property
+    def is_owner(self):
+        return self.is_active and self.is_admin and (
+            self.username == current_app.config["OWNER_MOBILE_USERNAME"]
+        )
+
     def is_locked(self):
         return bool(self.locked_until and utc_now() < self.locked_until)
 

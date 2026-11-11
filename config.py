@@ -51,6 +51,11 @@ class Config:
     ADMIN_BOOTSTRAP_NAME = os.environ.get("ADMIN_BOOTSTRAP_NAME", "Administrador General")
     ADMIN_BOOTSTRAP_PASSWORD = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD")
     APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Mexico_City")
+    OWNER_MOBILE_USERNAME = os.environ.get("OWNER_MOBILE_USERNAME", ADMIN_BOOTSTRAP_USERNAME)
+    OWNER_PUSH_PUBLIC_KEY = os.environ.get("OWNER_PUSH_PUBLIC_KEY", "")
+    OWNER_PUSH_PRIVATE_KEY = os.environ.get("OWNER_PUSH_PRIVATE_KEY", "")
+    OWNER_PUSH_SUBJECT = os.environ.get("OWNER_PUSH_SUBJECT", "")
+    CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
 
 class DevelopmentConfig(Config):
